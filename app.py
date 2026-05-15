@@ -1,0 +1,1196 @@
+import pandas as pd
+import streamlit as st
+
+from utils.loader import load_dataset, get_dataframe_info
+from utils.detector import detect_data_types, convert_to_datetime
+from utils.charts import (
+    make_histogram_boxplot, make_bar_chart, make_violin,
+    make_time_series, make_line_chart, make_heatmap, make_scatter,
+    make_density_contour, make_occurrence_heatmap, make_grouped_bar,
+    make_boxplot_by_category, make_pivot_heatmap,
+    make_confusion_matrix, make_roc_curve,
+    make_feature_importance_chart, make_learning_curve_chart,
+    make_coefficient_chart,
+    DISCRETE_THRESHOLD,
+)
+from utils.exploration import (
+    numerical_stats, detect_outliers,
+    categorical_stats, frequency_table, rare_categories,
+    datetime_stats,
+)
+from utils.ai_interpreter import (
+    interpret_dataset_overview,
+    interpret_single_column,
+    interpret_heatmap,
+)
+from utils.quality import (
+    check_numerical_quality,
+    check_categorical_quality,
+    check_datetime_quality,
+)
+
+# ── Page config ───────────────────────────────────────────────────────────────
+st.set_page_config(page_title="Data Analytics App", page_icon="📊", layout="wide")
+
+st.title("📊 Data Analytics App")
+st.caption(
+    "Upload your data file to get started. The app will inspect it, "
+    "check its quality, and explain the findings in plain English."
+)
+st.divider()
+
+# ── File Upload ───────────────────────────────────────────────────────────────
+st.subheader("Upload Your Data File")
+
+uploaded_file = st.file_uploader(
+    "Choose a CSV or Excel file",
+    type=["csv", "xlsx", "xls"],
+    help="Supported formats: CSV (.csv) and Excel (.xlsx, .xls)",
+)
+
+if uploaded_file is None:
+    st.info("Please upload a CSV or Excel file to begin.")
+    st.stop()
+
+try:
+    if (
+        "df" not in st.session_state
+        or st.session_state.get("filename") != uploaded_file.name
+    ):
+        df = load_dataset(uploaded_file)
+        st.session_state["df"] = df
+        st.session_state["filename"] = uploaded_file.name
+        for key in ("col_types", "ai_summary", "datetime_overrides", "override_warnings"):
+            st.session_state.pop(key, None)
+        for k in list(st.session_state.keys()):
+            if k.startswith("col_ai_") or k.startswith("heatmap_ai_"):
+                st.session_state.pop(k, None)
+    else:
+        df = st.session_state["df"]
+except ValueError as e:
+    st.error(str(e))
+    st.stop()
+
+st.success(f"File loaded: **{uploaded_file.name}**")
+m1, m2 = st.columns(2)
+m1.metric("Rows", f"{df.shape[0]:,}")
+m2.metric("Columns", df.shape[1])
+
+st.divider()
+
+# ── Dataset Preview ───────────────────────────────────────────────────────────
+st.subheader("Dataset Preview")
+st.caption("Showing the first 100 rows of your data.")
+
+preview_df = df.head(100).copy()
+bool_cols = preview_df.select_dtypes(include="bool").columns.tolist()
+if bool_cols:
+    preview_df[bool_cols] = preview_df[bool_cols].astype(str)
+st.dataframe(preview_df, use_container_width=True, height=300)
+
+st.divider()
+
+# ── Column Overview ───────────────────────────────────────────────────────────
+st.subheader("Column Overview")
+st.caption(
+    "Each column's data type, category, total values, and missing values. "
+    "Red = 20%+ missing. Yellow = 5–19% missing."
+)
+
+stored_overrides = st.session_state.get("datetime_overrides", [])
+if stored_overrides:
+    df = convert_to_datetime(df, stored_overrides)
+    st.session_state["df"] = df
+
+col_types = detect_data_types(df)
+st.session_state["col_types"] = col_types
+
+info_df = get_dataframe_info(df)
+type_label_map = {"numerical": "Numerical", "categorical": "Categorical", "datetime": "Date / Time"}
+col_to_type = {c: type_label_map[k] for k, cols in col_types.items() for c in cols}
+dt_index = info_df.columns.tolist().index("Data Type")
+info_df.insert(dt_index + 1, "Column Type", info_df["Column Name"].map(col_to_type))
+
+
+def highlight_missing_pct(val):
+    try:
+        v = float(val)
+        if v >= 20:
+            return "background-color: #f8d7da; color: #842029"
+        elif v >= 5:
+            return "background-color: #fff3cd; color: #664d03"
+        return ""
+    except (ValueError, TypeError):
+        return ""
+
+
+st.dataframe(
+    info_df.style
+        .map(highlight_missing_pct, subset=["Missing %"])
+        .format({"Missing %": "{:.2f}"}),
+    use_container_width=True,
+    hide_index=True,
+)
+
+if st.session_state.get("override_warnings"):
+    for w in st.session_state["override_warnings"]:
+        st.warning(w)
+    st.session_state["override_warnings"] = []
+
+non_datetime_cols = col_types["numerical"] + col_types["categorical"]
+if non_datetime_cols:
+    new_overrides = st.multiselect(
+        "Mark additional columns as Date / Time (optional)",
+        options=non_datetime_cols,
+        default=[c for c in stored_overrides if c in non_datetime_cols],
+        help="Select any column that contains dates but was not detected automatically.",
+    )
+    if set(new_overrides) != set(stored_overrides):
+        valid, warnings = [], []
+        for col in new_overrides:
+            non_null = df[col].dropna()
+            if len(non_null) == 0:
+                warnings.append(f"'{col}' has no values to check — it was not converted.")
+                continue
+            converted = pd.to_datetime(non_null, errors="coerce")
+            ratio = converted.notna().sum() / len(non_null)
+            if ratio >= 0.8:
+                valid.append(col)
+            else:
+                warnings.append(
+                    f"'{col}' was not converted — only {ratio * 100:.0f}% of its values "
+                    f"look like dates. Please check the column and try again."
+                )
+        st.session_state["datetime_overrides"] = valid
+        st.session_state["override_warnings"] = warnings
+        if valid:
+            st.session_state.pop("ai_summary", None)
+        st.rerun()
+
+st.divider()
+
+# ── Data Quality Summary ──────────────────────────────────────────────────────
+st.subheader("Data Quality Summary")
+
+
+def _stats_row(label: str, value) -> None:
+    st.markdown(
+        f"<div style='padding:3px 0'>"
+        f"<span style='color:#aaaaaa'><b>{label}:</b></span> "
+        f"<span style='color:#ffffff'>{value}</span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_numerical_panel(col_name: str) -> None:
+    series = df[col_name]
+    total = len(series)
+    missing = int(series.isna().sum())
+    missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+    unique = int(series.nunique())
+    is_discrete = unique < DISCRETE_THRESHOLD
+    has_data = not series.isna().all()
+
+    mn  = f"{series.min():.2f}"  if has_data else "—"
+    mx  = f"{series.max():.2f}"  if has_data else "—"
+    avg = f"{series.mean():.2f}" if has_data else "—"
+
+    with st.container(border=True):
+        st.markdown(f"**{col_name}**")
+        left, right = st.columns([3, 2])
+        with left:
+            if is_discrete:
+                fig, truncated, total_unique = make_bar_chart(series)
+                st.plotly_chart(fig, use_container_width=True)
+                if truncated:
+                    st.caption(f"Showing top 10 of {total_unique} unique values.")
+            else:
+                st.plotly_chart(make_histogram_boxplot(series), use_container_width=True)
+        with right:
+            for label, val in [
+                ("Missing Values", missing),
+                ("Missing %",      f"{missing_pct:.2f}%"),
+                ("Unique Values",  unique),
+                ("Minimum",        mn),
+                ("Maximum",        mx),
+                ("Average",        avg),
+            ]:
+                _stats_row(label, val)
+
+
+def render_categorical_panel(col_name: str) -> None:
+    series = df[col_name]
+    total = len(series)
+    missing = int(series.isna().sum())
+    missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+    unique = int(series.nunique())
+
+    if series.dtype == object:
+        lower_unique = series.dropna().str.strip().str.lower().nunique()
+        case_issue    = "Yes" if lower_unique < unique else "No"
+        has_special   = series.dropna().str.contains(r"[^a-zA-Z0-9\s]", regex=True).any()
+        special_chars = "Yes" if has_special else "No"
+    else:
+        case_issue    = "No"
+        special_chars = "No"
+
+    with st.container(border=True):
+        st.markdown(f"**{col_name}**")
+        left, right = st.columns([3, 2])
+        with left:
+            fig, truncated, total_unique = make_bar_chart(series)
+            st.plotly_chart(fig, use_container_width=True)
+            if truncated:
+                st.caption(f"Showing top 10 of {total_unique} unique values.")
+        with right:
+            for label, val in [
+                ("Missing Values",     missing),
+                ("Missing %",          f"{missing_pct:.2f}%"),
+                ("Unique Values",      unique),
+                ("Case Inconsistency", case_issue),
+                ("Special Characters", special_chars),
+            ]:
+                _stats_row(label, val)
+
+
+def render_datetime_panel(col_name: str) -> None:
+    series = pd.to_datetime(df[col_name], errors="coerce")
+    total = len(series)
+    missing = int(series.isna().sum())
+    missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+    earliest   = str(series.min().date()) if pd.notna(series.min()) else "—"
+    latest     = str(series.max().date()) if pd.notna(series.max()) else "—"
+    date_range = (
+        f"{(series.max() - series.min()).days:,} days"
+        if pd.notna(series.min()) and pd.notna(series.max()) else "—"
+    )
+
+    with st.container(border=True):
+        st.markdown(f"**{col_name}**")
+        left, right = st.columns([3, 2])
+        with left:
+            st.plotly_chart(make_histogram_boxplot(series), use_container_width=True)
+        with right:
+            for label, val in [
+                ("Missing Values", missing),
+                ("Missing %",      f"{missing_pct:.2f}%"),
+                ("Earliest Date",  earliest),
+                ("Latest Date",    latest),
+                ("Date Range",     date_range),
+            ]:
+                _stats_row(label, val)
+
+
+def render_panels(col_list: list, render_fn) -> None:
+    for i in range(0, len(col_list), 2):
+        pair = col_list[i : i + 2]
+        grid = st.columns(2)
+        for j, col_name in enumerate(pair):
+            with grid[j]:
+                render_fn(col_name)
+
+
+tab1, tab2, tab3 = st.tabs(["Numerical Columns", "Categorical Columns", "Date / Time Columns"])
+with tab1:
+    if not col_types["numerical"]:
+        st.info("No numerical columns found.")
+    else:
+        render_panels(col_types["numerical"], render_numerical_panel)
+with tab2:
+    if not col_types["categorical"]:
+        st.info("No categorical columns found.")
+    else:
+        render_panels(col_types["categorical"], render_categorical_panel)
+with tab3:
+    if not col_types["datetime"]:
+        st.info("No date/time columns found.")
+    else:
+        render_panels(col_types["datetime"], render_datetime_panel)
+
+st.divider()
+
+# ── AI Interpretation ─────────────────────────────────────────────────────────
+st.subheader("AI Interpretation")
+
+num_df = check_numerical_quality(df, col_types["numerical"])
+cat_df = check_categorical_quality(df, col_types["categorical"])
+dt_df  = check_datetime_quality(df, col_types["datetime"])
+
+
+def build_quality_text(quality_df: pd.DataFrame) -> str:
+    if quality_df.empty:
+        return ""
+    return "\n".join(
+        " | ".join(f"{k}: {v}" for k, v in row.items())
+        for _, row in quality_df.iterrows()
+    )
+
+
+if "ai_summary" not in st.session_state:
+    with st.spinner("Analysing your data…"):
+        try:
+            st.session_state["ai_summary"] = interpret_dataset_overview(
+                shape=df.shape,
+                col_types=col_types,
+                num_summary=build_quality_text(num_df),
+                cat_summary=build_quality_text(cat_df),
+                dt_summary=build_quality_text(dt_df),
+            )
+        except Exception as e:
+            st.error(f"Could not generate AI interpretation: {e}")
+            st.session_state["ai_summary"] = None
+
+if st.session_state.get("ai_summary"):
+    st.info(st.session_state["ai_summary"])
+    if st.button("🔄 Refresh interpretation"):
+        st.session_state.pop("ai_summary", None)
+        st.rerun()
+
+st.divider()
+
+# ── Data Exploratory Analysis ─────────────────────────────────────────────────
+st.subheader("Data Exploratory Analysis")
+
+# ── Single Column ─────────────────────────────────────────────────────────────
+st.markdown("#### Column Profile")
+st.caption("Select a column for a detailed deep-dive: full statistics, charts, and anomaly detection.")
+
+selected_col = st.selectbox("Select a column", options=df.columns.tolist(), index=0)
+
+if selected_col:
+    col_type = col_to_type.get(selected_col, "Unknown")
+    st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {col_type}")
+    st.divider()
+
+    # ── Numerical ─────────────────────────────────────────────────────────────
+    if col_type == "Numerical":
+        series = df[selected_col]
+        unique = int(series.nunique())
+        is_discrete = unique < DISCRETE_THRESHOLD
+
+        chart_l, chart_r = st.columns([3, 2])
+        with chart_l:
+            st.markdown("**Distribution**")
+            if is_discrete:
+                fig, truncated, total_unique = make_bar_chart(series, height=360)
+                st.plotly_chart(fig, use_container_width=True)
+                if truncated:
+                    st.caption(f"Showing top 10 of {total_unique} unique values.")
+            else:
+                st.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
+        with chart_r:
+            st.markdown("**Violin Plot**")
+            st.plotly_chart(make_violin(series, height=360), use_container_width=True)
+
+        st.markdown("**Summary Statistics**")
+        stats = numerical_stats(series)
+        if stats:
+            stat_items = list(stats.items())
+            for i in range(0, len(stat_items), 4):
+                cols = st.columns(4)
+                for j, (label, val) in enumerate(stat_items[i : i + 4]):
+                    with cols[j]:
+                        st.metric(label=label, value=val)
+
+        st.markdown("**Outlier Detection** — IQR method")
+        outlier_summary, _ = detect_outliers(series)
+        o1, o2 = st.columns(2)
+        o1.metric("Outliers Found", outlier_summary["count"])
+        o2.metric("Outlier %",      outlier_summary["pct"])
+
+        ai_key = f"col_ai_{selected_col}"
+        with st.expander("🤖 AI Interpretation"):
+            if ai_key not in st.session_state:
+                with st.spinner("Generating interpretation…"):
+                    try:
+                        extra = {
+                            "Outliers found":    outlier_summary["count"],
+                            "Outlier %":         outlier_summary["pct"],
+                            "Lower bound (IQR)": outlier_summary["lower_bound"] or "—",
+                            "Upper bound (IQR)": outlier_summary["upper_bound"] or "—",
+                        }
+                        st.session_state[ai_key] = interpret_single_column(
+                            col_name=selected_col, col_type=col_type,
+                            stats=stats, extra=extra,
+                        )
+                    except Exception as e:
+                        st.session_state[ai_key] = None
+                        st.error(f"Could not generate interpretation: {e}")
+            if st.session_state.get(ai_key):
+                st.info(st.session_state[ai_key])
+                if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
+                    st.session_state.pop(ai_key, None)
+                    st.rerun()
+
+    # ── Categorical ───────────────────────────────────────────────────────────
+    elif col_type == "Categorical":
+        series = df[selected_col]
+        unique = int(series.nunique())
+
+        if unique <= 5:
+            max_bars = unique
+        else:
+            _slider_max = min(50, unique)
+            max_bars = st.slider(
+                "Number of bars to display",
+                min_value=5,
+                max_value=_slider_max,
+                value=min(20, _slider_max),
+                step=5,
+                help="Controls how many category values are shown in the bar chart.",
+            )
+
+        st.markdown("**Frequency Chart**")
+        fig, truncated, total_unique = make_bar_chart(series, max_bars=max_bars, height=400)
+        st.plotly_chart(fig, use_container_width=True)
+        if truncated:
+            st.caption(f"Showing top {max_bars} of {total_unique} unique values, sorted by frequency.")
+
+        st.markdown("**Frequency Table**")
+        st.caption("Rows highlighted in yellow appear in less than 1% of records.")
+        freq_df = frequency_table(series)
+
+        def _style_rare_pct(val):
+            try:
+                if float(val) < 1.0:
+                    return "background-color: #fff3cd; color: #333333"
+            except (ValueError, TypeError):
+                pass
+            return ""
+
+        st.dataframe(
+            freq_df.style
+                .map(_style_rare_pct, subset=["Percentage"])
+                .format({"Percentage": "{:.2f}%"}),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        ai_key = f"col_ai_{selected_col}"
+        stats  = categorical_stats(series)
+        rare_df = rare_categories(series)
+        with st.expander("🤖 AI Interpretation"):
+            if ai_key not in st.session_state:
+                with st.spinner("Generating interpretation…"):
+                    try:
+                        extra = {"Rare categories (< 1%)": len(rare_df) if not rare_df.empty else 0}
+                        st.session_state[ai_key] = interpret_single_column(
+                            col_name=selected_col, col_type=col_type,
+                            stats=stats, extra=extra,
+                        )
+                    except Exception as e:
+                        st.session_state[ai_key] = None
+                        st.error(f"Could not generate interpretation: {e}")
+            if st.session_state.get(ai_key):
+                st.info(st.session_state[ai_key])
+                if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
+                    st.session_state.pop(ai_key, None)
+                    st.rerun()
+
+    # ── Date / Time ───────────────────────────────────────────────────────────
+    elif col_type == "Date / Time":
+        series = pd.to_datetime(df[selected_col], errors="coerce")
+
+        freq_options = {"Day": "D", "Week": "W", "Month": "M", "Year": "Y"}
+        freq_label = st.radio(
+            "Aggregate by", options=list(freq_options.keys()), index=2, horizontal=True,
+        )
+        st.markdown("**Records Over Time**")
+        st.plotly_chart(
+            make_time_series(series, freq=freq_options[freq_label], height=360),
+            use_container_width=True,
+        )
+
+        st.markdown("**Summary Statistics**")
+        stats = datetime_stats(series)
+        stat_items = list(stats.items())
+        for i in range(0, len(stat_items), 4):
+            cols = st.columns(4)
+            for j, (label, val) in enumerate(stat_items[i : i + 4]):
+                with cols[j]:
+                    st.metric(label=label, value=val)
+
+        ai_key = f"col_ai_{selected_col}"
+        with st.expander("🤖 AI Interpretation"):
+            if ai_key not in st.session_state:
+                with st.spinner("Generating interpretation…"):
+                    try:
+                        st.session_state[ai_key] = interpret_single_column(
+                            col_name=selected_col, col_type=col_type, stats=stats,
+                        )
+                    except Exception as e:
+                        st.session_state[ai_key] = None
+                        st.error(f"Could not generate interpretation: {e}")
+            if st.session_state.get(ai_key):
+                st.info(st.session_state[ai_key])
+                if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
+                    st.session_state.pop(ai_key, None)
+                    st.rerun()
+
+st.divider()
+
+# ── Multi-Column Analysis ─────────────────────────────────────────────────────
+st.markdown("#### Column Relationships")
+st.caption("Select two or more columns using the checkboxes below. Available chart types will appear based on your selection.")
+
+# ── Grouped checkboxes by column type ────────────────────────────────────────
+selected_cols = []
+checkbox_groups = [
+    ("Numerical",   col_types["numerical"]),
+    ("Categorical", col_types["categorical"]),
+    ("Date / Time", col_types["datetime"]),
+]
+for group_label, group_cols in checkbox_groups:
+    if not group_cols:
+        continue
+    st.markdown(f"**{group_label}**")
+    n_per_row = 4
+    for i in range(0, len(group_cols), n_per_row):
+        row_cols = st.columns(n_per_row)
+        for j, col_name in enumerate(group_cols[i : i + n_per_row]):
+            if row_cols[j].checkbox(col_name, key=f"mc_{col_name}"):
+                selected_cols.append(col_name)
+
+if len(selected_cols) >= 2:
+    sel_num = [c for c in selected_cols if col_to_type.get(c) == "Numerical"]
+    sel_cat = [c for c in selected_cols if col_to_type.get(c) == "Categorical"]
+    sel_dt  = [c for c in selected_cols if col_to_type.get(c) == "Date / Time"]
+    n_num, n_cat, n_dt = len(sel_num), len(sel_cat), len(sel_dt)
+
+    # Determine available charts
+    available = []
+    if n_cat == 2 and n_num == 1 and n_dt == 0:
+        available.append("Heatmap — Numerical Values")
+    if n_num == 1 and n_cat == 1 and n_dt == 0:
+        available.append("Boxplot — Distribution by Category")
+    if n_dt == 1 and n_num >= 1 and n_cat == 0:
+        available.append("Line Chart — Trend")
+    if n_num == 2 and n_cat == 0 and n_dt == 0:
+        available += ["Scatter Plot — Correlation", "Interaction Chart — Density"]
+    if n_num >= 2 and n_cat == 0 and n_dt == 0:
+        available.append("Heatmap — Multiple Correlations")
+    if n_cat == 2 and n_num == 0 and n_dt == 0:
+        available += ["Heatmap — Occurrence", "Interaction Chart — Grouped Bar"]
+
+    if not available:
+        st.info(
+            "No charts available for this combination. Try selecting: "
+            "1 date + 1 or more numerical, 2 or more numerical, or exactly 2 categorical columns."
+        )
+    else:
+        chart_type = st.radio("Chart type", available, horizontal=True)
+
+        # ── Heatmap — Numerical Values ────────────────────────────────────────
+        if chart_type == "Heatmap — Numerical Values":
+            st.plotly_chart(
+                make_pivot_heatmap(df, sel_cat[0], sel_cat[1], sel_num[0], height=460),
+                use_container_width=True,
+            )
+            st.caption(
+                f"Average of **{sel_num[0]}** for each combination of "
+                f"**{sel_cat[0]}** (rows) and **{sel_cat[1]}** (columns). "
+                f"Showing up to 10 most frequent values per column."
+            )
+
+        # ── Boxplot — Distribution by Category ───────────────────────────────
+        elif chart_type == "Boxplot — Distribution by Category":
+            fig, truncated, total_cats = make_boxplot_by_category(
+                df, num_col=sel_num[0], cat_col=sel_cat[0], height=420,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            if truncated:
+                st.caption(
+                    f"Showing top 15 of {total_cats} categories, sorted by median descending."
+                )
+
+        # ── Line Chart — Trend ────────────────────────────────────────────────
+        elif chart_type == "Line Chart — Trend":
+            st.plotly_chart(
+                make_line_chart(df, x_col=sel_dt[0], y_cols=sel_num, height=420),
+                use_container_width=True,
+            )
+
+        # ── Scatter Plot — Correlation ────────────────────────────────────────
+        elif chart_type == "Scatter Plot — Correlation":
+            corr_val = df[sel_num].corr().iloc[0, 1]
+            st.plotly_chart(
+                make_scatter(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
+                use_container_width=True,
+            )
+            st.caption(f"Correlation coefficient (r): **{corr_val:.2f}**")
+
+        # ── Interaction Chart — Density ───────────────────────────────────────
+        elif chart_type == "Interaction Chart — Density":
+            st.plotly_chart(
+                make_density_contour(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
+                use_container_width=True,
+            )
+
+        # ── Heatmap — Multiple Correlations ──────────────────────────────────
+        elif chart_type == "Heatmap — Multiple Correlations":
+            corr_df = df[sel_num].corr()
+            st.plotly_chart(make_heatmap(corr_df), use_container_width=True)
+
+            pairs = [
+                f"{corr_df.columns[i]} × {corr_df.columns[j]}: {corr_df.iloc[i, j]:.2f}"
+                for i in range(len(corr_df.columns))
+                for j in range(i + 1, len(corr_df.columns))
+            ]
+            hm_key = f"heatmap_ai_{'_'.join(sorted(sel_num))}"
+            with st.expander("🤖 AI Interpretation"):
+                if hm_key not in st.session_state:
+                    with st.spinner("Generating interpretation…"):
+                        try:
+                            st.session_state[hm_key] = interpret_heatmap(
+                                corr_pairs="\n".join(pairs),
+                                col_names=sel_num,
+                            )
+                        except Exception as e:
+                            st.session_state[hm_key] = None
+                            st.error(f"Could not generate interpretation: {e}")
+                if st.session_state.get(hm_key):
+                    st.info(st.session_state[hm_key])
+                    if st.button("🔄 Refresh", key="refresh_heatmap"):
+                        st.session_state.pop(hm_key, None)
+                        st.rerun()
+
+        # ── Heatmap — Occurrence ──────────────────────────────────────────────
+        elif chart_type == "Heatmap — Occurrence":
+            st.plotly_chart(
+                make_occurrence_heatmap(df, sel_cat[0], sel_cat[1], height=460),
+                use_container_width=True,
+            )
+            st.caption(
+                f"Showing up to 10 most frequent values per column. "
+                f"Rows = **{sel_cat[0]}**, Columns = **{sel_cat[1]}**."
+            )
+
+        # ── Interaction Chart — Grouped Bar ───────────────────────────────────
+        elif chart_type == "Interaction Chart — Grouped Bar":
+            st.plotly_chart(
+                make_grouped_bar(df, sel_cat[0], sel_cat[1], height=420),
+                use_container_width=True,
+            )
+            st.caption(
+                f"Showing up to 10 most frequent values per column. "
+                f"X-axis = **{sel_cat[0]}**, grouped by **{sel_cat[1]}**."
+            )
+
+elif len(selected_cols) == 1:
+    st.info("Select at least one more column to see available charts.")
+
+# ── Predictive Analytics ──────────────────────────────────────────────────────
+st.divider()
+st.subheader("Predictive Analytics")
+
+from utils.modelling import (
+    detect_target_type, detect_id_columns, estimate_training_time,
+    get_model_explanation, interpret_learning_curve, interpret_r2,
+    run_random_forest_regressor, PARAM_GRID, CV_FOLDS, TOTAL_COMBOS, TOTAL_FITS,
+    run_random_forest_classifier, interpret_classifier_f1,
+    interpret_learning_curve_classifier,
+    run_random_forest_multiclass_classifier, interpret_multiclass_f1,
+    PARAM_GRID_CLASSIFIER, TOTAL_COMBOS_CLASSIFIER, TOTAL_FITS_CLASSIFIER,
+    run_regression_comparison, estimate_training_time_comparison,
+    LASSO_PARAM_GRID, LASSO_TOTAL_FITS, COMPARISON_TOTAL_FITS,
+)
+import matplotlib.pyplot as plt
+import shap as _shap
+
+# ── Step 1 — Target Column ────────────────────────────────────────────────────
+st.markdown("#### Step 1 — Target Column")
+st.caption("The target column is what you want to predict — for example, price, sales, or temperature.")
+pa_target = st.selectbox("Select target column", options=df.columns.tolist(), key="pa_target_select")
+
+# ── Step 2 — Predictor Columns ────────────────────────────────────────────────
+st.markdown("#### Step 2 — Predictor Columns")
+st.caption("Predictor columns are the inputs your model uses to make predictions. Choose columns you believe influence the target.")
+
+pa_pred_num = [c for c in col_types["numerical"]  if c != pa_target]
+pa_pred_cat = [c for c in col_types["categorical"] if c != pa_target]
+pa_pred_dt  = [c for c in col_types["datetime"]    if c != pa_target]
+
+pa_predictors = []
+for grp_label, grp_cols in [("Numerical", pa_pred_num), ("Categorical", pa_pred_cat), ("Date / Time", pa_pred_dt)]:
+    if not grp_cols:
+        continue
+    st.markdown(f"**{grp_label}**")
+    for i in range(0, len(grp_cols), 4):
+        row = st.columns(4)
+        for j, cname in enumerate(grp_cols[i : i + 4]):
+            if row[j].checkbox(cname, key=f"pa_pred_{cname}"):
+                pa_predictors.append(cname)
+
+if pa_predictors:
+    for cname, reason in detect_id_columns(df, pa_predictors):
+        st.warning(f"⚠️ **{cname}** may be an identifier ({reason}). Including it could reduce model accuracy — consider deselecting it.")
+
+# ── Step 3 — Model Detection & Recommendation ────────────────────────────────
+if pa_predictors:
+    st.markdown("#### Step 3 — Model")
+
+    pa_target_type = detect_target_type(df[pa_target], col_to_type.get(pa_target, "Categorical"))
+    st.markdown(get_model_explanation(pa_target_type))
+    st.divider()
+
+    # ── Hyperparameter configuration ──────────────────────────────────────────
+    st.markdown("**Model Configuration**")
+    is_comparison = (pa_target_type == "continuous_numerical")
+    is_regression = (pa_target_type in ("continuous_numerical", "discrete_numerical"))
+
+    if is_comparison:
+        # Two-model config table
+        config_df = pd.DataFrame([
+            {"Model": "Lasso",         "Parameter": "Alpha (regularisation)", "Values Tested": "0.001, 0.01, 0.1, 1, 10", "Total Fits": str(LASSO_TOTAL_FITS)},
+            {"Model": "Random Forest", "Parameter": "Max Tree Depth",         "Values Tested": "10, 15",     "Total Fits": ""},
+            {"Model": "Random Forest", "Parameter": "Min Samples to Split",   "Values Tested": "5, 10",      "Total Fits": ""},
+            {"Model": "Random Forest", "Parameter": "Min Samples per Leaf",   "Values Tested": "3, 5",       "Total Fits": str(TOTAL_FITS)},
+            {"Model": "Combined",      "Parameter": "Cross-Validation Folds", "Values Tested": str(CV_FOLDS),"Total Fits": str(COMPARISON_TOTAL_FITS)},
+        ])
+        st.dataframe(config_df, use_container_width=True, hide_index=True)
+        time_est = estimate_training_time_comparison(len(df))
+    else:
+        _combos = TOTAL_COMBOS if is_regression else TOTAL_COMBOS_CLASSIFIER
+        _fits   = TOTAL_FITS   if is_regression else TOTAL_FITS_CLASSIFIER
+        param_rows = [
+            {"Parameter": "Number of Trees",     "Values Tested": "300",    "What it controls": "How many decision trees are built"},
+            {"Parameter": "Max Tree Depth",       "Values Tested": "10, 15", "What it controls": "How deep each tree can grow — limits overfitting"},
+            {"Parameter": "Min Samples to Split", "Values Tested": "5, 10",  "What it controls": "Minimum samples a node needs before splitting"},
+            {"Parameter": "Min Samples per Leaf", "Values Tested": "3, 5",   "What it controls": "Minimum samples required at each leaf node"},
+        ]
+        if not is_regression:
+            param_rows.append({"Parameter": "Max Features", "Values Tested": "sqrt, log2", "What it controls": "Features considered at each split"})
+        param_rows += [
+            {"Parameter": "CV Folds",          "Values Tested": str(CV_FOLDS), "What it controls": "Validation rounds per combination"},
+            {"Parameter": "Total Combinations", "Values Tested": str(_combos),  "What it controls": "—"},
+            {"Parameter": "Total Fits",         "Values Tested": str(_fits),    "What it controls": "—"},
+        ]
+        st.dataframe(pd.DataFrame(param_rows), use_container_width=True, hide_index=True)
+        time_est = estimate_training_time(len(df))
+
+    st.info(f"⏱ **Estimated training time: {time_est}** based on {len(df):,} rows.")
+
+    # Invalidate cache when selection changes
+    pa_cache_key = f"{pa_target}__{'|'.join(sorted(pa_predictors))}"
+    if st.session_state.get("pa_cache_key") != pa_cache_key:
+        st.session_state.pop("pa_results", None)
+        st.session_state["pa_cache_key"] = pa_cache_key
+
+    # ── Single run button (label varies by target type) ───────────────────────
+    _btn_labels = {
+        "binary":              "▶ Run Random Forest Classifier",
+        "discrete_numerical":  "▶ Run Random Forest Multi-class Classifier",
+        "continuous_numerical":"▶ Run Lasso vs Random Forest Comparison",
+        "multiclass":          "▶ Run Random Forest Multi-class Classifier",
+    }
+    run_btn = st.button(_btn_labels[pa_target_type], type="primary", key="pa_run_btn")
+
+    def _train_model():
+        if pa_target_type == "continuous_numerical":
+            return run_regression_comparison(df, pa_target, pa_predictors)
+        elif pa_target_type == "binary":
+            res = run_random_forest_classifier(df, pa_target, pa_predictors)
+            res["_model_type"] = "binary_classifier"
+            return res
+        else:
+            res = run_random_forest_multiclass_classifier(df, pa_target, pa_predictors)
+            res["_model_type"] = "multiclass_classifier"
+            return res
+
+    if run_btn:
+        with st.spinner(f"Training — estimated {time_est}. Please wait…"):
+            try:
+                st.session_state["pa_results"] = _train_model()
+            except Exception as e:
+                st.error(f"Training failed: {e}")
+                st.session_state.pop("pa_results", None)
+
+    # ── Step 4 — Results ──────────────────────────────────────────────────────
+    if st.session_state.get("pa_results"):
+        results    = st.session_state["pa_results"]
+        model_type = results.get("_model_type", "")
+        clean_names = [n.split("__", 1)[-1] for n in results["feature_names"]]
+
+        st.markdown("#### Results")
+        st.caption(f"Trained on {results['n_train']:,} rows · Tested on {results['n_test']:,} rows")
+
+        # ── Regression comparison ─────────────────────────────────────────────
+        if model_type == "regression_comparison":
+            winner = results["winner"]
+            st.success(f"🏆 **{winner}** performs better on this dataset (higher Test R²).")
+
+            # Comparison table with green highlights
+            cdf = results["comparison_df"].copy()
+            higher_better = {"Train R²", "Test R²", "CV Mean R²"}
+            lower_better  = {"Train MAE", "Test MAE", "Train RMSE", "Test RMSE"}
+
+            def _style_cmp(row):
+                styles = [""] * len(row)
+                metric = row["Metric"]
+                lv, rv  = row["Lasso"], row["Random Forest"]
+                if metric in higher_better:
+                    win_col = "Lasso" if lv >= rv else "Random Forest"
+                elif metric in lower_better:
+                    win_col = "Lasso" if lv <= rv else "Random Forest"
+                else:
+                    return styles
+                col_idx = cdf.columns.tolist().index(win_col)
+                styles[col_idx] = "background-color: #d4edda; color: #155724; font-weight: bold"
+                return styles
+
+            st.dataframe(
+                cdf.style.apply(_style_cmp, axis=1).format({"Lasso": "{:.3f}", "Random Forest": "{:.3f}"}),
+                use_container_width=True, hide_index=True,
+            )
+            st.divider()
+
+            wm = results["winner_metrics"]
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            mc1.metric("Test R²",     f"{wm['test_r2']:.3f}")
+            mc2.metric("Test RMSE",   f"{wm['test_rmse']:.3f}")
+            mc3.metric("Test MAE",    f"{wm['test_mae']:.3f}")
+            mc4.metric("CV Mean R²",  f"{wm['cv_mean']:.3f} ± {wm['cv_std']:.3f}")
+            st.markdown(interpret_r2(wm["test_r2"]))
+            st.divider()
+
+            st.markdown(f"**Learning Curve** — {winner}")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            if winner == "Random Forest":
+                st.markdown("**Feature Importance** — top 20 predictors")
+                st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            else:
+                st.markdown("**Coefficient Importance** — top 20 predictors")
+                st.caption("Blue bars = positive effect on target. Orange bars = negative effect.")
+                st.plotly_chart(make_coefficient_chart(results["coefficients"]), use_container_width=True)
+            st.divider()
+
+            st.markdown(f"**SHAP Summary** — {winner}")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            plt.figure()
+            _shap.summary_plot(results["shap_values"], results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
+
+        # ── Binary classifier ─────────────────────────────────────────────────
+        elif model_type == "binary_classifier":
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
+            mc1.metric("Accuracy",  f"{results['accuracy']:.3f}")
+            mc2.metric("F1 Score",  f"{results['f1']:.3f}")
+            mc3.metric("Precision", f"{results['precision']:.3f}")
+            mc4.metric("Recall",    f"{results['recall']:.3f}")
+            mc5.metric("ROC-AUC",   f"{results['roc_auc']:.3f}")
+            st.markdown(interpret_classifier_f1(results["f1"]))
+            st.divider()
+
+            cm_col, roc_col = st.columns(2)
+            with cm_col:
+                st.markdown("**Confusion Matrix**")
+                st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            with roc_col:
+                st.markdown("**ROC Curve**")
+                st.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], results["roc_auc"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**Learning Curve** — training vs validation accuracy")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            st.markdown("**Feature Importance** — top 20 predictors")
+            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**SHAP Summary** — positive class")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            plt.figure()
+            _shap.summary_plot(results["shap_vals_class1"], results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
+
+        # ── Multi-class classifier ────────────────────────────────────────────
+        elif model_type == "multiclass_classifier":
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
+            mc1.metric("Accuracy",            f"{results['accuracy']:.3f}")
+            mc2.metric("F1 (weighted)",        f"{results['f1']:.3f}")
+            mc3.metric("Precision (weighted)", f"{results['precision']:.3f}")
+            mc4.metric("Recall (weighted)",    f"{results['recall']:.3f}")
+            mc5.metric("ROC-AUC (OvR)",        f"{results['roc_auc']:.3f}")
+            st.markdown(interpret_multiclass_f1(results["f1"]))
+            st.divider()
+
+            st.markdown("**Confusion Matrix**")
+            st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**Learning Curve** — training vs validation accuracy")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            st.markdown("**Feature Importance** — top 20 predictors")
+            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**SHAP Summary** — feature impact by class")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            shap_class = st.selectbox("Select class to view", options=results["class_labels"], key="pa_shap_class")
+            class_idx  = results["class_labels"].index(shap_class)
+            sv         = results["shap_values"]
+            shap_cls   = sv[:, :, class_idx] if not isinstance(sv, list) else sv[class_idx]
+            plt.figure()
+            _shap.summary_plot(shap_cls, results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
+
+# ── Step 1 — Target Column ────────────────────────────────────────────────────
+st.markdown("#### Step 1 — Target Column")
+st.caption(
+    "The target column is what you want to predict — "
+    "for example, price, sales, or temperature."
+)
+pa_target = st.selectbox("Select target column", options=df.columns.tolist(), key="pa_target_select")
+
+# ── Step 2 — Predictor Columns ────────────────────────────────────────────────
+st.markdown("#### Step 2 — Predictor Columns")
+st.caption(
+    "Predictor columns are the inputs your model uses to make predictions. "
+    "Choose columns you believe influence the target."
+)
+
+pa_pred_num = [c for c in col_types["numerical"]  if c != pa_target]
+pa_pred_cat = [c for c in col_types["categorical"] if c != pa_target]
+pa_pred_dt  = [c for c in col_types["datetime"]    if c != pa_target]
+
+pa_predictors = []
+for grp_label, grp_cols in [
+    ("Numerical",   pa_pred_num),
+    ("Categorical", pa_pred_cat),
+    ("Date / Time", pa_pred_dt),
+]:
+    if not grp_cols:
+        continue
+    st.markdown(f"**{grp_label}**")
+    for i in range(0, len(grp_cols), 4):
+        row = st.columns(4)
+        for j, cname in enumerate(grp_cols[i : i + 4]):
+            if row[j].checkbox(cname, key=f"pa_pred_{cname}"):
+                pa_predictors.append(cname)
+
+if pa_predictors:
+    for cname, reason in detect_id_columns(df, pa_predictors):
+        st.warning(
+            f"⚠️ **{cname}** may be an identifier ({reason}). "
+            f"Including it could reduce model accuracy — consider deselecting it."
+        )
+
+# ── Step 3 — Model Detection & Recommendation ────────────────────────────────
+if pa_predictors:
+    st.markdown("#### Step 3 — Model")
+
+    pa_target_type = detect_target_type(
+        df[pa_target], col_to_type.get(pa_target, "Categorical")
+    )
+    st.markdown(get_model_explanation(pa_target_type))
+    st.divider()
+
+    # Hyperparameter table
+    st.markdown("**Model Configuration**")
+    _is_reg = (pa_target_type == "continuous_numerical")
+    _combos = TOTAL_COMBOS if _is_reg else TOTAL_COMBOS_CLASSIFIER
+    _fits   = TOTAL_FITS   if _is_reg else TOTAL_FITS_CLASSIFIER
+
+    param_rows = [
+        {"Parameter": "Number of Trees",     "Values Tested": "300",    "What it controls": "How many decision trees are built"},
+        {"Parameter": "Max Tree Depth",       "Values Tested": "10, 15", "What it controls": "How deep each tree can grow — limits overfitting"},
+        {"Parameter": "Min Samples to Split", "Values Tested": "5, 10",  "What it controls": "Minimum samples a node needs before splitting"},
+        {"Parameter": "Min Samples per Leaf", "Values Tested": "3, 5",   "What it controls": "Minimum samples required at each leaf node"},
+    ]
+    if not _is_reg:
+        param_rows.append({"Parameter": "Max Features", "Values Tested": "sqrt, log2", "What it controls": "Number of features considered at each split"})
+    param_rows += [
+        {"Parameter": "Cross-Validation Folds", "Values Tested": str(CV_FOLDS), "What it controls": "How many validation rounds are run per combination"},
+        {"Parameter": "Total Combinations",     "Values Tested": str(_combos),  "What it controls": "—"},
+        {"Parameter": "Total Model Fits",       "Values Tested": str(_fits),    "What it controls": "—"},
+    ]
+    st.dataframe(pd.DataFrame(param_rows), use_container_width=True, hide_index=True)
+
+    time_est = estimate_training_time(len(df))
+    st.info(
+        f"⏱ **Estimated training time: {time_est}** based on {len(df):,} rows. "
+        f"Actual time varies with the number of predictors and server speed."
+    )
+
+    # Invalidate cache when selection changes
+    pa_cache_key = f"{pa_target}__{'|'.join(sorted(pa_predictors))}"
+    if st.session_state.get("pa_cache_key") != pa_cache_key:
+        st.session_state.pop("pa_results", None)
+        st.session_state["pa_cache_key"] = pa_cache_key
+
+    # Button configuration per target type
+    _btn_cfg = {
+        "binary": (
+            "▶ Run RF Classifier  (Recommended)", "run_classifier",
+            "Run Logistic Regression",             None,
+        ),
+        "discrete_numerical": (
+            "▶ Run RF Multi-class Classifier  (Recommended)", "run_multiclass",
+            "▶ Run RF Regressor",                              "run_regressor",
+        ),
+        "continuous_numerical": (
+            "▶ Run RF Regressor  (Recommended)", "run_regressor",
+            "▶ Run RF Multi-class Classifier",   "run_multiclass",
+        ),
+        "multiclass": (
+            "▶ Run RF Multi-class Classifier  (Recommended)", "run_multiclass",
+            "Run ANOVA",                                       None,
+        ),
+    }
+    _rec_label, _rec_action, _alt_label, _alt_action = _btn_cfg[pa_target_type]
+
+    btn1, btn2 = st.columns(2)
+    run_rec = btn1.button(_rec_label, type="primary", key="pa_run_rec")
+    run_alt = btn2.button(
+        _alt_label,
+        key="pa_run_alt",
+        disabled=(_alt_action is None),
+        help="Coming soon." if _alt_action is None else None,
+    )
+
+    def _train(action: str) -> dict:
+        if action == "run_regressor":
+            res = run_random_forest_regressor(df, pa_target, pa_predictors)
+            res["_model_type"] = "regressor"
+        elif action == "run_classifier":
+            res = run_random_forest_classifier(df, pa_target, pa_predictors)
+            res["_model_type"] = "binary_classifier"
+        else:
+            res = run_random_forest_multiclass_classifier(df, pa_target, pa_predictors)
+            res["_model_type"] = "multiclass_classifier"
+        return res
+
+    if run_rec or run_alt:
+        action = _rec_action if run_rec else _alt_action
+        with st.spinner(f"Training model — estimated {time_est}. Please wait…"):
+            try:
+                st.session_state["pa_results"] = _train(action)
+            except Exception as e:
+                st.error(f"Training failed: {e}")
+                st.session_state.pop("pa_results", None)
+
+    # ── Step 4 — Results ──────────────────────────────────────────────────────
+    if st.session_state.get("pa_results"):
+        results    = st.session_state["pa_results"]
+        model_type = results.get("_model_type", "regressor")
+        clean_names = [n.split("__", 1)[-1] for n in results["feature_names"]]
+
+        st.markdown("#### Results")
+        st.caption(
+            f"Trained on {results['n_train']:,} rows · "
+            f"Tested on {results['n_test']:,} rows · "
+            f"Best depth: {results['best_params'].get('model__max_depth')} · "
+            f"Min leaf: {results['best_params'].get('model__min_samples_leaf')}"
+        )
+
+        # ── Regressor ─────────────────────────────────────────────────────────
+        if model_type == "regressor":
+            mc1, mc2, mc3 = st.columns(3)
+            mc1.metric("R² Score",   f"{results['r2']:.3f}")
+            mc2.metric("RMSE",       f"{results['rmse']:.3f}")
+            mc3.metric("Mean CV R²", f"{results['cv_mean']:.3f} ± {results['cv_std']:.3f}")
+            st.markdown(interpret_r2(results["r2"]))
+            st.divider()
+
+            st.markdown("**Learning Curve** — training vs validation R²")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            st.markdown("**Feature Importance** — top 20 predictors")
+            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**SHAP Summary** — how each feature drives predictions")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            plt.figure()
+            _shap.summary_plot(results["shap_values"], results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
+
+        # ── Binary classifier ─────────────────────────────────────────────────
+        elif model_type == "binary_classifier":
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
+            mc1.metric("Accuracy",  f"{results['accuracy']:.3f}")
+            mc2.metric("F1 Score",  f"{results['f1']:.3f}")
+            mc3.metric("Precision", f"{results['precision']:.3f}")
+            mc4.metric("Recall",    f"{results['recall']:.3f}")
+            mc5.metric("ROC-AUC",   f"{results['roc_auc']:.3f}")
+            st.markdown(interpret_classifier_f1(results["f1"]))
+            st.divider()
+
+            cm_col, roc_col = st.columns(2)
+            with cm_col:
+                st.markdown("**Confusion Matrix**")
+                st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            with roc_col:
+                st.markdown("**ROC Curve**")
+                st.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], results["roc_auc"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**Learning Curve** — training vs validation accuracy")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            st.markdown("**Feature Importance** — top 20 predictors")
+            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**SHAP Summary** — how each feature drives predictions (positive class)")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            plt.figure()
+            _shap.summary_plot(results["shap_vals_class1"], results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
+
+        # ── Multi-class classifier ────────────────────────────────────────────
+        elif model_type == "multiclass_classifier":
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
+            mc1.metric("Accuracy",           f"{results['accuracy']:.3f}")
+            mc2.metric("F1 (weighted)",       f"{results['f1']:.3f}")
+            mc3.metric("Precision (weighted)",f"{results['precision']:.3f}")
+            mc4.metric("Recall (weighted)",   f"{results['recall']:.3f}")
+            mc5.metric("ROC-AUC (OvR)",       f"{results['roc_auc']:.3f}")
+            st.markdown(interpret_multiclass_f1(results["f1"]))
+            st.divider()
+
+            st.markdown("**Confusion Matrix**")
+            st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**Learning Curve** — training vs validation accuracy")
+            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"]), use_container_width=True)
+            st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
+            st.divider()
+
+            st.markdown("**Feature Importance** — top 20 predictors")
+            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            st.divider()
+
+            st.markdown("**SHAP Summary** — feature impact by class")
+            st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
+            shap_class = st.selectbox(
+                "Select class to view",
+                options=results["class_labels"],
+                key="pa_shap_class",
+            )
+            class_idx = results["class_labels"].index(shap_class)
+            sv = results["shap_values"]
+            shap_cls = sv[:, :, class_idx] if not isinstance(sv, list) else sv[class_idx]
+            plt.figure()
+            _shap.summary_plot(shap_cls, results["X_sample"], feature_names=clean_names, show=False)
+            st.pyplot(plt.gcf(), bbox_inches="tight")
+            plt.close("all")
