@@ -95,12 +95,11 @@ try:
     _b1.metric("👁 Total Visits", f"{_app_stats['visits']:,}")
     _b2.metric("👍 Likes",        f"{_app_stats['likes']:,}")
     _b3.metric("👎 Dislikes",     f"{_app_stats['dislikes']:,}")
-# except Exception:
-#     _b1.metric("👁 Total Visits", "—")
-#     _b2.metric("👍 Likes",        "—")
-#     _b3.metric("👎 Dislikes",     "—")
-except Exception as e:
-    st.error(f"Stats error: {e}")
+except Exception:
+    _b1.metric("👁 Total Visits", "—")
+    _b2.metric("👍 Likes",        "—")
+    _b3.metric("👎 Dislikes",     "—")
+
 
 st.title("📊 Data Analytics Assistant")
 st.caption(
