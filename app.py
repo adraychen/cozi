@@ -293,8 +293,8 @@ st.subheader("Data Quality Summary")
 def _stats_row(label: str, value) -> None:
     st.markdown(
         f"<div style='padding:3px 0'>"
-        f"<span style='color:#5B8DB8'><b>{label}:</b></span> " # change from #6B7280 to #5B8DB8
-        f"<span style='color:#1A1A1A'>{value}</span>"
+        f"<span style='color:#6B7280'><b>{label}:</b></span> "
+        f"<span style='color:#5B8DB8'>{value}</span>"  # change from #1A1A1A to #6B7280
         f"</div>",
         unsafe_allow_html=True,
     )
