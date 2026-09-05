@@ -376,6 +376,8 @@ def render_categorical_panel(col_name: str) -> None:
                 ("Special Characters", special_chars),
             ]:
                 _stats_row(label, val)
+                if label == "Unique Values":
+                    st.caption("(Cardinality)")
 
 
 def render_datetime_panel(col_name: str) -> None:
