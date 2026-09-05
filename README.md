@@ -481,3 +481,19 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 | Visit counter + like/dislike feedback with Supabase | ✅ Complete |
 | Sample datasets (heart disease, Boston housing, iris) | ✅ Complete |
 | Data Cleaning | 🔜 Planned |
+
+
+## Group Statistics
+
+Data Exploratory Analysis now has three tabs: **Column Profile → Group Statistics → Column Relationships**. Select a numerical measure, optional categorical dimensions, then an analysis type.
+
+- **Group Summary:** sum, mean, median, min/max, sample standard deviation, or non-missing numerical count.
+- **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
+- **Period-over-Period Comparison:** previous calendar period, or same period last year for monthly/quarterly/yearly data.
+- **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
+- **Rolling Averages:** moving mean over a complete window of calendar periods.
+- **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
+
+Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
+
+Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
