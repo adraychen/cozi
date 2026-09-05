@@ -6,7 +6,7 @@ from typing import Dict, List
 
 def _get_llm() -> ChatGroq:
     return ChatGroq(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         api_key=st.secrets["GROQ_API_KEY"],
         temperature=0.3,
     )

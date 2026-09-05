@@ -112,7 +112,7 @@ Three tabbed panels, each rendered as bordered cards (two per row):
 > **Note on date parsing:** dates that cannot be parsed — such as text values, impossible dates (e.g. April 31), or unrecognised formats — are automatically converted to `NaT` and counted under **Missing Values**. The **Future Dates** field counts valid dates that fall after today. Invalid day numbers such as September 32 may be silently rolled over to the next valid date by the parser rather than treated as missing.
 
 ### AI Interpretation
-After all quality panels load, the app generates a 4–5 sentence plain-English summary of the dataset's type, quality issues, and column composition using Groq (Llama 3.3 70B). Cached in `st.session_state` and refreshable via a **🔄 Refresh** button.
+After all quality panels load, the app generates a 4–5 sentence plain-English summary of the dataset's type, quality issues, and column composition using Groq (OpenAI GPT-OSS 120B (`openai/gpt-oss-120b`)). Cached in `st.session_state` and refreshable via a **🔄 Refresh** button.
 
 ---
 
@@ -455,7 +455,7 @@ data-analytics-assistant/
 
 ## AI Interpretations
 
-Uses **Llama 3.3 70B** via the Groq API (`langchain-groq`).
+Uses **OpenAI GPT-OSS 120B (`openai/gpt-oss-120b`)** via the Groq API (`langchain-groq`).
 
 | Function | When it runs | Output |
 |---|---|---|
@@ -506,9 +506,9 @@ The numerical selector supports **None**, including datasets with no numerical c
 
 Choose **Cross Tabulation / Chi-square** and select at least two categorical dimensions, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
 
-Available views: observed counts, expected counts under independence, observed minus expected, Pearson residuals, row percentages, and column percentages. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
+The cross-tab report shows three stacked lines per cell: observed count, expected count (2 decimals), and standardized/Pearson residual (4 decimals). Row totals, column totals, grand total, and a cell-content legend follow the reference report format; no heatmap or view selector is shown. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
 
-The Pearson chi-square test reports statistic, degrees of freedom, p-value, and interpretation at the selected significance level (0.05 default), without continuity correction. It requires at least two observed categories per variable and independent observations. Expected counts below 5 trigger a sparse-table warning. P-values are unadjusted for repeated testing; a non-significant result does not prove independence and association does not establish causation. Unused category levels are omitted. Tables exceeding 10,000 cells are rejected; heatmaps are omitted above 400 cells without truncating table calculations.
+The Pearson chi-square test reports statistic, degrees of freedom, p-value, and interpretation at the selected significance level (0.05 default), without continuity correction. It requires at least two observed categories per variable and independent observations. Expected counts below 5 trigger a sparse-table warning. P-values are unadjusted for repeated testing; a non-significant result does not prove independence and association does not establish causation. Unused category levels are omitted. Tables exceeding 10,000 cells are rejected; wide tables scroll horizontally without truncating calculations.
 
 Method: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html
 

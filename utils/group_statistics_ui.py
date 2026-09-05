@@ -2,6 +2,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils.contingency_table import contingency_table_html
 from utils.group_statistics import STATISTICS, FREQUENCIES, summary, compare, contribution, temporal, contingency
 
 ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Comparison",
@@ -25,22 +26,9 @@ def render_contingency(df, dimensions):
         st.warning(str(exc))
         return
     st.caption(f"Included {result['n']:,} rows; excluded {result['excluded']:,} rows with missing categories. Expected counts = row total × column total ÷ grand total.")
-    views = {"Observed counts": result["observed"], "Expected counts": result["expected"],
-             "Observed − expected": result["difference"], "Pearson residuals": result["residual"],
-             "Row percentages": result["observed"].div(result["observed"].sum(axis=1), axis=0) * 100,
-             "Column percentages": result["observed"].div(result["observed"].sum(axis=0), axis=1) * 100}
-    view = st.selectbox("Table view", list(views), key="gs_ct_view")
-    table = views[view]
-    st.dataframe(table.style.format(precision=2), use_container_width=True)
-    if table.size <= 400:
-        signed = view in ("Observed − expected", "Pearson residuals")
-        fig = px.imshow(table, aspect="auto", color_continuous_scale="RdBu_r" if signed else "Blues",
-                        color_continuous_midpoint=0 if signed else None,
-                        labels={"x": str(column), "y": str(row), "color": view})
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.caption("Heatmap omitted for tables larger than 400 cells; all cells remain in the table and downloads.")
-    st.caption("Positive differences/residuals mean more observations than expected under independence. Residuals are descriptive, not separate significance tests.")
+    table = result["observed"]
+    st.markdown(contingency_table_html(result, row, column), unsafe_allow_html=True)
+    st.caption("Standardized residual = (observed − expected) / √expected (Pearson residual), matching the reference layout. Positive values mean more observations than expected under independence; these are not separate significance tests.")
     # Positional cell records preserve the original category names, even when they match output labels.
     records = [{"Row category": r, "Column category": c, "Observed": int(result['observed'].loc[r, c]),
                 "Expected": float(result['expected'].loc[r, c]), "Observed - expected": float(result['difference'].loc[r, c]),
