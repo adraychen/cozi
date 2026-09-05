@@ -520,6 +520,8 @@ with profile_tab:
                         st.caption(f"Showing top 10 of {total_unique} unique values.")
                 else:
                     st.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
+                from utils.distribution_fit_ui import render_distribution_fit
+                render_distribution_fit(series, selected_col)
             with chart_r:
                 st.markdown("**Violin Plot**")
                 st.plotly_chart(make_violin(series, height=360), use_container_width=True)
@@ -536,6 +538,17 @@ with profile_tab:
                     "Value":     list(all_stats.values()),
                 })
                 st.dataframe(stats_df, use_container_width=True, hide_index=True)
+                st.caption(
+                    "Standard error = sample standard deviation / √n. The 95% confidence interval estimates "
+                    "the population mean using Student's t distribution; it assumes independent observations "
+                    "and approximately normal data or a sufficiently large sample. Missing and infinite values "
+                    "are excluded. At least two valid values are required."
+                )
+                st.caption(
+                    "Coefficient of variation = sample standard deviation / mean × 100%. "
+                    "Shown only for a positive mean; meaningful for ratio-scale data with a true zero "
+                    "and unstable when the mean is close to zero."
+                )
 
             ai_key = f"col_ai_{selected_col}"
             with st.expander("🤖 AI Interpretation"):
@@ -604,6 +617,20 @@ with profile_tab:
                 use_container_width=True,
                 hide_index=True,
             )
+
+            st.markdown("**Mode**")
+            mode_counts = series.value_counts(dropna=True)
+            mode_counts = mode_counts[mode_counts > 0]
+            if mode_counts.empty:
+                st.caption("No mode available: this column has no non-missing values.")
+            else:
+                mode_frequency = int(mode_counts.max())
+                mode_values = mode_counts[mode_counts == mode_frequency].index.tolist()
+                st.text("; ".join(str(value) for value in mode_values))
+                st.caption(
+                    f"Frequency: {mode_frequency:,} each. Missing values are excluded."
+                    + (" All tied modes are shown." if len(mode_values) > 1 else "")
+                )
 
             ai_key = f"col_ai_{selected_col}"
             stats  = categorical_stats(series)

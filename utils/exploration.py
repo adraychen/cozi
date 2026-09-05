@@ -7,15 +7,25 @@ from scipy import stats as scipy_stats
 
 def numerical_stats(series: pd.Series) -> dict:
     """Compute descriptive stats for a numerical column (no Count)."""
-    clean = series.dropna()
+    clean = series.replace([np.inf, -np.inf], np.nan).dropna()
     if clean.empty:
         return {}
 
+    n = len(clean)
+    mean = float(clean.mean())
+    std = float(clean.std(ddof=1)) if n >= 2 else np.nan
+    standard_error = std / np.sqrt(n) if n >= 2 else np.nan
+    cv = std / mean * 100 if n >= 2 and mean > 0 else np.nan
+    margin = float(scipy_stats.t.ppf(0.975, df=n - 1)) * standard_error if n >= 2 else np.nan
+    confidence_interval = f"[{mean - margin:.2f}, {mean + margin:.2f}]" if np.isfinite(margin) else "N/A"
     q1, q2, q3 = clean.quantile([0.25, 0.50, 0.75]).values
     return {
         "Mean":             f"{clean.mean():.2f}",
         "Median":           f"{clean.median():.2f}",
         "Std Dev":          f"{clean.std():.2f}",
+        "Standard Error (Mean)": f"{standard_error:.2f}" if np.isfinite(standard_error) else "N/A",
+        "Coefficient of Variation": f"{cv:.2f}%" if np.isfinite(cv) else "N/A",
+        "95% Confidence Interval (Mean)": confidence_interval,
         "Skewness":         f"{clean.skew():.2f}",
         "Kurtosis":         f"{clean.kurtosis():.2f}",
         "Minimum":          f"{clean.min():.2f}",

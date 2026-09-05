@@ -513,3 +513,19 @@ The Pearson chi-square test reports statistic, degrees of freedom, p-value, and 
 Method: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html
 
 Run calculation tests: `python -m unittest discover -s tests -p "test_*statistics.py"`.
+
+
+### Additional numerical Column Profile statistics
+
+The summary table includes standard error of the mean (sample SD / sqrt(n)), coefficient of variation (sample SD / mean × 100%, positive means only), and a two-sided 95% Student-t confidence interval for the population mean (n−1 degrees of freedom). These use finite, non-missing observations and require at least two values; unavailable results show N/A. CV is meaningful for ratio-scale data with a true zero. Confidence intervals assume independent observations and approximately normal data or a sufficiently large sample. Constant samples produce zero standard error and a collapsed interval.
+
+
+### Theoretical distribution fitting
+
+Numeric Column Profile now displays a fit assessment beneath the distribution chart, including type, best theoretical candidate (lowest AIC), binned probability-mass SSE, KS/CDF distance, fit quality, and a qualified conclusion. Automatic type detection uses integer-valued observations, independently of the chart's unique-value threshold; users can override rounded continuous measurements. Integers/ordinal values do not establish a count process.
+
+Continuous candidates: Normal, Uniform, and strictly positive Lognormal/Exponential (location fixed at zero). Discrete candidates: Poisson and zero-based geometric, plus binomial only when the user supplies a known trial count. Unsupported discrete support and insufficient/constant data get explanatory messages.
+
+Fit assessment uses 199 reproducible parametric bootstrap simulations, refitting each sample. A bootstrap p-value below 0.05 is Poor; otherwise Not rejected, never proof of a theoretical distribution. Discrete distance checks both sides of CDF jumps, without an ordinary continuous KS p-value. If all candidates fail, the conclusion states no suitable theoretical distribution was identified among tested families. Tests are exploratory, unadjusted across families, and assume independent observations.
+
+Requires 20 finite observations and two distinct values. Above 3,000 observations a reproducible random sample is used and disclosed. Computations are cached. SSE uses common histogram probability-mass bins with tails; metrics and ranking refer to the same data sample.
