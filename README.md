@@ -28,13 +28,14 @@ The top of the app shows three live metrics pulled from Supabase:
 
 ## Sample Data
 
-An expandable **Try with sample data** section sits below the file uploader. Clicking one of the three buttons fetches the file directly from Google Drive and loads it into the app without any manual download.
+An expandable **Try with sample data** section sits below the file uploader. Clicking one of the four buttons fetches the file directly from Google Drive and loads it into the app without any manual download.
 
 | File | Problem type | Rows |
 |---|---|---|
 | heart_disease.csv | Binary classification | 303 |
 | BostonHousing.csv | Regression | 506 |
 | iris.csv | Multi-class classification | 150 |
+| ecommerceSalesAnalytics.csv | E-commerce sales analytics | 5,000 |
 
 ---
 
@@ -485,7 +486,7 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 
 ## Group Statistics
 
-Data Exploratory Analysis now has three tabs: **Column Profile → Group Statistics → Column Relationships**. Select a numerical measure, optional categorical dimensions, then an analysis type.
+Data Exploratory Analysis now has three tabs: **Column Profile → Group Statistics → Column Relationships**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
 
 - **Group Summary:** sum, mean, median, min/max, sample standard deviation, or non-missing numerical count.
 - **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
@@ -497,3 +498,18 @@ Data Exploratory Analysis now has three tabs: **Column Profile → Group Statist
 Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
 
 Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
+
+
+### Categorical group statistics and contingency tables
+
+The numerical selector supports **None**, including datasets with no numerical columns. With None selected, group summaries, segment comparisons, contribution analysis, and time analyses use **Row count**, including rows with missing numerical values. Numerical measures retain the original statistics; Row count is also available alongside non-missing count.
+
+Choose **Cross Tabulation / Chi-square** and select at least two categorical dimensions, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
+
+Available views: observed counts, expected counts under independence, observed minus expected, Pearson residuals, row percentages, and column percentages. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
+
+The Pearson chi-square test reports statistic, degrees of freedom, p-value, and interpretation at the selected significance level (0.05 default), without continuity correction. It requires at least two observed categories per variable and independent observations. Expected counts below 5 trigger a sparse-table warning. P-values are unadjusted for repeated testing; a non-significant result does not prove independence and association does not establish causation. Unused category levels are omitted. Tables exceeding 10,000 cells are rejected; heatmaps are omitted above 400 cells without truncating table calculations.
+
+Method: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html
+
+Run calculation tests: `python -m unittest discover -s tests -p "test_*statistics.py"`.

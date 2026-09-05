@@ -50,6 +50,11 @@ _SAMPLE_DATASETS = [
         "id":   "1vviVuBIZvizhTTLyldzkD5wQiaFUbDXP",
         "desc": "Multi-class classification — predict iris species (150 rows)",
     },
+    {
+        "name": "ecommerceSalesAnalytics.csv",
+        "id":   "1fFyV8Q2PD0M69jHR7mhQD5hxU39KrxjV",
+        "desc": "E-commerce sales analytics (5,000 rows)",
+    },
 ]
 
 
