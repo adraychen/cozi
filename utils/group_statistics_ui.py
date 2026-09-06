@@ -9,17 +9,17 @@ ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Compariso
             "Running & Cumulative Statistics", "Rolling Averages", "Contribution to Total", "Cross Tabulation / Chi-square"]
 
 
-def render_contingency(df, dimensions):
+def render_contingency(df, dimensions, key_prefix="gs_ct"):
     st.caption("Counts rows for two categorical variables; the numerical selection is not used.")
     if len(dimensions) < 2:
         st.info("Select at least two categorical columns above to build a contingency table.")
         return
-    row = st.selectbox("Row variable", dimensions, key="gs_ct_row")
-    column = st.selectbox("Column variable", [c for c in dimensions if c != row], key="gs_ct_column")
+    row = st.selectbox("Row variable", dimensions, key=f"{key_prefix}_row")
+    column = st.selectbox("Column variable", [c for c in dimensions if c != row], key=f"{key_prefix}_column")
     if len(dimensions) > 2:
         st.caption("Only the chosen row and column variables enter this test; other dimensions are not used as controls.")
-    missing = st.checkbox("Include missing values as categories", key="gs_ct_missing")
-    alpha = st.selectbox("Significance level", [0.05, 0.01, 0.10], key="gs_ct_alpha")
+    missing = st.checkbox("Include missing values as categories", key=f"{key_prefix}_missing")
+    alpha = st.selectbox("Significance level", [0.05, 0.01, 0.10], key=f"{key_prefix}_alpha")
     try:
         result = contingency(df, row, column, missing)
     except (ValueError, TypeError) as exc:
@@ -35,7 +35,7 @@ def render_contingency(df, dimensions):
                 "Pearson residual": float(result['residual'].loc[r, c])}
                for r in table.index for c in table.columns]
     st.download_button("Download observed and expected counts (CSV)", pd.DataFrame(records).to_csv(index=False).encode("utf-8-sig"),
-                       file_name="contingency_comparison.csv", mime="text/csv", key="gs_ct_download")
+                       file_name="contingency_comparison.csv", mime="text/csv", key=f"{key_prefix}_download")
     st.markdown("##### Chi-square test of association")
     st.caption("Pearson chi-square test without continuity correction. Null hypothesis: the two variables are independent. Rows must represent independent observations; association does not imply causation.")
     if result["chi2"] is None:

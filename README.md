@@ -11,7 +11,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, column type, total values, missing values, missing % (colour-coded) |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
-| **Data Exploratory Analysis** | Single-column deep-dive (Column Profile) and multi-column chart explorer (Column Relationships) |
+| **Data Exploratory Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
 ---
@@ -99,11 +99,12 @@ Three tabbed panels, each rendered as bordered cards (two per row):
 - Left: vertical bar chart sorted descending, capped at 10 bars
 - Right: same stats as continuous
 
-> The threshold of 15 unique values is defined as `DISCRETE_THRESHOLD = 15` in `utils/charts.py` and applied consistently across the app, including target type detection in Predictive Analytics.
+> The threshold of 15 unique values is defined as `DISCRETE_THRESHOLD = 15` in `utils/charts.py` used for chart selection and target type detection in Predictive Analytics. The separate theoretical distribution fitter uses integer-valued observations for automatic discrete detection, with a user override.
 
 ### Categorical Columns
 - Left: vertical bar chart, top 10 by frequency, sorted descending
 - Right: Missing Values, Missing %, Unique Values, Unique %, Case Inconsistency, Special Characters
+- **(Cardinality)** appears directly beneath the Unique Values count; the count excludes missing values.
 
 ### Date/Time Columns
 - Left: histogram stacked above a boxplot
@@ -118,18 +119,21 @@ After all quality panels load, the app generates a 4–5 sentence plain-English 
 
 ## Data Exploratory Analysis
 
-### Column Profile (single column)
+Tab order: **Data Profile → Group Statistics → Relationship**.
+
+### Data Profile (single column)
 
 Select any column from a dropdown for a detailed deep-dive.
 
 **Numerical columns:**
 - Distribution chart (bar chart for discrete, histogram + boxplot for continuous) alongside a violin plot
-- Summary statistics as a **Statistic / Value table**: Mean, Median, Std Dev, Skewness, Kurtosis, Minimum, Quartile 1/2/3, Maximum, Outliers Found (IQR), Outlier %
+- Summary statistics as a **Statistic / Value table**: Mean, Median, Std Dev, Standard Error (Mean), Coefficient of Variation (%), 95% Confidence Interval (Mean), Skewness, Kurtosis, Minimum, Quartile 1/2/3, Maximum, Outliers Found (IQR), Outlier %
 - AI interpretation (cached per column, expandable)
 
 **Categorical columns:**
 - Frequency bar chart with configurable bar count slider (5 to 50 bars)
 - Frequency table with percentage; values below 1% highlighted in yellow
+- **Mode** directly below the frequency table, showing all tied modes and their frequency. Missing values are excluded; columns without non-missing values show an explanatory message.
 - AI interpretation (cached per column, expandable)
 
 **Date/Time columns:**
@@ -139,7 +143,73 @@ Select any column from a dropdown for a detailed deep-dive.
 
 ---
 
-### Column Relationships (multi-column)
+#### Numerical summary calculation notes
+
+The summary table includes standard error of the mean (sample SD / sqrt(n)), coefficient of variation (sample SD / mean × 100%, positive means only), and a two-sided 95% Student-t confidence interval for the population mean (n−1 degrees of freedom). These use finite, non-missing observations and require at least two values; unavailable results show N/A. CV is meaningful for ratio-scale data with a true zero. Confidence intervals assume independent observations and approximately normal data or a sufficiently large sample. Constant samples produce zero standard error and a collapsed interval.
+
+#### Theoretical distribution fitting
+
+Below the numeric distribution chart, only these three results are shown by default:
+
+- **Best theoretical fit**
+- **Goodness of fit**
+- **Conclusion**
+
+The collapsed **Fit details** expander contains the type selector and detected type, optional known binomial trials, SSE, AIC, KS statistic, candidate comparison table, bootstrap p-values, sampling information, and assumptions. Lowest AIC identifies the best candidate among tested families; it does not establish adequate fit. Automatic type detection uses integer-valued observations, independently of the chart's unique-value threshold; users can override rounded continuous measurements. Integers/ordinal values do not establish a count process.
+
+Continuous candidates: Normal, Uniform, and strictly positive Lognormal/Exponential (location fixed at zero). Discrete candidates: Poisson and zero-based geometric, plus binomial only when the user supplies a known trial count. Unsupported discrete support and insufficient/constant data get explanatory messages.
+
+Fit assessment uses 199 reproducible parametric bootstrap simulations, refitting each sample. A bootstrap p-value below 0.05 is Poor; otherwise Not rejected, never proof of a theoretical distribution. Discrete distance checks both sides of CDF jumps, without an ordinary continuous KS p-value. If all candidates fail, the conclusion states no suitable theoretical distribution was identified among tested families. Tests are exploratory, unadjusted across families, and assume independent observations.
+
+Requires 20 finite observations and two distinct values. Above 3,000 observations a reproducible random sample is used and disclosed. Computations are cached. SSE uses common histogram probability-mass bins with tails; metrics and ranking refer to the same data sample.
+
+### Group Statistics
+
+Data Exploratory Analysis now has three tabs: **Data Profile → Group Statistics → Relationship**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+
+- **Group Summary:** sum, mean, median, min/max, sample standard deviation, non-missing numerical count, or row count.
+- **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
+- **Period-over-Period Comparison:** previous calendar period, or same period last year for monthly/quarterly/yearly data.
+- **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
+- **Rolling Averages:** moving mean over a complete window of calendar periods.
+- **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
+- **Cross Tabulation / Chi-square:** categorical contingency report with observed/expected counts, residuals, totals, and association testing.
+
+Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
+
+Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
+
+
+#### Categorical group statistics and contingency tables
+
+The numerical selector supports **None**, including datasets with no numerical columns. With None selected, group summaries, segment comparisons, contribution analysis, and time analyses use **Row count**, including rows with missing numerical values. Numerical measures retain the original statistics; Row count is also available alongside non-missing count.
+
+Choose **Cross Tabulation / Chi-square** and select at least two categorical dimensions, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
+
+The cross-tab report shows three stacked lines per cell: observed count, expected count (2 decimals), and standardized/Pearson residual (4 decimals). Row totals, column totals, grand total, and a cell-content legend follow the reference report format; no heatmap or view selector is shown. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
+
+The Pearson chi-square test reports statistic, degrees of freedom, p-value, and interpretation at the selected significance level (0.05 default), without continuity correction. It requires at least two observed categories per variable and independent observations. Expected counts below 5 trigger a sparse-table warning. P-values are unadjusted for repeated testing; a non-significant result does not prove independence and association does not establish causation. Unused category levels are omitted. Tables exceeding 10,000 cells are rejected; wide tables scroll horizontally without truncating calculations.
+
+Method: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html
+
+Run calculation tests: `python -m unittest discover -s tests -p "test_*statistics.py"`.
+
+---
+
+### Relationship (multi-column)
+
+Select variables with the existing checkboxes, then choose an available **Analysis method**. Existing chart choices remain below the statistical analysis.
+
+| Variables | Added methods |
+|---|---|
+| Numerical–numerical | Scatterplot with OLS line; Pearson correlation and p-value; Spearman correlation; simple regression coefficients, standard errors, 95% intervals, and in-sample R² |
+| Categorical–numerical | Per-group count/mean/median/SD/min/max, boxplot, classical one-way ANOVA |
+| Categorical–categorical | Stacked cross-tabulation report and Pearson chi-square using the same calculations as Group Statistics |
+| Time–numerical | Daily/weekly/monthly/quarterly/yearly mean or sum, aggregated time-series plot and descriptive linear trend per elapsed day |
+| Multiple variables | Numerical outcome with two or more numerical predictors; multivariable OLS coefficients, intervals, p-values, adjusted R², and observed-versus-fitted plot |
+
+Missing/nonfinite pairs are excluded and reported. Regression rejects insufficient samples, constant outcomes, and rank-deficient predictor matrices. Classical coefficient inference assumes independent, homoscedastic errors and approximately normal errors for small samples. ANOVA requires two groups with at least two observations each; independence, equal variances and approximately normal errors are assumptions. In-sample R² is not predictive validation; association is not causation. Time trends omit missing periods without treating them as zero, use actual elapsed time, and do not model seasonality/autocorrelation or provide forecasts.
+
 
 Select columns using checkboxes grouped by type. Available chart types appear automatically based on the combination selected:
 
@@ -269,10 +339,10 @@ All charts use a consistent visual style: blue primary colour (`#4C72B0`), white
 |---|---|---|
 | `make_histogram_boxplot` | `(series, height=300)` | Histogram (top) stacked above boxplot (bottom) on a shared x-axis. Used for continuous numerical and date/time columns. |
 | `make_bar_chart` | `(series, max_bars=10, height=300)` | Vertical bar chart of value counts, sorted descending, capped at `max_bars`. Returns `(figure, was_truncated, total_unique)`. |
-| `make_violin` | `(series, height=300)` | Violin plot with embedded boxplot and mean line. Used in Column Profile alongside the distribution chart. |
+| `make_violin` | `(series, height=300)` | Violin plot with embedded boxplot and mean line. Used in Data Profile alongside the distribution chart. |
 | `make_time_series` | `(series, freq="M", height=360)` | Line chart of record counts aggregated by time period. `freq`: `"D"` day, `"W"` week, `"M"` month, `"Y"` year. |
 
-### Column Relationships Charts
+### Relationship Charts
 
 | Function | Signature | What it produces |
 |---|---|---|
@@ -413,6 +483,7 @@ data-analytics-assistant/
 ├── app.py                    # Streamlit entry point — all UI sections
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # This file
+├── tests/                    # Automated group, contingency, and distribution checks
 ├── .streamlit/
 │   └── secrets.toml          # API keys and DB URL (do not commit)
 └── utils/
@@ -423,6 +494,14 @@ data-analytics-assistant/
     ├── quality.py            # Quality check DataFrames for AI summary text
     ├── exploration.py        # Single-column deep-dive stats (descriptive stats,
     │                         # outlier detection, frequency tables, datetime stats)
+    ├── manual_input.py       # Validated table/CSV entry and dataset activation
+    ├── relationship_stats.py # OLS regression and one-way ANOVA calculations
+    ├── relationship_ui.py    # Five relationship analysis methods
+    ├── group_statistics.py   # Group, time-series, contribution, contingency calculations
+    ├── group_statistics_ui.py # Streamlit Group Statistics controls and results
+    ├── contingency_table.py  # Stacked observed/expected/residual HTML report
+    ├── distribution_fit.py   # Candidate fitting and refitted bootstrap assessment
+    ├── distribution_fit_ui.py # Three-result summary and collapsed Fit details
     ├── ai_interpreter.py     # LangChain + Groq chains: dataset overview,
     │                         # single-column, heatmap, and predictive analytics
     ├── modelling.py          # ML pipelines: target type detection, ID column detection,
@@ -443,7 +522,7 @@ data-analytics-assistant/
 | `pandas` | Data loading and manipulation |
 | `openpyxl` | Excel file support |
 | `plotly` | Interactive charts |
-| `scipy` | Statistical functions used in IQR outlier detection |
+| `scipy` | Statistical summaries, Student-t confidence intervals, chi-square testing, and theoretical distribution fitting |
 | `scikit-learn` | ML pipelines, GridSearchCV, preprocessing, model classes |
 | `shap` | SHAP explainability plots for all model types |
 | `matplotlib` | SHAP summary plot rendering via `st.pyplot` |
@@ -455,12 +534,12 @@ data-analytics-assistant/
 
 ## AI Interpretations
 
-Uses **OpenAI GPT-OSS 120B (`openai/gpt-oss-120b`)** via the Groq API (`langchain-groq`).
+Uses **OpenAI GPT-OSS 120B** (`openai/gpt-oss-120b`) via Groq through LangChain `ChatGroq`, with temperature **0.3**. The existing `GROQ_API_KEY` is used. Python performs the statistical calculations and model training; the LLM provides explanatory text.
 
 | Function | When it runs | Output |
 |---|---|---|
 | `interpret_dataset_overview` | After data quality summary loads | 4–5 sentences on dataset type, missing values, and column types |
-| `interpret_single_column` | On Column Profile deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
+| `interpret_single_column` | On Data Profile deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
 | `interpret_heatmap` | On Heatmap — Multiple Correlations | 3–5 sentences on strongest correlations and unexpected relationships |
 | `interpret_predictive_results` | After model training completes | 4–5 sentences on winning model, key features, SHAP impact, overfitting, and recommendation |
 
@@ -474,58 +553,47 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 |---|---|
 | File upload, dataset overview, column overview | ✅ Complete |
 | Data quality summary (numerical, categorical, date/time) with AI | ✅ Complete |
-| Column Profile — single column deep-dive with AI | ✅ Complete |
-| Column Relationships — multi-column charts with AI | ✅ Complete |
+| Data Profile — single column deep-dive with AI | ✅ Complete |
+| Relationship — multi-column charts with AI | ✅ Complete |
 | Predictive Analytics — Regression (Lasso vs RF) with AI | ✅ Complete |
 | Predictive Analytics — Binary Classification (LR vs RF) with AI | ✅ Complete |
 | Predictive Analytics — Multi-class Classification (Multinomial LR vs RF) with AI | ✅ Complete |
 | Visit counter + like/dislike feedback with Supabase | ✅ Complete |
-| Sample datasets (heart disease, Boston housing, iris) | ✅ Complete |
+| Sample datasets (heart disease, Boston housing, iris, e-commerce sales) | ✅ Complete |
+| Group Statistics, including categorical contingency tables and chi-square | ✅ Complete |
+| Categorical mode and cardinality label | ✅ Complete |
+| Standard error, coefficient of variation, and 95% mean confidence interval | ✅ Complete |
+| Distribution fit summary and collapsed Fit details | ✅ Complete |
+| Manual Input Data: editable table and CSV text pane | ✅ Complete |
 | Data Cleaning | 🔜 Planned |
 
 
-## Group Statistics
+## Manual data entry — Input Data
 
-Data Exploratory Analysis now has three tabs: **Column Profile → Group Statistics → Column Relationships**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+**Status: implemented.** Existing file upload and **Try with sample data** remain available. Use the **Input Data** button for manual entry, offering:
 
-- **Group Summary:** sum, mean, median, min/max, sample standard deviation, or non-missing numerical count.
-- **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
-- **Period-over-Period Comparison:** previous calendar period, or same period last year for monthly/quarterly/yearly data.
-- **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
-- **Rolling Averages:** moving mean over a complete window of calendar periods.
-- **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
+- An editable table for entering or pasting data.
+- A text pane for typed or pasted CSV-formatted data, with the first row used as column headers.
 
-Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
+Set table dimensions and CSV-formatted column names before editing the grid. Changing the grid dimensions or headers starts a new grid; completely blank trailing grid rows are removed on submission. Empty cells become missing values. Fully numeric columns are inferred as numerical, while leading-zero identifiers are preserved. CSV parsing supports quoted commas and validates consistent field counts and unique, non-empty headers. Invalid input leaves the active dataset unchanged. Manual submission resets analytical state and clears the previous upload selection.
 
-Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
+Both manual entry methods are limited to **500 data rows and 25 columns**; the header row does not count toward the row limit. The manual submission button is also labelled **Input Data**, not Load Data. Validate the input and display clear errors before sending valid data through the existing analytics workflow. These limits apply to manual entry, not existing uploads or Google Drive samples.
 
+## Automated checks
 
-### Categorical group statistics and contingency tables
+The `tests/` folder contains development checks; they do not run during normal app usage.
 
-The numerical selector supports **None**, including datasets with no numerical columns. With None selected, group summaries, segment comparisons, contribution analysis, and time analyses use **Row count**, including rows with missing numerical values. Numerical measures retain the original statistics; Row count is also available alongside non-missing count.
+| File | Coverage |
+|---|---|
+| `tests/test_group_statistics.py` | Group totals, reference comparisons, contributions, missing periods, rolling/running statistics, and year-over-year calculations |
+| `tests/test_categorical_statistics.py` | Known chi-square results, expected counts, residuals, missing/unused categories, row counts, and degenerate tables |
+| `tests/test_input_relationship.py` | Manual CSV limits/validation, known regression coefficients, rank deficiency, and ANOVA |
+| `tests/test_distribution_fit.py` | Poor count-family fits for bedroom-like data, lognormal/binomial examples, discrete CDF distance, invalid support, and insufficient data |
 
-Choose **Cross Tabulation / Chi-square** and select at least two categorical dimensions, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
+After installing the app dependencies, run from the repository root:
 
-The cross-tab report shows three stacked lines per cell: observed count, expected count (2 decimals), and standardized/Pearson residual (4 decimals). Row totals, column totals, grand total, and a cell-content legend follow the reference report format; no heatmap or view selector is shown. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
 
-The Pearson chi-square test reports statistic, degrees of freedom, p-value, and interpretation at the selected significance level (0.05 default), without continuity correction. It requires at least two observed categories per variable and independent observations. Expected counts below 5 trigger a sparse-table warning. P-values are unadjusted for repeated testing; a non-significant result does not prove independence and association does not establish causation. Unused category levels are omitted. Tables exceeding 10,000 cells are rejected; wide tables scroll horizontally without truncating calculations.
-
-Method: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html
-
-Run calculation tests: `python -m unittest discover -s tests -p "test_*statistics.py"`.
-
-
-### Additional numerical Column Profile statistics
-
-The summary table includes standard error of the mean (sample SD / sqrt(n)), coefficient of variation (sample SD / mean × 100%, positive means only), and a two-sided 95% Student-t confidence interval for the population mean (n−1 degrees of freedom). These use finite, non-missing observations and require at least two values; unavailable results show N/A. CV is meaningful for ratio-scale data with a true zero. Confidence intervals assume independent observations and approximately normal data or a sufficiently large sample. Constant samples produce zero standard error and a collapsed interval.
-
-
-### Theoretical distribution fitting
-
-Numeric Column Profile now displays a fit assessment beneath the distribution chart, including type, best theoretical candidate (lowest AIC), binned probability-mass SSE, KS/CDF distance, fit quality, and a qualified conclusion. Automatic type detection uses integer-valued observations, independently of the chart's unique-value threshold; users can override rounded continuous measurements. Integers/ordinal values do not establish a count process.
-
-Continuous candidates: Normal, Uniform, and strictly positive Lognormal/Exponential (location fixed at zero). Discrete candidates: Poisson and zero-based geometric, plus binomial only when the user supplies a known trial count. Unsupported discrete support and insufficient/constant data get explanatory messages.
-
-Fit assessment uses 199 reproducible parametric bootstrap simulations, refitting each sample. A bootstrap p-value below 0.05 is Poor; otherwise Not rejected, never proof of a theoretical distribution. Discrete distance checks both sides of CDF jumps, without an ordinary continuous KS p-value. If all candidates fail, the conclusion states no suitable theoretical distribution was identified among tested families. Tests are exploratory, unadjusted across families, and assume independent observations.
-
-Requires 20 finite observations and two distinct values. Above 3,000 observations a reproducible random sample is used and disclosed. Computations are cached. SSE uses common histogram probability-mass bins with tails; metrics and ranking refer to the same data sample.
+These tests cover selected calculations. They do not verify live Groq or Google Drive availability, Supabase connections, or every browser layout. The production app remains Python/Streamlit, with Streamlit Community Cloud deployment instructions above; the earlier proposed Netlify frontend migration is not the active direction.

@@ -127,8 +127,12 @@ st.subheader("Upload Your Data File")
 uploaded_file = st.file_uploader(
     "Choose a CSV or Excel file",
     type=["csv", "xlsx", "xls"],
+    key=f"upload_{st.session_state.get('upload_epoch', 0)}",
     help="Supported formats: CSV (.csv) and Excel (.xlsx, .xls)",
 )
+
+from utils.manual_input import render_manual_input
+render_manual_input()
 
 # ── Sample datasets (below uploader) ─────────────────────────────────────────
 with st.expander("📂 Try with sample data", expanded=False):
@@ -157,6 +161,7 @@ with st.expander("📂 Try with sample data", expanded=False):
                         if any(_k.startswith(_p) for _p in
                                ("col_ai_", "heatmap_ai_", "pa_pred_", "mc_")):
                             st.session_state.pop(_k, None)
+                    st.session_state["upload_epoch"] = st.session_state.get("upload_epoch", 0) + 1
                     st.rerun()
                 except Exception as _e:
                     st.error(f"Could not load {_ds['name']}: {_e}")
@@ -190,7 +195,8 @@ except ValueError as e:
 
 _display_name = (
     uploaded_file.name if uploaded_file is not None
-    else st.session_state.get("file_id", "sample").replace("sample__", "")
+    else (st.session_state.get("manual_name", "Manual data") if st.session_state.get("file_id", "").startswith("manual__")
+          else st.session_state.get("file_id", "sample").replace("sample__", ""))
 )
 
 st.success(f"File loaded: **{_display_name}**")
@@ -492,11 +498,11 @@ st.divider()
 # ── Data Exploratory Analysis ─────────────────────────────────────────────────
 st.subheader("Data Exploratory Analysis")
 
-profile_tab, group_tab, relationships_tab = st.tabs(["Column Profile", "Group Statistics", "Column Relationships"])
+profile_tab, group_tab, relationships_tab = st.tabs(["Data Profile", "Group Statistics", "Relationship"])
 
 with profile_tab:
     # ── Single Column ─────────────────────────────────────────────────────────────
-    st.markdown("#### Column Profile")
+    st.markdown("#### Data Profile")
     st.caption("Select a column for a detailed deep-dive: full statistics, charts, and anomaly detection.")
 
     selected_col = st.selectbox("Select a column", options=df.columns.tolist(), index=0)
@@ -702,7 +708,7 @@ with group_tab:
 
 with relationships_tab:
     # ── Multi-Column Analysis ─────────────────────────────────────────────────────
-    st.markdown("#### Column Relationships")
+    st.markdown("#### Relationship")
     st.caption("Select two or more columns using the checkboxes below. Available chart types will appear based on your selection.")
 
     # ── Grouped checkboxes by column type ────────────────────────────────────────
@@ -728,6 +734,9 @@ with relationships_tab:
         sel_cat = [c for c in selected_cols if col_to_type.get(c) == "Categorical"]
         sel_dt  = [c for c in selected_cols if col_to_type.get(c) == "Date / Time"]
         n_num, n_cat, n_dt = len(sel_num), len(sel_cat), len(sel_dt)
+
+        from utils.relationship_ui import render_relationship_analysis
+        render_relationship_analysis(df, sel_num, sel_cat, sel_dt)
 
         # Determine available charts
         available = []
