@@ -495,8 +495,12 @@ _show_feedback("Data Quality Summary", "dqs")
 
 st.divider()
 
-# ── Data Exploratory Analysis ─────────────────────────────────────────────────
-st.subheader("Data Exploratory Analysis")
+from utils.visual_analysis import render_visual_analysis
+render_visual_analysis(df, col_types)
+st.divider()
+
+# ── Exploratory Data Analysis ─────────────────────────────────────────────────
+st.subheader("Exploratory Data Analysis")
 
 profile_tab, group_tab, relationships_tab = st.tabs(["Data Profile", "Group Statistics", "Relationship"])
 
@@ -861,11 +865,7 @@ with relationships_tab:
         st.info("Select at least one more column to see available charts.")
 
 
-_show_feedback("Data Exploratory Analysis", "eda")
-
-st.divider()
-from utils.visual_analysis import render_visual_analysis
-render_visual_analysis(df, col_types)
+_show_feedback("Exploratory Data Analysis", "eda")
 
 # ── Predictive Analytics ──────────────────────────────────────────────────────
 st.divider()

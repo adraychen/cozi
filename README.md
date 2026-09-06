@@ -11,7 +11,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, column type, total values, missing values, missing % (colour-coded) |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
-| **Data Exploratory Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
+| **Exploratory Data Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
 | **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
@@ -42,7 +42,7 @@ An expandable **Try with sample data** section sits below the file uploader. Cli
 
 ## User Feedback
 
-At the end of each of the three main sections — Data Quality Summary, Data Exploratory Analysis, and Predictive Analytics — a 👍 / 👎 row appears. Clicking either opens a popup dialog (Streamlit `@st.dialog`) titled **"Thank you for your feedback"** with an optional comment text area, a **Submit** button, and a **Skip** button. All responses are stored in Supabase with the section name, feedback type, optional comment, and timestamp.
+At the end of each of the three main sections — Data Quality Summary, Exploratory Data Analysis, and Predictive Analytics — a 👍 / 👎 row appears. Clicking either opens a popup dialog (Streamlit `@st.dialog`) titled **"Thank you for your feedback"** with an optional comment text area, a **Submit** button, and a **Skip** button. All responses are stored in Supabase with the section name, feedback type, optional comment, and timestamp.
 
 ---
 
@@ -118,7 +118,7 @@ After all quality panels load, the app generates a 4–5 sentence plain-English 
 
 ---
 
-## Data Exploratory Analysis
+## Exploratory Data Analysis
 
 Tab order: **Data Profile → Group Statistics → Relationship**.
 
@@ -166,7 +166,7 @@ Requires 20 finite observations and two distinct values. Above 3,000 observation
 
 ### Group Statistics
 
-Data Exploratory Analysis now has three tabs: **Data Profile → Group Statistics → Relationship**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+Exploratory Data Analysis now has three tabs: **Data Profile → Group Statistics → Relationship**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
 
 - **Group Summary:** sum, mean, median, min/max, sample standard deviation, non-missing numerical count, or row count.
 - **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
@@ -603,7 +603,7 @@ These tests cover selected calculations. They do not verify live Groq or Google 
 
 ## Visual Analysis
 
-A standalone section between Data Exploratory Analysis and Predictive Analytics. Select columns in **Numeric**, **Categorical**, and **Date/time** groups; only compatible graphs appear. Additional controls assign axes, grouping, measures, and aggregation.
+A standalone section above Exploratory Data Analysis. Select columns in **Numeric**, **Categorical**, and **Date/time** groups; only compatible graph buttons appear. Click a button to select a graph; the active button is highlighted. Buttons are arranged four per row, and changing columns resets an incompatible selection to the first available graph. Additional controls assign axes, grouping, measures, and aggregation.
 
 | Graph | Selected columns needed |
 |---|---|

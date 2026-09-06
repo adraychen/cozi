@@ -42,7 +42,18 @@ def render_visual_analysis(df, col_types):
     if not choices:
         st.info('Select a numeric or categorical column to begin. Time-series charts also need a numeric measure.')
         return
-    chart = choose('Graph', choices, 'chart')
+    if st.session_state.get('va_selected_graph') not in choices:
+        st.session_state['va_selected_graph'] = choices[0]
+    st.markdown('**Choose a graph**')
+    def select_graph(name):
+        st.session_state['va_selected_graph'] = name
+    for start in range(0, len(choices), 4):
+        buttons = st.columns(4)
+        for button, name in zip(buttons, choices[start:start + 4]):
+            button.button(name, key='va_graph_button_' + name,
+                          type='primary' if st.session_state['va_selected_graph'] == name else 'secondary',
+                          use_container_width=True, on_click=select_graph, args=(name,))
+    chart = st.session_state['va_selected_graph']
     # Rename selected columns internally so source names cannot collide with derived chart fields.
     columns = list(dict.fromkeys(nums + cats + dates))
     key = {c: f'_c{i}' for i,c in enumerate(columns)}
