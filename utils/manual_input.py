@@ -52,6 +52,27 @@ def activate_dataset(frame, name):
     st.session_state['upload_epoch'] = st.session_state.get('upload_epoch', 0) + 1
 
 
+def parse_grid(grid, header_mode='Auto detect'):
+    """Trim unused trailing space; retain interior missing cells/rows."""
+    frame = grid.replace(r'^\s*$', None, regex=True).copy()
+    occupied_rows = frame.notna().any(axis=1).to_numpy().nonzero()[0]
+    occupied_cols = frame.notna().any(axis=0).to_numpy().nonzero()[0]
+    if not len(occupied_rows) or not len(occupied_cols):
+        raise ValueError('Enter or paste a table first.')
+    frame = frame.iloc[:occupied_rows[-1]+1, :occupied_cols[-1]+1]
+    first = frame.iloc[0]
+    # Text-like first rows are presumed headers; ambiguous categorical data can be overridden.
+    textual = first.notna().all() and pd.to_numeric(first, errors='coerce').isna().all()
+    has_header = header_mode == 'First row is headers' or (header_mode == 'Auto detect' and len(frame)>1 and textual)
+    if has_header:
+        names = [str(v).strip() if pd.notna(v) else '' for v in first]
+        frame = frame.iloc[1:].copy()
+        frame.columns = names
+    else:
+        frame.columns = [f'Column {i+1}' for i in range(len(frame.columns))]
+    return validate_frame(frame.reset_index(drop=True)), bool(has_header)
+
+
 def render_manual_input():
     if st.button('Input Data', key='manual_open'):
         st.session_state['manual_visible'] = not st.session_state.get('manual_visible', False)
@@ -61,19 +82,18 @@ def render_manual_input():
         mode = st.radio('Entry method', ['Editable table', 'CSV text'], horizontal=True, key='manual_mode')
         st.caption('Maximum 500 data rows and 25 columns. The CSV header row is not counted. Blank cells become missing values.')
         if mode == 'Editable table':
-            rows = int(st.number_input('Rows', 1, 500, 10, key='manual_rows'))
-            columns = int(st.number_input('Columns', 1, 25, 3, key='manual_columns'))
-            names_text = st.text_input('Column names (CSV format)', value=','.join(f'Column {i+1}' for i in range(columns)), key=f'manual_headers_{columns}')
-            try:
-                names = next(csv.reader([names_text], strict=True))
-                if len(names) != columns or len(set(n.strip() for n in names)) != columns or any(not n.strip() for n in names):
-                    raise ValueError('Provide one unique, non-empty name per column.')
-            except (csv.Error, ValueError, StopIteration) as exc:
-                st.error(str(exc))
-                return
-            st.caption('Set the table size and headers before entering values. Changing them starts a new grid. Empty trailing rows are removed on submission.')
-            edited = st.data_editor(pd.DataFrame('', index=range(rows), columns=names), num_rows='fixed',
-                                    use_container_width=True, key=f'manual_grid_{rows}_{columns}_{names_text}')
+            st.caption('Paste your table, including its column headers, into the top-left cell. The grid is fixed at 500 rows × 25 columns; a pasted header uses one row, leaving 499 data rows. Unused trailing rows and columns are removed.')
+            edited = st.data_editor(pd.DataFrame('', index=range(500), columns=[f'Column {i+1}' for i in range(25)]),
+                                    num_rows='fixed', height=420, use_container_width=True, key='manual_fixed_grid')
+            with st.expander('Header detection and preview'):
+                header_mode = st.selectbox('Header handling', ['Auto detect', 'First row is headers', 'No header row'], key='manual_header_mode')
+                st.caption('Auto detection treats a populated, text-only first row as headers. For text-only datasets or numeric headers, check the preview and override if needed.')
+                try:
+                    preview, detected = parse_grid(edited, header_mode)
+                    st.caption('First row used as headers.' if detected else 'Generated column names; first row kept as data.')
+                    st.dataframe(preview.head(5), hide_index=True, use_container_width=True)
+                except ValueError as exc:
+                    st.caption(str(exc))
         else:
             text = st.text_area('CSV-formatted data', height=240, key='manual_csv',
                                 placeholder='Region,Sales\nEast,120\nWest,95')
@@ -82,10 +102,7 @@ def render_manual_input():
                 if mode == 'CSV text':
                     frame = parse_csv(text)
                 else:
-                    edited = edited.replace(r'^\s*$', None, regex=True)
-                    while len(edited) and edited.iloc[-1].isna().all():
-                        edited = edited.iloc[:-1]
-                    frame = validate_frame(edited)
+                    frame, _ = parse_grid(edited, header_mode)
                 activate_dataset(frame, 'Manual table' if mode == 'Editable table' else 'Manual CSV')
                 st.session_state['manual_visible'] = False
                 st.rerun()

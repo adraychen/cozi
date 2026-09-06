@@ -1,0 +1,189 @@
+"""Column-driven, standalone visual exploration with explicit chart roles."""
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from scipy import stats
+import streamlit as st
+
+
+def available_charts(numeric, categorical, dates):
+    charts = []
+    if numeric:
+        charts += ['Histogram', 'Dot plot', 'Density plot', 'Box plot', 'Q–Q plot']
+    if categorical:
+        charts += ['Bar chart', 'Pareto chart']
+    if len(categorical) >= 2:
+        charts += ['Stacked-bar chart']
+    if (dates and numeric) or len(numeric) >= 2:
+        charts += ['Line chart', 'Area chart']
+    if len(numeric) >= 2:
+        charts += ['Scatter plot', 'Correlation matrix', 'Pair plot']
+    if len(categorical) >= 2 or len(numeric) >= 2:
+        charts += ['Heatmap']
+    if len(numeric) >= 3:
+        charts += ['Bubble plot']
+    return charts
+
+
+def choose(label, options, key):
+    return st.selectbox(label, options, key='va_' + key)
+
+
+def render_visual_analysis(df, col_types):
+    st.subheader('Visual Analysis')
+    st.caption('Select columns, then choose a compatible graph. Chart-specific controls assign roles to your selected columns.')
+    selected = {}
+    for label, kind in [('Numeric', 'numerical'), ('Categorical', 'categorical'), ('Date/time', 'datetime')]:
+        selected[kind] = st.multiselect(label + ' columns', col_types[kind], key='va_select_' + kind)
+    nums, cats, dates = selected['numerical'], selected['categorical'], selected['datetime']
+    choices = available_charts(nums, cats, dates)
+    if not choices:
+        st.info('Select a numeric or categorical column to begin. Time-series charts also need a numeric measure.')
+        return
+    chart = choose('Graph', choices, 'chart')
+    # Rename selected columns internally so source names cannot collide with derived chart fields.
+    columns = list(dict.fromkeys(nums + cats + dates))
+    key = {c: f'_c{i}' for i,c in enumerate(columns)}
+    data = df[columns].copy().rename(columns=key)
+    labels = {v:str(k) for k,v in key.items()}
+    for c in nums:
+        data[key[c]] = pd.to_numeric(data[key[c]], errors='coerce').replace([np.inf,-np.inf],np.nan)
+    for c in dates:
+        data[key[c]] = pd.to_datetime(data[key[c]],errors='coerce')
+    for c in cats:
+        data[key[c]] = data[key[c]].astype('string')
+    try:
+        fig = None
+        if chart in ['Histogram','Dot plot','Density plot','Box plot','Q–Q plot']:
+            col = choose('Numerical variable', nums, 'univariate')
+            x = data[key[col]].dropna()
+            if x.empty:
+                raise ValueError('No finite numerical values to plot.')
+            if chart == 'Histogram':
+                bins = st.slider('Number of bins',5,100,30,key='va_bins')
+                fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
+            elif chart == 'Box plot':
+                group = choose('Group by', [None]+cats, 'box_group')
+                fig = px.box(data,x=key[group] if group else None,y=key[col],labels=labels)
+            elif chart == 'Dot plot':
+                if len(x)>2000:
+                    x=x.sample(2000,random_state=42)
+                    st.caption('Dot plot uses a reproducible sample of 2,000 observations.')
+                dots=pd.DataFrame({'Value':x.to_numpy()})
+                dots['Stack']=dots.groupby('Value').cumcount()+1
+                fig=px.scatter(dots,x='Value',y='Stack',labels={'Value':str(col),'Stack':'Stacked observations'})
+            elif chart == 'Density plot':
+                if x.nunique()<2:
+                    raise ValueError('Density estimation requires variation in the selected column.')
+                if len(x)>10000:
+                    x=x.sample(10000,random_state=42)
+                    st.caption('Density estimated from a reproducible sample of 10,000 observations.')
+                smooth=st.slider('Bandwidth multiplier',0.2,3.0,1.0,0.1,key='va_bandwidth')
+                kde=stats.gaussian_kde(x)
+                kde.set_bandwidth(kde.factor*smooth)
+                grid=np.linspace(x.min(),x.max(),300)
+                fig=px.line(x=grid,y=kde(grid),labels={'x':str(col),'y':'Density'})
+                st.caption('Gaussian kernel density estimate; a smoothed description, not a theoretical distribution fit.')
+            else:
+                if len(x)<3 or x.nunique()<2:
+                    raise ValueError('Q–Q plots require at least three values and variation.')
+                (theory,ordered),(slope,intercept,r)=stats.probplot(x,dist='norm')
+                fig=go.Figure(go.Scatter(x=theory,y=ordered,mode='markers',name='Observed'))
+                fig.add_scatter(x=theory,y=slope*np.asarray(theory)+intercept,mode='lines',name='Reference line')
+                fig.update_layout(xaxis_title='Theoretical normal quantiles',yaxis_title=str(col))
+                st.caption('Normal Q–Q plot. Departure from the line suggests departure from normality; this is not a significance test.')
+        elif chart in ['Bar chart','Stacked-bar chart','Pareto chart']:
+            category=choose('Category',cats,'bar_category')
+            stack=choose('Stack by',[c for c in cats if c!=category],'stack') if chart=='Stacked-bar chart' else None
+            measure=choose('Measure',[None]+nums,'bar_measure')
+            agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart!='Pareto chart' else 'Sum'
+            if chart=='Pareto chart':
+                st.caption('Pareto uses row counts or sums, ordered from largest to smallest. The cumulative line uses the full total.')
+            keys=[key[category]]+([key[stack]] if stack else [])
+            clean=data.dropna(subset=keys+([key[measure]] if measure else []))
+            grouped=clean.groupby(keys,observed=True)
+            values=(grouped[key[measure]].sum(min_count=1) if agg=='Sum' else grouped[key[measure]].mean()) if measure else grouped.size()
+            table=values.rename('Value').reset_index()
+            if table.empty:
+                raise ValueError('No complete values for this chart.')
+            if chart=='Pareto chart':
+                if (table.Value<0).any() or table.Value.sum()<=0:
+                    raise ValueError('Pareto requires nonnegative category totals and a positive grand total.')
+                table=table.sort_values('Value',ascending=False)
+                table['Cumulative %']=table.Value.cumsum()/table.Value.sum()*100
+                fig=make_subplots(specs=[[{'secondary_y':True}]])
+                fig.add_trace(go.Bar(x=table[key[category]],y=table.Value,name='Value'),secondary_y=False)
+                fig.add_trace(go.Scatter(x=table[key[category]],y=table['Cumulative %'],name='Cumulative %',mode='lines+markers'),secondary_y=True)
+                fig.update_yaxes(range=[0,100],title_text='Cumulative %',secondary_y=True)
+            else:
+                fig=px.bar(table,x=key[category],y='Value',color=key[stack] if stack else None,barmode='stack',labels=labels)
+            st.dataframe(table.rename(columns=labels),hide_index=True,use_container_width=True)
+        elif chart in ['Line chart','Area chart']:
+            axis=choose('X axis',dates+nums,'line_x')
+            ys=st.multiselect('Measures',[c for c in nums if c!=axis],default=[c for c in nums if c!=axis][:1],key='va_line_y')
+            if not ys:
+                raise ValueError('Select at least one measure.')
+            agg=choose('Aggregate repeated X values',['Mean','Sum'],'line_agg')
+            clean=data[[key[axis]]+[key[c] for c in ys]].dropna(subset=[key[axis]])
+            grouped=clean.groupby(key[axis])[[key[c] for c in ys]]
+            table=(grouped.mean() if agg=='Mean' else grouped.sum(min_count=1)).reset_index().sort_values(key[axis])
+            fig=(px.line if chart=='Line chart' else px.area)(table,x=key[axis],y=[key[c] for c in ys],labels=labels)
+            st.caption('X values are sorted; repeated X values are aggregated. Area measures are stacked. Missing measures are not replaced by zero.')
+        elif chart in ['Scatter plot','Bubble plot']:
+            x=choose('X axis',nums,'scatter_x')
+            y=choose('Y axis',[c for c in nums if c!=x],'scatter_y')
+            size=choose('Bubble size',[c for c in nums if c not in [x,y]],'bubble_size') if chart=='Bubble plot' else None
+            color=choose('Color by',[None]+cats,'scatter_color')
+            needed=[key[x],key[y]]+([key[size]] if size else [])+([key[color]] if color else [])
+            clean=data.dropna(subset=needed)
+            if size and ((clean[key[size]]<0).any() or not (clean[key[size]]>0).any()):
+                raise ValueError('Bubble sizes must be nonnegative, with at least one positive value.')
+            if len(clean)>5000:
+                clean=clean.sample(5000,random_state=42)
+                st.caption('Scatter/bubble plot uses a reproducible sample of 5,000 complete rows.')
+            fig=px.scatter(clean,x=key[x],y=key[y],size=key[size] if size else None,color=key[color] if color else None,labels=labels)
+        elif chart=='Pair plot':
+            axes=st.multiselect('Pair plot variables',nums,default=nums[:4],key='va_pair_axes')
+            if not 2<=len(axes)<=6:
+                raise ValueError('Choose two to six numerical variables for the pair plot.')
+            clean=data[[key[c] for c in axes]].dropna()
+            if len(clean)>2000:
+                clean=clean.sample(2000,random_state=42)
+                st.caption('Pair plot uses a reproducible sample of 2,000 complete rows.')
+            fig=px.scatter_matrix(clean,dimensions=[key[c] for c in axes],labels=labels)
+            fig.update_traces(diagonal_visible=False)
+        elif chart=='Correlation matrix':
+            method=choose('Correlation method',['pearson','spearman'],'correlation')
+            matrix=data[[key[c] for c in nums]].corr(method=method).rename(index=labels,columns=labels)
+            fig=px.imshow(matrix,zmin=-1,zmax=1,color_continuous_scale='RdBu_r',text_auto='.2f',aspect='auto')
+            st.caption('Pairwise complete observations are used; sample sizes can differ by pair. Constant columns yield missing correlations.')
+        else:
+            modes=(['Categorical cross-tab'] if len(cats)>=2 else [])+(['Numerical values'] if len(nums)>=2 else [])
+            mode=choose('Heatmap type',modes,'heat_mode')
+            if mode=='Categorical cross-tab':
+                row=choose('Rows',cats,'heat_row'); col=choose('Columns',[c for c in cats if c!=row],'heat_col')
+                measure=choose('Cell measure',[None]+nums,'heat_measure')
+                clean=data.dropna(subset=[key[row],key[col]]+([key[measure]] if measure else []))
+                if clean[key[row]].nunique()*clean[key[col]].nunique()>10000:
+                    raise ValueError('Choose categories producing at most 10,000 heatmap cells.')
+                matrix=clean.pivot_table(index=key[row],columns=key[col],values=key[measure],aggfunc='mean',observed=True) if measure else pd.crosstab(clean[key[row]],clean[key[col]])
+                matrix.index.name=str(row); matrix.columns.name=str(col)
+                st.caption('Cells show mean measure values.' if measure else 'Cells show row counts.')
+            else:
+                matrix=data[[key[c] for c in nums]].rename(columns=labels)
+                if len(matrix)>500:
+                    matrix=matrix.head(500)
+                    st.caption('Numerical heatmap shows the first 500 rows in original order.')
+                if st.checkbox('Standardize each column',value=True,key='va_heat_scale'):
+                    matrix=(matrix-matrix.mean())/matrix.std().replace(0,np.nan)
+                st.caption('Rows are records; columns are numerical variables. Missing values remain blank.')
+            if matrix.empty:
+                raise ValueError('No values available for the heatmap.')
+            fig=px.imshow(matrix,aspect='auto',color_continuous_scale='Blues')
+        if fig is not None:
+            st.plotly_chart(fig,use_container_width=True)
+        st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
+    except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
+        st.info(str(exc))

@@ -863,6 +863,10 @@ with relationships_tab:
 
 _show_feedback("Data Exploratory Analysis", "eda")
 
+st.divider()
+from utils.visual_analysis import render_visual_analysis
+render_visual_analysis(df, col_types)
+
 # ── Predictive Analytics ──────────────────────────────────────────────────────
 st.divider()
 st.subheader("Predictive Analytics")

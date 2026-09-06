@@ -12,6 +12,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | **Column Overview** | Per-column table: data type, column type, total values, missing values, missing % (colour-coded) |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
 | **Data Exploratory Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
+| **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
 ---
@@ -494,6 +495,7 @@ data-analytics-assistant/
     ├── quality.py            # Quality check DataFrames for AI summary text
     ├── exploration.py        # Single-column deep-dive stats (descriptive stats,
     │                         # outlier detection, frequency tables, datetime stats)
+    ├── visual_analysis.py   # Column-driven Visual Analysis charts and controls
     ├── manual_input.py       # Validated table/CSV entry and dataset activation
     ├── relationship_stats.py # OLS regression and one-way ANOVA calculations
     ├── relationship_ui.py    # Five relationship analysis methods
@@ -575,7 +577,7 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 - An editable table for entering or pasting data.
 - A text pane for typed or pasted CSV-formatted data, with the first row used as column headers.
 
-Set table dimensions and CSV-formatted column names before editing the grid. Changing the grid dimensions or headers starts a new grid; completely blank trailing grid rows are removed on submission. Empty cells become missing values. Fully numeric columns are inferred as numerical, while leading-zero identifiers are preserved. CSV parsing supports quoted commas and validates consistent field counts and unique, non-empty headers. Invalid input leaves the active dataset unchanged. Manual submission resets analytical state and clears the previous upload selection.
+The editable grid is fixed at **500 rows × 25 columns**, with no dimension or column-name setup controls. Paste the table including headers into the top-left cell. Auto detection treats a populated text-only first row as headers; **Header detection and preview** provides first-row/no-header overrides for ambiguous categorical data or numeric headers. Unused trailing rows/columns are trimmed; interior missing rows/cells are retained. A pasted header occupies one grid row, leaving **499 data rows**; without headers the grid holds 500 data rows. CSV entry still accepts 500 data rows plus a header. Blank input, invalid headers and excess limits are rejected. Numeric inference preserves leading-zero identifiers.
 
 Both manual entry methods are limited to **500 data rows and 25 columns**; the header row does not count toward the row limit. The manual submission button is also labelled **Input Data**, not Load Data. Validate the input and display clear errors before sending valid data through the existing analytics workflow. These limits apply to manual entry, not existing uploads or Google Drive samples.
 
@@ -597,3 +599,24 @@ python -m unittest discover -s tests -p "test_*.py"
 ```
 
 These tests cover selected calculations. They do not verify live Groq or Google Drive availability, Supabase connections, or every browser layout. The production app remains Python/Streamlit, with Streamlit Community Cloud deployment instructions above; the earlier proposed Netlify frontend migration is not the active direction.
+
+
+## Visual Analysis
+
+A standalone section between Data Exploratory Analysis and Predictive Analytics. Select columns in **Numeric**, **Categorical**, and **Date/time** groups; only compatible graphs appear. Additional controls assign axes, grouping, measures, and aggregation.
+
+| Graph | Selected columns needed |
+|---|---|
+| Histogram, dot plot, density, box plot, normal Q–Q plot | At least one numeric; optional categorical grouping for box plots |
+| Bar, Pareto | At least one categorical; optional numerical measure (otherwise counts) |
+| Stacked-bar | At least two categorical; optional numerical measure |
+| Line, area | Date/time + numeric, or at least two numeric |
+| Scatter, correlation matrix, pair plot | At least two numeric |
+| Heatmap | At least two categorical for counts/mean pivot, or two numeric for record-value heatmap |
+| Bubble | At least three numeric for X, Y, and nonnegative size; optional categorical color |
+
+Histogram bin count and density bandwidth are adjustable. Dot plots stack repeated values. Q–Q uses a normal reference. Bars offer sum/mean or counts; Pareto uses nonnegative counts/sums and a cumulative percentage against the full total. Line/area charts sort X and aggregate repeated values; areas stack the selected measures. Correlations support Pearson and Spearman with pairwise complete observations. Pair plots accept 2–6 variables. Numerical heatmaps optionally standardize columns. Categorical heatmaps show counts or mean measures.
+
+Display limits are disclosed: dot plots sample 2,000 observations, density 10,000, scatter/bubble 5,000 and pair plots 2,000 when needed, all with a fixed seed. Numerical heatmaps show the first 500 rows. Categorical heatmaps reject more than 10,000 cells. Missing/nonfinite values are omitted as appropriate; invalid sizes, constant density inputs, and insufficient Q–Q data receive explanatory messages.
+
+Implemented in `utils/visual_analysis.py`. Existing Data Profile, Group Statistics, Relationship, and Predictive Analytics remain available.
