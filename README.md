@@ -620,3 +620,24 @@ Histogram bin count and density bandwidth are adjustable. Dot plots stack repeat
 Display limits are disclosed: dot plots sample 2,000 observations, density 10,000, scatter/bubble 5,000 and pair plots 2,000 when needed, all with a fixed seed. Numerical heatmaps show the first 500 rows. Categorical heatmaps reject more than 10,000 cells. Missing/nonfinite values are omitted as appropriate; invalid sizes, constant density inputs, and insufficient Q–Q data receive explanatory messages.
 
 Implemented in `utils/visual_analysis.py`. Existing Data Profile, Group Statistics, Relationship, and Predictive Analytics remain available.
+
+
+For exactly **one numeric + one categorical column** (and no date/time column), Visual Analysis offers only **Box plot, Bar chart, and Pareto chart**. Box plots group the selected measure by the category; bar and Pareto charts use the selected numerical measure rather than defaulting to row counts. Single-variable histogram, dot, density, and Q–Q plots are not offered for this combination.
+
+
+Stacked-bar charts have an **Additive measure** selector: **Sum** or **Count**. Sum requires a selected numerical measure and adds its non-missing values. Count counts rows per category combination, including rows with missing numeric values. Missing grouping categories are excluded. With no numeric column selected, only Count is available and a hint explains how to enable Sum. Mean is not offered for stacked bars.
+
+
+### Exact Visual Analysis selection rules
+
+For these combinations without date/time columns, the following menus override the general chart-availability table above:
+
+| Selected columns | Available graphs |
+|---|---|
+| One numeric + one categorical | Box plot, bar chart, Pareto chart |
+| Two numeric + one categorical | Scatter plot, with category color required |
+| One numeric + two categorical | Grouped bar chart, stacked-bar chart, grouped box plot, heatmap |
+| Two numeric | Scatter plot, correlation matrix, pair plot, line chart, area chart |
+| Two categorical | Grouped bar chart, stacked-bar chart, count heatmap |
+
+Grouped bars use both categories (axis and color), with the numeric measure required when selected. Grouped boxes show the selected measure by category and subgroup. Numeric/category heatmaps require the selected numeric measure and display its mean by the two categories. Two-numeric line/area plots require a meaningful ordered X variable, as noted in the UI. Stacked bars retain the requested Sum/Count selector: Sum uses the selected measure, whereas Count intentionally shows category frequencies, including rows with missing numeric values. Other combinations retain their existing chart options.

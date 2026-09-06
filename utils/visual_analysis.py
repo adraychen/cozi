@@ -9,6 +9,18 @@ import streamlit as st
 
 
 def available_charts(numeric, categorical, dates):
+    if len(numeric) == 1 and len(categorical) == 1 and not dates:
+        return ['Box plot', 'Bar chart', 'Pareto chart']
+    if not dates:
+        combination = (len(numeric), len(categorical))
+        if combination == (2, 1):
+            return ['Scatter plot']
+        if combination == (1, 2):
+            return ['Grouped bar chart', 'Stacked-bar chart', 'Grouped box plot', 'Heatmap']
+        if combination == (2, 0):
+            return ['Scatter plot', 'Correlation matrix', 'Pair plot', 'Line chart', 'Area chart']
+        if combination == (0, 2):
+            return ['Grouped bar chart', 'Stacked-bar chart', 'Heatmap']
     charts = []
     if numeric:
         charts += ['Histogram', 'Dot plot', 'Density plot', 'Box plot', 'Q–Q plot']
@@ -67,7 +79,7 @@ def render_visual_analysis(df, col_types):
         data[key[c]] = data[key[c]].astype('string')
     try:
         fig = None
-        if chart in ['Histogram','Dot plot','Density plot','Box plot','Q–Q plot']:
+        if chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
             col = choose('Numerical variable', nums, 'univariate')
             x = data[key[col]].dropna()
             if x.empty:
@@ -75,9 +87,12 @@ def render_visual_analysis(df, col_types):
             if chart == 'Histogram':
                 bins = st.slider('Number of bins',5,100,30,key='va_bins')
                 fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
-            elif chart == 'Box plot':
-                group = choose('Group by', [None]+cats, 'box_group')
-                fig = px.box(data,x=key[group] if group else None,y=key[col],labels=labels)
+            elif chart in ['Box plot', 'Grouped box plot']:
+                group = choose('Group by', cats if cats else [None], 'box_group')
+                color_group = choose('Subgroup', [c for c in cats if c != group], 'box_subgroup') if chart == 'Grouped box plot' else None
+                fig = px.box(data,x=key[group] if group else None,y=key[col],color=key[color_group] if color_group else None,labels=labels)
+                if color_group:
+                    fig.update_layout(boxmode='group')
             elif chart == 'Dot plot':
                 if len(x)>2000:
                     x=x.sample(2000,random_state=42)
@@ -105,11 +120,22 @@ def render_visual_analysis(df, col_types):
                 fig.add_scatter(x=theory,y=slope*np.asarray(theory)+intercept,mode='lines',name='Reference line')
                 fig.update_layout(xaxis_title='Theoretical normal quantiles',yaxis_title=str(col))
                 st.caption('Normal Q–Q plot. Departure from the line suggests departure from normality; this is not a significance test.')
-        elif chart in ['Bar chart','Stacked-bar chart','Pareto chart']:
+        elif chart in ['Bar chart','Grouped bar chart','Stacked-bar chart','Pareto chart']:
             category=choose('Category',cats,'bar_category')
-            stack=choose('Stack by',[c for c in cats if c!=category],'stack') if chart=='Stacked-bar chart' else None
-            measure=choose('Measure',[None]+nums,'bar_measure')
-            agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart!='Pareto chart' else 'Sum'
+            stack=choose('Stack by',[c for c in cats if c!=category],'stack') if chart in ['Stacked-bar chart','Grouped bar chart'] else None
+            if chart=='Stacked-bar chart':
+                additive=choose('Additive measure',['Sum','Count'] if nums else ['Count'],'stack_additive')
+                if additive=='Sum':
+                    measure=choose('Numerical measure to sum',nums,'stack_measure')
+                else:
+                    measure=None
+                agg='Sum'
+                st.caption('Count intentionally uses category frequencies rather than the selected numeric measure. Count counts rows within each category combination, including rows with missing numeric values. Rows with missing grouping categories are excluded.' if additive=='Count' else 'Sum adds the selected numeric values within each category combination; missing numeric values are excluded.')
+                if not nums:
+                    st.caption('Select a numeric column to enable Sum.')
+            else:
+                measure=choose('Measure',nums if len(nums)==1 and not dates else [None]+nums,'bar_measure')
+                agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart!='Pareto chart' else 'Sum'
             if chart=='Pareto chart':
                 st.caption('Pareto uses row counts or sums, ordered from largest to smallest. The cumulative line uses the full total.')
             keys=[key[category]]+([key[stack]] if stack else [])
@@ -129,10 +155,12 @@ def render_visual_analysis(df, col_types):
                 fig.add_trace(go.Scatter(x=table[key[category]],y=table['Cumulative %'],name='Cumulative %',mode='lines+markers'),secondary_y=True)
                 fig.update_yaxes(range=[0,100],title_text='Cumulative %',secondary_y=True)
             else:
-                fig=px.bar(table,x=key[category],y='Value',color=key[stack] if stack else None,barmode='stack',labels=labels)
+                fig=px.bar(table,x=key[category],y='Value',color=key[stack] if stack else None,barmode='group' if chart=='Grouped bar chart' else 'stack',labels=labels)
             st.dataframe(table.rename(columns=labels),hide_index=True,use_container_width=True)
         elif chart in ['Line chart','Area chart']:
             axis=choose('X axis',dates+nums,'line_x')
+            if not dates:
+                st.caption('Use line/area charts only when the X variable has a meaningful order; otherwise use a scatter plot.')
             ys=st.multiselect('Measures',[c for c in nums if c!=axis],default=[c for c in nums if c!=axis][:1],key='va_line_y')
             if not ys:
                 raise ValueError('Select at least one measure.')
@@ -146,7 +174,7 @@ def render_visual_analysis(df, col_types):
             x=choose('X axis',nums,'scatter_x')
             y=choose('Y axis',[c for c in nums if c!=x],'scatter_y')
             size=choose('Bubble size',[c for c in nums if c not in [x,y]],'bubble_size') if chart=='Bubble plot' else None
-            color=choose('Color by',[None]+cats,'scatter_color')
+            color=choose('Color by',cats if len(nums)==2 and len(cats)==1 and not dates else [None]+cats,'scatter_color')
             needed=[key[x],key[y]]+([key[size]] if size else [])+([key[color]] if color else [])
             clean=data.dropna(subset=needed)
             if size and ((clean[key[size]]<0).any() or not (clean[key[size]]>0).any()):
@@ -175,7 +203,7 @@ def render_visual_analysis(df, col_types):
             mode=choose('Heatmap type',modes,'heat_mode')
             if mode=='Categorical cross-tab':
                 row=choose('Rows',cats,'heat_row'); col=choose('Columns',[c for c in cats if c!=row],'heat_col')
-                measure=choose('Cell measure',[None]+nums,'heat_measure')
+                measure=choose('Cell measure',nums if len(nums)==1 and len(cats)==2 and not dates else [None]+nums,'heat_measure')
                 clean=data.dropna(subset=[key[row],key[col]]+([key[measure]] if measure else []))
                 if clean[key[row]].nunique()*clean[key[col]].nunique()>10000:
                     raise ValueError('Choose categories producing at most 10,000 heatmap cells.')
