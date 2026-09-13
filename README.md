@@ -36,7 +36,7 @@ An expandable **Try with sample data** section sits below the file uploader. Cli
 | heart_disease.csv | Binary classification | 303 |
 | BostonHousing.csv | Regression | 506 |
 | iris.csv | Multi-class classification | 150 |
-| ecommerceSalesAnalytics.csv | E-commerce sales analytics | 5,000 |
+| CustomerSatisfaction.csv | Statistical Analysis | 120 |
 
 ---
 
@@ -174,7 +174,6 @@ Exploratory Data Analysis now has three tabs: **Data Profile → Group Statistic
 - **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
 - **Rolling Averages:** moving mean over a complete window of calendar periods.
 - **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
-- **Cross Tabulation / Chi-square:** categorical contingency report with observed/expected counts, residuals, totals, and association testing.
 
 Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
 
@@ -185,7 +184,7 @@ Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `
 
 The numerical selector supports **None**, including datasets with no numerical columns. With None selected, group summaries, segment comparisons, contribution analysis, and time analyses use **Row count**, including rows with missing numerical values. Numerical measures retain the original statistics; Row count is also available alongside non-missing count.
 
-Choose **Cross Tabulation / Chi-square** and select at least two categorical dimensions, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
+In **EDA → Relationship**, select at least two categorical columns and choose **Categorical–categorical: cross-tabulation and chi-square**, then choose distinct row and column variables. Extra dimensions are not included as controls. This analysis always uses unweighted row counts, regardless of the numerical selection. Missing categories are excluded by default, with an option to include them explicitly.
 
 The cross-tab report shows three stacked lines per cell: observed count, expected count (2 decimals), and standardized/Pearson residual (4 decimals). Row totals, column totals, grand total, and a cell-content legend follow the reference report format; no heatmap or view selector is shown. Download observed/expected counts, differences, and residuals together as CSV. Expected counts use row total × column total / grand total.
 
@@ -204,8 +203,8 @@ Select variables with the existing checkboxes, then choose an available **Analys
 | Variables | Added methods |
 |---|---|
 | Numerical–numerical | Scatterplot with OLS line; Pearson correlation and p-value; Spearman correlation; simple regression coefficients, standard errors, 95% intervals, and in-sample R² |
-| Categorical–numerical | Per-group count/mean/median/SD/min/max, boxplot, classical one-way ANOVA |
-| Categorical–categorical | Stacked cross-tabulation report and Pearson chi-square using the same calculations as Group Statistics |
+| Categorical–numerical | Per-group count/mean/median/SD/min/max, boxplot, validated Welch or classical one-way ANOVA |
+| Categorical–categorical | Stacked cross-tabulation report and Pearson chi-square, available only in Relationship |
 | Time–numerical | Daily/weekly/monthly/quarterly/yearly mean or sum, aggregated time-series plot and descriptive linear trend per elapsed day |
 | Multiple variables | Numerical outcome with two or more numerical predictors; multivariable OLS coefficients, intervals, p-values, adjusted R², and observed-versus-fitted plot |
 
@@ -562,7 +561,7 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 | Predictive Analytics — Multi-class Classification (Multinomial LR vs RF) with AI | ✅ Complete |
 | Visit counter + like/dislike feedback with Supabase | ✅ Complete |
 | Sample datasets (heart disease, Boston housing, iris, e-commerce sales) | ✅ Complete |
-| Group Statistics, including categorical contingency tables and chi-square | ✅ Complete |
+| Group Statistics summaries; contingency tables and chi-square in Relationship | ✅ Complete |
 | Categorical mode and cardinality label | ✅ Complete |
 | Standard error, coefficient of variation, and 95% mean confidence interval | ✅ Complete |
 | Distribution fit summary and collapsed Fit details | ✅ Complete |
@@ -641,3 +640,16 @@ For these combinations without date/time columns, the following menus override t
 | Two categorical | Grouped bar chart, stacked-bar chart, count heatmap |
 
 Grouped bars use both categories (axis and color), with the numeric measure required when selected. Grouped boxes show the selected measure by category and subgroup. Numeric/category heatmaps require the selected numeric measure and display its mean by the two categories. Two-numeric line/area plots require a meaningful ordered X variable, as noted in the UI. Stacked bars retain the requested Sum/Count selector: Sum uses the selected measure, whereas Count intentionally shows category frequencies, including rows with missing numeric values. Other combinations retain their existing chart options.
+
+
+## Relationship validation update
+
+Cross-tabulation and chi-square are available only in **EDA → Relationship**. Group Statistics retains its six summary/comparison methods. The renderer is `utils/contingency_ui.py`; existing counts, percentages/residual report, sparse-table warning and CSV download are preserved.
+
+**Regression:** OLS equations, coefficient explanations, 95% mean-response bands for a single predictor, and an expandable Model validation panel. Checks include residual histogram, Q–Q plot, Omnibus and Jarque–Bera tests, residual/fitted plot with a smooth trend, Koenker Breusch–Pagan variance test, and Cook's distance/leverage screening. Durbin–Watson and the residual sequence plot require meaningful original row order. Missing/nonfinite values, rank-deficient predictors, small samples and perfect fits are handled explicitly. Perfect fits suppress inference. Diagnostics warn rather than certify assumptions; non-normality alone does not bias OLS under a correct conditional-mean model, and constant variance does not imply independence. Conventional intervals are not automatically replaced by robust intervals.
+
+**ANOVA:** choose a categorical group and numeric outcome. Group summaries, box plots, Shapiro–Wilk within each nonconstant group (3–5,000 observations), group Q–Q plots and median-centered Levene/Brown–Forsythe variance diagnostics are provided. Welch is the default; classical is explicitly selectable. At least two groups with two usable observations each are required. Welch needs positive variance in every group; classical needs positive pooled within-group variance. Missing pairs and lost groups are reported. Small groups, imbalance and outliers trigger warnings without automatic removal. Users must confirm independent observations before results appear; confirmation resets with the dataset or selected columns. Repeated/clustered measurements need a suitable alternative model. The result reports F, degrees of freedom and p-value; no automatic post-hoc tests are run.
+
+Install with the project's `requirements.txt`, including statsmodels. Run checks with `python -m unittest discover -s tests -p "test_*.py"`.
+
+References: [Ray Chen's regression validation article](https://medium.com/@chenchungwai/a-comprehensive-guide-to-regression-model-validation-with-visual-tools-and-statistical-tests-in-f86d4ff6efbb), [statsmodels ANOVA](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.anova_oneway.html), [SciPy Levene](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html), [SciPy Shapiro–Wilk](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.shapiro.html).

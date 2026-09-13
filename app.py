@@ -51,9 +51,10 @@ _SAMPLE_DATASETS = [
         "desc": "Multi-class classification — predict iris species (150 rows)",
     },
     {
-        "name": "ecommerceSalesAnalytics.csv",
-        "id":   "1fFyV8Q2PD0M69jHR7mhQD5hxU39KrxjV",
-        "desc": "E-commerce sales analytics (5,000 rows)",
+        "name": "CustomerSatisfaction.csv",
+        "id":   "1tv1KDUNDixgPrhI2w6ixti1EKZtJHg_N",
+        "desc": "Statistical Analysis (120 rows)",
+        "separator": "-",
     },
 ]
 
@@ -154,7 +155,7 @@ with st.expander("📂 Try with sample data", expanded=False):
     st.caption("Click a dataset below to load it instantly — no upload needed.")
     for _ds in _SAMPLE_DATASETS:
         if st.button(
-            f"**{_ds['name']}** — {_ds['desc']}", key=f"sample_{_ds['name']}"
+            f"**{_ds['name']}** {_ds.get('separator', '—')} {_ds['desc']}", key=f"sample_{_ds['name']}"
         ):
             with st.spinner(f"Loading {_ds['name']}…"):
                 try:

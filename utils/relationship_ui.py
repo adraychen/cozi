@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.relationship_stats import regression, group_anova
-from utils.group_statistics_ui import render_contingency
+from utils.anova_ui import render_anova
+from utils.regression_analysis import regression
+from utils.regression_validation_ui import render_validation
+from utils.contingency_ui import render_contingency
 
 
 def show_regression(result):
@@ -37,16 +39,7 @@ def render_relationship_analysis(df, numerical, categorical, dates):
         elif method.startswith('Categorical–numerical'):
             cat = st.selectbox('Grouping variable', categorical, key='rel_group')
             num = st.selectbox('Numerical outcome', numerical, key='rel_group_y')
-            # Show summaries even when the inferential test cannot run.
-            clean = df[[cat,num]].copy()
-            clean[num] = pd.to_numeric(clean[num], errors='coerce').replace([np.inf,-np.inf], np.nan)
-            clean = clean.dropna()
-            st.dataframe(clean.groupby(cat, observed=True)[num].agg(['count','mean','median','std','min','max']), use_container_width=True)
-            st.plotly_chart(px.box(clean, x=cat, y=num), use_container_width=True)
-            _, f,p,excluded = group_anova(df,cat,num)
-            st.write(f'One-way ANOVA: F = {f:.4g}; p-value = {p:.4g}. Excluded rows: {excluded:,}.')
-            st.write('Evidence that at least one group mean differs (α = 0.05).' if p<.05 else 'Insufficient evidence of different group means (α = 0.05).')
-            st.caption('Classical one-way ANOVA assumes independent observations, approximately normal within-group errors, and equal variances. It does not identify which pairs differ. Tests are exploratory and unadjusted for multiple comparisons.')
+            render_anova(df, cat, num)
         elif method.startswith('Time–numerical'):
             date = st.selectbox('Time variable', dates, key='rel_date')
             num = st.selectbox('Measure', numerical, key='rel_time_y')
@@ -87,6 +80,9 @@ def render_relationship_analysis(df, numerical, categorical, dates):
                 x = result['clean'][predictors[0]].to_numpy()
                 fig = px.scatter(x=x,y=result['actual'],labels={'x':predictors[0],'y':target})
                 order = np.argsort(x)
+                if not result['perfect_fit']:
+                    fig.add_scatter(x=x[order], y=result['mean_ci'][order, 0], mode='lines', line=dict(width=0), showlegend=False)
+                    fig.add_scatter(x=x[order], y=result['mean_ci'][order, 1], mode='lines', line=dict(width=0), fill='tonexty', name='95% CI for mean response')
                 fig.add_scatter(x=x[order],y=result['fitted'][order],mode='lines',name='OLS fit')
                 st.plotly_chart(fig,use_container_width=True)
                 from scipy.stats import pearsonr, spearmanr
@@ -94,5 +90,13 @@ def render_relationship_analysis(df, numerical, categorical, dates):
                 rho,_ = spearmanr(x,result['actual'])
                 st.write(f'Pearson r = {r:.4f} (p = {p:.4g}); Spearman ρ = {rho:.4f}.')
             show_regression(result)
+            terms = result['coefficients']
+            equation = f"{target} = {terms.iloc[0]['Coefficient']:.4g}"
+            for _, row in terms.iloc[1:].iterrows():
+                equation += f" {row['Coefficient']:+.4g} × {row['Term']}"
+            st.write(equation)
+            for _, row in terms.iloc[1:].iterrows():
+                st.write(f"A one-unit increase in {row['Term']} is associated with an estimated {row['Coefficient']:.4g}-unit change in {target}" + (', holding the other selected predictors constant.' if multiple else '.'))
+            render_validation(result)
     except (ValueError, TypeError, np.linalg.LinAlgError) as exc:
         st.info(str(exc))
