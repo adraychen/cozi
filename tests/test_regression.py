@@ -20,7 +20,7 @@ class RegressionTests(unittest.TestCase):
 
     def test_cleaning_preserves_original_row_positions(self):
         data = pd.DataFrame({'x': [1, 2, np.inf, 4, 'bad', 6], 'y': [3, 6, 8, 7, 9, 14]}, index=[4]*6)
-        r = regression(data, 'y', ['x'])
+        r = regression(data, 'y', ['x'], categorical=[])
         self.assertEqual(r['excluded'], 2)
         np.testing.assert_array_equal(r['source_rows'], [1, 2, 4, 6])
 
@@ -79,7 +79,7 @@ render_relationship_analysis(df, ['x', 'y', 'z'], [], [])
         app.checkbox(key='rel_reg_ordered').check().run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any(m.label == 'Durbin–Watson statistic' for m in app.metric))
-        app.selectbox(key='rel_method').select('Multiple variables: multivariable regression').run(timeout=30)
+        app.multiselect(key='rel_predictors').set_value(['y','z']).run(timeout=30)
         self.assertEqual(len(app.exception), 0)
 
     def test_perfect_fit_and_invalid_ui(self):
@@ -92,7 +92,7 @@ render_relationship_analysis(df, list(df.columns), [], [])
 ''').run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any('Perfect or near-perfect' in w.value for w in app.warning))
-        app.selectbox(key='rel_x').select('constant').run(timeout=30)
+        app.multiselect(key='rel_predictors').set_value(['constant']).run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any('constant' in w.value for w in app.info))
 

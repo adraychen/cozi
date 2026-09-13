@@ -83,6 +83,7 @@ st.session_state['file_id'] = dataset
 df = pd.DataFrame({'g': ['a']*5 + ['b']*5, 'v': [1.,2,4,3,6, 3,5,8,6,10]})
 render_relationship_analysis(df, ['v'], ['g'], [])
 ''').run(timeout=30)
+        app.selectbox(key='rel_method').select('Categorical–numerical: group summaries and ANOVA').run(timeout=30)
         self.assertFalse(app.exception)
         self.assertFalse(any('one-way ANOVA**' in m.value for m in app.markdown))
         app.checkbox(key='rel_anova_independent').check().run(timeout=30)

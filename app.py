@@ -729,7 +729,7 @@ with group_tab:
 with relationships_tab:
     # ── Multi-Column Analysis ─────────────────────────────────────────────────────
     st.markdown("#### Relationship")
-    st.caption("Select two or more columns using the checkboxes below. Available chart types will appear based on your selection.")
+    st.caption("Select a numerical target and one or more numerical or categorical predictors below, then choose Linear regression. Other analyses and charts depend on your selection.")
 
     # ── Grouped checkboxes by column type ────────────────────────────────────────
     selected_cols = []

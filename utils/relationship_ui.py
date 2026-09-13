@@ -19,16 +19,14 @@ def show_regression(result):
 
 def render_relationship_analysis(df, numerical, categorical, dates):
     methods = []
-    if len(numerical)>=2:
-        methods.append('Numerical–numerical: correlation and regression')
+    if numerical and len(numerical) + len(categorical) >= 2:
+        methods.append('Linear regression')
     if categorical and numerical:
         methods.append('Categorical–numerical: group summaries and ANOVA')
     if len(categorical)>=2:
         methods.append('Categorical–categorical: cross-tabulation and chi-square')
     if dates and numerical:
         methods.append('Time–numerical: trend analysis')
-    if len(numerical)>=3:
-        methods.append('Multiple variables: multivariable regression')
     if not methods:
         return
     st.markdown('##### Relationship analysis')
@@ -62,17 +60,21 @@ def render_relationship_analysis(df, numerical, categorical, dates):
             st.dataframe(chart,hide_index=True,use_container_width=True)
             st.caption(f'Excluded {len(df)-len(clean):,} invalid/missing pairs. Missing periods are omitted, not filled with zero; elapsed calendar time is used. Trend is descriptive, not a forecast or significance test: seasonality and autocorrelation are not modelled. Boundary periods may be incomplete.')
         else:
-            multiple = method.startswith('Multiple')
-            target = st.selectbox('Outcome (Y)', numerical, key='rel_target_'+str(multiple))
-            options = [c for c in numerical if c!=target]
-            if multiple:
-                predictors = st.multiselect('Predictors (X)', options, default=options[:2], key='rel_predictors')
-                if len(predictors)<2:
-                    st.info('Select at least two numerical predictors.')
-                    return
-            else:
-                predictors = [st.selectbox('Predictor (X)', options, key='rel_x')]
-            result = regression(df,target,predictors)
+            st.markdown('##### Linear regression')
+            target = st.selectbox('Target / dependent variable (Y)', numerical, key='rel_target_False')
+            options = [c for c in dict.fromkeys(numerical + categorical) if c != target]
+            predictors = st.multiselect('Predictors / independent variables (X)', options,
+                                        default=options[:1], key='rel_predictors')
+            st.caption('Choose one or more numeric or categorical predictors. The dependent variable must be numeric. Change column types in Column Overview if needed.')
+            if not predictors:
+                st.info('Select at least one independent variable.')
+                return
+            categorical_predictors = [c for c in predictors if c in categorical]
+            result = regression(df, target, predictors, categorical=categorical_predictors)
+            multiple = len(predictors) > 1 or bool(categorical_predictors)
+            if result['coding']:
+                st.dataframe(pd.DataFrame(result['coding']), hide_index=True, use_container_width=True)
+                st.caption('Each categorical predictor uses one reference level, shown above. Other levels are encoded as 0/1 indicators. Reference levels are chosen deterministically from observed complete rows. Category coefficients compare that level with its reference, holding other predictors constant.')
             if multiple:
                 chart = pd.DataFrame({'Observed': result['actual'], 'Fitted':result['fitted']})
                 st.plotly_chart(px.scatter(chart,x='Observed',y='Fitted'),use_container_width=True)
@@ -95,8 +97,12 @@ def render_relationship_analysis(df, numerical, categorical, dates):
             for _, row in terms.iloc[1:].iterrows():
                 equation += f" {row['Coefficient']:+.4g} × {row['Term']}"
             st.write(equation)
+            categorical_terms = {item['Term'] for item in result['coding']}
             for _, row in terms.iloc[1:].iterrows():
-                st.write(f"A one-unit increase in {row['Term']} is associated with an estimated {row['Coefficient']:.4g}-unit change in {target}" + (', holding the other selected predictors constant.' if multiple else '.'))
+                if row['Term'] in categorical_terms:
+                    st.write(f"{row['Term']}: estimated difference in {target} = {row['Coefficient']:.4g}, holding the other predictors constant.")
+                else:
+                    st.write(f"A one-unit increase in {row['Term']} is associated with an estimated {row['Coefficient']:.4g}-unit change in {target}, holding other predictors constant.")
             render_validation(result)
     except (ValueError, TypeError, np.linalg.LinAlgError) as exc:
         st.info(str(exc))
