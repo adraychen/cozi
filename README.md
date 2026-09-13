@@ -1,4 +1,4 @@
-# 📊 Data Analytics Assistant
+# 📊 AutoData Analytics
 
 A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel file — or load a sample dataset — and the assistant will inspect your data, run a quality audit, visualise every column, explore relationships, and run machine learning models, all explained in plain English.
 

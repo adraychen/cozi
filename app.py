@@ -92,7 +92,7 @@ def _show_feedback(section: str, key: str) -> None:
         _feedback_dialog(section, "dislike")
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(page_title="Data Analytics Assistant", page_icon="📊", layout="wide")
+st.set_page_config(page_title="AutoData Analytics", page_icon="📊", layout="wide")
 
 # ── App stats banner (above title) ───────────────────────────────────────────
 _b1, _b2, _b3 = st.columns(3)
@@ -106,11 +106,26 @@ except Exception:
     _b2.metric("👍 Likes",        "—")
     _b3.metric("👎 Dislikes",     "—")
 
-st.title("📊 Data Analytics Assistant")
+st.title("📊 AutoData Analytics")
 st.caption(
-    "Upload your data file to get started. The assistant will inspect it, "
-    "check its quality, explain the findings, and provide insights for you."
+    "Upload or input your data and automatically explore data quality, distributions, anomalies, "
+    "group differences, relationships, and visualizations. Designed for people who need to understand data quickly."
 )
+
+@st.dialog("Data and Privacy")
+def _show_data_privacy():
+    st.write(
+        "Uploaded files and input data are temporarily processed in server memory to perform the requested analysis. "
+        "When AI interpretation is used, dataset structure, column names, statistics, and analysis summaries may be "
+        "transmitted to Groq. The original uploaded file is not intentionally sent to the AI model."
+    )
+
+_privacy_label, _privacy_info, _privacy_space = st.columns([3, 1, 20])
+with _privacy_label:
+    st.markdown("Data and Privacy")
+with _privacy_info:
+    if st.button("ℹ️", key="data_privacy_info", help="Read Data and Privacy information"):
+        _show_data_privacy()
 
 # ── Visit tracking ────────────────────────────────────────────────────────────
 if not st.session_state.get("visit_recorded"):
