@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from scipy import stats
+from utils.regression_reporting import format_table
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 ARTICLE = 'https://medium.com/@chenchungwai/a-comprehensive-guide-to-regression-model-validation-with-visual-tools-and-statistical-tests-in-f86d4ff6efbb'
@@ -31,7 +32,7 @@ def render_validation(result):
         fig.add_hline(y=0, line_dash='dash')
         st.plotly_chart(fig, use_container_width=True)
         st.write('Curvature suggests a missing nonlinear relationship. A funnel shape suggests changing error variance. In multiple regression, also consider relationships with individual predictors.')
-        st.dataframe(diagnostic, hide_index=True, use_container_width=True)
+        st.dataframe(format_table(diagnostic), hide_index=True, use_container_width=True)
         st.caption('Breusch–Pagan uses the Koenker LM variant. Unequal variance can invalidate conventional standard errors: consider robust standard errors or a revised model before relying on the reported intervals and p-values. This test can be unreliable in small samples.')
         st.markdown('**Normality of residuals**')
         a, b = st.columns(2)

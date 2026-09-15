@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas.io.formats.style import Styler
 from typing import List
 
 
@@ -114,7 +115,7 @@ def colour_missing(val, col_name: str):
         return ""
 
 
-def style_quality_table(df: pd.DataFrame) -> pd.io.formats.style.Styler:
+def style_quality_table(df: pd.DataFrame) -> Styler:
     """Apply missing % colour coding to a quality DataFrame."""
     return df.style.map(
         lambda v: colour_missing(v, "Missing %"),

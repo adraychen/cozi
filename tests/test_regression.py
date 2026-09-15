@@ -94,7 +94,7 @@ render_relationship_analysis(df, list(df.columns), [], [])
         self.assertTrue(any('Perfect or near-perfect' in w.value for w in app.warning))
         app.multiselect(key='rel_predictors').set_value(['constant']).run(timeout=30)
         self.assertEqual(len(app.exception), 0)
-        self.assertTrue(any('constant' in w.value for w in app.info))
+        self.assertTrue(any('constant' in w.value for w in app.error))
 
 
 if __name__ == '__main__':

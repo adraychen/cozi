@@ -658,3 +658,13 @@ References: [Ray Chen's regression validation article](https://medium.com/@chenc
 ### Linear regression with numeric and categorical predictors
 
 In EDA → Relationship, select the columns you want to use and choose **Linear regression**. Choose a numeric **Target / dependent variable (Y)** and one or more **Predictors / independent variables (X)**, which can be numeric, categorical, or a mixture. One unified interface supports simple and multiple regression. Categorical predictors use reference-level indicator coding; the coding table reports the reference and comparison levels. Coefficients compare each level with its reference while holding other predictors constant. Missing selected values are excluded before encoding. Constant categories, redundant encoded predictors, and insufficient residual degrees of freedom are blocked; sparse categories warn. More than 100 observed levels in a predictor are blocked as a usability safeguard. Numeric category codes use the categorical classification from Column Overview. Multiple/categorical models display observed versus fitted values; one numeric predictor retains the fitted line and mean-response confidence band. The existing residual diagnostics apply to the encoded model.
+
+
+### Separate correlation analysis
+
+In EDA → Relationship, select two or more numeric columns and choose **Correlation**. Choose Pearson or Spearman. Two variables display their correlation, two-sided p-value and scatter plot; more than two display a correlation matrix heatmap and coefficient table, with usable pair counts. Missing/nonfinite values are omitted pairwise, with at least three usable observations and variation in both variables required. Undefined entries remain blank/NaN. Correlation results are no longer included under Linear regression.
+
+
+## Extended Linear Regression
+
+Linear regression now supports explicitly selected numeric/categorical interactions, centered quadratic/cubic terms, hierarchy-preserving backward elimination, detailed fit/coefficient analysis, VIF/tolerance, studentized residuals and influence plots, confidence and prediction bands, original-unit prediction with both intervals, and deterministic Regression Findings. Results are organized into eight areas and fitted models are cached per session. See [the regression guide](REGRESSION.md) for methods, model hierarchy, validation rules, files and tests. Correlation remains a separate Relationship analysis.
