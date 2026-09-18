@@ -30,8 +30,16 @@ def set_powers(options, selected):
     st.session_state['rel_polynomial_terms']=list(options) if selected else []
 
 
-def checkbox_group(title, options, state_key, group, default=(), formatter=str, powers=False):
+def set_selection(state_key, options, selected):
+    st.session_state[state_key]=list(options) if selected else []
+
+
+def checkbox_group(title, options, state_key, group, default=(), formatter=str, powers=False, bulk=False):
     st.markdown('**'+title+'**')
+    if bulk:
+        a,b=st.columns(2)
+        a.button('Select all',key='rel_'+group+'_all',on_click=set_selection,args=(state_key,options,True),disabled=not options)
+        b.button('Clear all',key='rel_'+group+'_clear',on_click=set_selection,args=(state_key,options,False),disabled=not options)
     chosen=[v for v in st.session_state.get(state_key,list(default)) if v in options]
     if powers:
         for c,d in list(chosen):
@@ -53,8 +61,8 @@ def checkbox_group(title, options, state_key, group, default=(), formatter=str, 
 
 
 def render_checkbox_specification(responses, numerical, categorical):
-    st.markdown('**Target / dependent variable (Y)**')
-    st.caption('Choose one target. Checking another variable switches the target.')
+    st.markdown('**Response / dependent variable (Y)**')
+    st.caption('Choose one response. Checking another variable switches the response.')
     target=st.session_state.get('rel_target_False')
     if target not in responses: target=responses[0]
     st.session_state['rel_target_False']=target
@@ -65,7 +73,7 @@ def render_checkbox_specification(responses, numerical, categorical):
             st.session_state[key]=c==target
             container.checkbox(str(c),key=key,on_change=choose_target,args=(c,responses))
     options=[c for c in dict.fromkeys(numerical+categorical) if c!=target]
-    predictors=checkbox_group('Predictors / independent variables (X)',options,'rel_predictors','predictor',default=options[:1])
+    predictors=checkbox_group('Predictors / independent variables (X)',options,'rel_predictors','predictor',default=options[:1],bulk=True)
     # Prune unavailable terms even when no predictors remain and the caller returns early.
     pairs=list(combinations(predictors,2))
     st.session_state['rel_interaction_terms']=[p for p in st.session_state.get('rel_interaction_terms',[]) if p in pairs]
@@ -76,7 +84,7 @@ def render_checkbox_specification(responses, numerical, categorical):
 
 def render_term_checkboxes(predictors, nums):
     pairs=list(combinations(predictors,2))
-    interactions=checkbox_group('Interaction terms',pairs,'rel_interaction_terms','interaction',formatter=lambda p:' × '.join(map(str,p)))
+    interactions=checkbox_group('Interaction terms',pairs,'rel_interaction_terms','interaction',formatter=lambda p:' × '.join(map(str,p)),bulk=True)
     terms=[(c,d) for c in nums for d in (2,3)]
     st.markdown('**Polynomial terms**')
     a,b=st.columns(2)

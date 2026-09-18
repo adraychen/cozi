@@ -59,7 +59,8 @@ def render_results(r,key):
                    ('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),
                    ('Excluded missing/nonfinite rows',str(r['excluded'])),
                    ('Model-building method','Backward elimination' if r['elimination'] else 'No elimination')]
-        st.text('\n'.join(f'{name}: {value}' for name,value in summary))
+        st.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        st.markdown('**Fitted regression equation**')
         st.write(equation(r))
         st.markdown('**Model performance**')
         a,b,c = st.columns(3)
