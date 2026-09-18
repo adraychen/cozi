@@ -86,9 +86,10 @@ render_regression(df,['y','x'],['g'])
 """).run(timeout=40)
         self.assertFalse(app.exception)
         self.assertFalse(any(s.label=='Retained interaction to plot' for s in app.selectbox))
-        app.multiselect(key='rel_predictors').set_value(['x','g']).run(timeout=40)
-        app.multiselect(key='reg_interactions').set_value([('x','g')]).run(timeout=40)
-        app.selectbox(key='reg_degree_x').select(3).run(timeout=40)
+        from utils.regression_controls import widget_key
+        app.checkbox(key=widget_key('predictor','g')).check().run(timeout=40)
+        app.checkbox(key=widget_key('interaction',('x','g'))).check().run(timeout=40)
+        app.checkbox(key=widget_key('power',('x',3))).check().run(timeout=40)
         self.assertFalse(app.exception)
         labels={s.label for s in app.selectbox}
         self.assertTrue({'Retained interaction to plot','Predictor with retained polynomial terms','Interacting predictor for separate curves'} <= labels)

@@ -1,3 +1,4 @@
+from utils.regression_controls import widget_key
 import unittest
 import numpy as np
 import pandas as pd
@@ -79,7 +80,7 @@ render_relationship_analysis(df, ['x', 'y', 'z'], [], [])
         app.checkbox(key='rel_reg_ordered').check().run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any(m.label == 'Durbin–Watson statistic' for m in app.metric))
-        app.multiselect(key='rel_predictors').set_value(['y','z']).run(timeout=30)
+        app.checkbox(key=widget_key('predictor','z')).check().run(timeout=30)
         self.assertEqual(len(app.exception), 0)
 
     def test_perfect_fit_and_invalid_ui(self):
@@ -92,7 +93,8 @@ render_relationship_analysis(df, list(df.columns), [], [])
 ''').run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any('Perfect or near-perfect' in w.value for w in app.warning))
-        app.multiselect(key='rel_predictors').set_value(['constant']).run(timeout=30)
+        app.checkbox(key=widget_key('predictor','y')).uncheck().run(timeout=30)
+        app.checkbox(key=widget_key('predictor','constant')).check().run(timeout=30)
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any('constant' in w.value for w in app.error))
 

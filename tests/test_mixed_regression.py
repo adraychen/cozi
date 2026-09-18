@@ -1,3 +1,4 @@
+from utils.regression_controls import widget_key
 import unittest
 import numpy as np
 import pandas as pd
@@ -44,13 +45,13 @@ render_relationship_analysis(df, ['y','x'], ['g'], [])
 ''').run(timeout=30)
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key='rel_method').value, 'Linear regression')
-        self.assertEqual(app.selectbox(key='rel_target_False').label, 'Target / dependent variable (Y)')
-        app.multiselect(key='rel_predictors').set_value(['x','g']).run(timeout=30)
+        self.assertTrue(app.checkbox(key=widget_key('target','y')).value)
+        app.checkbox(key=widget_key('predictor','g')).check().run(timeout=30)
         self.assertFalse(app.exception)
         self.assertTrue(any('0/1 indicators' in item.value for item in app.caption))
-        app.multiselect(key='rel_predictors').set_value(['g']).run(timeout=30)
+        app.checkbox(key=widget_key('predictor','x')).uncheck().run(timeout=30)
         self.assertFalse(app.exception)
-        app.multiselect(key='rel_predictors').set_value([]).run(timeout=30)
+        app.checkbox(key=widget_key('predictor','g')).uncheck().run(timeout=30)
         self.assertTrue(any('at least one independent' in item.value for item in app.info))
 
 

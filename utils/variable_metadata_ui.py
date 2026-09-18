@@ -1,23 +1,15 @@
 """Column Overview with a type-dependent classification editor."""
 import pandas as pd
 import streamlit as st
-from utils.loader import get_dataframe_info
+from utils.variable_overview_display import overview_html
 from utils.variable_metadata import ALLOWED, ensure_metadata, infer_variable_subtype, category_order, apply_user_override, effective_data
 
 
 def render_column_overview(raw, dataset_id):
     metadata=ensure_metadata(st.session_state,raw,dataset_id)
     st.caption('Variable Type defines whether a variable is treated analytically as numerical or categorical. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
-    info=get_dataframe_info(raw)
-    for position, field, key in [(2,'Variable Type','variable_type'),(3,'Variable Subtype','variable_subtype')]:
-        info.insert(position,field,[metadata[c][key] for c in raw])
-    info['Unique Values']=[raw[c].nunique(dropna=True) for c in raw]
-    info['Classification Source']=[metadata[c]['source'] for c in raw]
-    info['Category Order']=[' < '.join(map(str,metadata[c]['order'])) for c in raw]
-    def missing_style(v):
-        return 'background-color: #f8d7da; color: #842029' if v>=20 else 'background-color: #fff3cd; color: #664d03' if v>=5 else ''
-    st.dataframe(info.style.map(missing_style,subset=['Missing %']).format({'Missing %':'{:.2f}'}),hide_index=True,use_container_width=True)
-    st.caption('Missing values: red ≥20%; yellow 5–19%. Data Type describes storage; Variable Type controls analysis.')
+    st.html(overview_html(raw,metadata))
+    st.caption('Missing values: red ≥20%; yellow 5–19%. Data Type describes storage; Variable Type controls analysis. A = Automatic classification; M = Manual Override. Hover over a badge for its meaning; click ⓘ beside Unique Values for details.')
     with st.expander('Edit variable classification',expanded=True):
         col=st.selectbox('Column to edit',list(raw),key='vm_column')
         m=metadata[col]

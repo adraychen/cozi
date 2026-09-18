@@ -9,7 +9,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | Section | What it does |
 |---|---|
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
-| **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values, source, and ordinal order; classification editor |
+| **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values with expandable details and A/M classification badges; classification editor |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
 | **Exploratory Data Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
 | **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
@@ -73,9 +73,9 @@ One row per column showing:
 
 **Classification editor:** Select a column below the overview table, choose Variable Type and its dependent Variable Subtype, then Apply classification. Binary requires exactly two non-missing values. Numeric classifications require safe numeric conversion; Discrete requires integer-valued finite numbers. Date/Time retains the existing 80% parsing threshold for date-like values; numeric timestamps require prior explicit conversion. The original dataset is preserved.
 
-Integers default to Discrete, floats to Continuous. Categorical pairs default to Binary; other categories default to Nominal unless an explicit ordered dtype or recognized complete semantic sequence identifies Ordinal. Numeric 0/1 values remain numerical until overridden. Ordinal order is editable using category numbers from lowest to highest, preserving the original labels. Automatic and user-overridden classifications are distinguished in the table. Overrides persist in session metadata and reset when the dataset is replaced. Upload identity includes a content hash, preventing equal-name/equal-size replacements from retaining stale metadata.
+Integers default to Discrete, floats to Continuous. Categorical pairs default to Binary; other categories default to Nominal unless an explicit ordered dtype or recognized complete semantic sequence identifies Ordinal. Numeric 0/1 values remain numerical until overridden. Ordinal order is editable using category numbers from lowest to highest, preserving the original labels. Automatic and user-overridden classifications are shown as A/M badges beside both Variable Type and Variable Subtype. Hover text reads Automatic classification or Manual Override. Overrides persist in session metadata and reset when the dataset is replaced. Upload identity includes a content hash, preventing equal-name/equal-size replacements from retaining stale metadata.
 
-The overview also shows Unique Values, Classification Source and Category Order. Missing percentages retain their color coding. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md) for implementation and validation details.
+The overview shows Unique Values with an info control: Continuous and Discrete with more than 10 unique values show min/max; Discrete with at most 10 and Binary show all values; Nominal shows the first five observed unique values; Ordinal shows all values in configured order. Missing values are excluded. Classification Source and Category Order are no longer separate columns; ordinal order remains editable. Missing percentages retain their color coding. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md) for implementation and validation details.
 
 ---
 
@@ -677,4 +677,6 @@ Linear regression now supports explicitly selected numeric/categorical interacti
 
 Regression Visual Analysis shows interaction plots only for interactions retained in the final model, and polynomial plots only for retained powers. Numeric moderators use their complete-case 25th, 50th and 75th percentiles; categorical moderators use separate curves by level. Categorical-by-categorical plots use category axes with confidence bars. Other predictors are held at displayed complete-case means or reference categories. Predictions reuse the fitted design and show pointwise 95% mean-response confidence intervals. Numeric axes stay within observed ranges, including category-specific ranges where applicable. These conditional displays do not adjust for model-selection uncertainty. Polynomial predictors with retained interactions show curves by an interacting predictor. Single-predictor polynomial plots preserve observed points and both confidence and prediction bands.
 
-Regression Model Overview combines model performance with readable summary, predictor, term-status, centering and equation-component tables. The full equation and elimination history remain available in expandable sections.
+Regression Model Overview combines model performance with labeled summary lines and the full fitted equation. Selected terms shows Term, Type, Final status, Centering - Mean Subtracted and Centering - Transformation. Separate specified-predictor, centering and equation-component tables are removed. Elimination history remains expandable.
+
+Linear Regression uses checkbox controls for its target (exactly one), predictors, interaction pairs, and individual quadratic/cubic terms. Polynomial controls include Select all and Clear; cubic terms automatically include their squares. Unavailable dependent terms are cleared when predictors change.

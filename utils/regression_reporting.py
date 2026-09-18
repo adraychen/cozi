@@ -73,3 +73,32 @@ def findings(result, ordered=False, visual_concerns=()):
         lines.append('Backward elimination makes the reported inference exploratory and conditional on selection; selection uncertainty is not included.')
     lines.append('These associations do not imply causation.')
     return lines
+
+
+def selected_terms_table(result):
+    """Describe selected blocks using the fitted training centers, including removed terms."""
+    import pandas as pd
+    spec=result['spec']
+    rows=[]
+    for block in spec['blocks']:
+        variables=list(block[1:]) if block[0]=='interaction' else [block[1]]
+        numeric=[c for c in variables if c in spec['numeric']]
+        if not numeric:
+            means=transformation='Not applicable'
+        else:
+            means='; '.join(f'{c}: {spec["means"][c]:.6g}' for c in numeric) if spec['centered'] else 'Not applied'
+            factors=[]
+            for c in variables:
+                if c in spec['categorical']:
+                    factors.append(f'indicators({c})')
+                elif spec['centered']:
+                    factors.append(f'({c} − {spec["means"][c]:.6g})')
+                else:
+                    factors.append(str(c))
+            transformation=' × '.join(factors)
+            if block[0]=='power':
+                transformation+={2:'²',3:'³'}[block[2]]
+        rows.append({'Term':label(block),'Type':{'main':'Main effect','power':'Polynomial','interaction':'Interaction'}[block[0]],
+                     'Final status':'Retained' if block in result['active'] else 'Removed',
+                     'Centering - Mean Subtracted':means,'Centering - Transformation':transformation})
+    return pd.DataFrame(rows,columns=['Term','Type','Final status','Centering - Mean Subtracted','Centering - Transformation'])

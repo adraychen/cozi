@@ -92,8 +92,11 @@ st.subheader('Column Overview')
 render_column_overview(df,'two' if new else 'one')
 ''').run(timeout=30)
         self.assertFalse(app.exception)
-        table=app.dataframe[0].value
-        self.assertEqual(list(table.columns)[2:4],['Variable Type','Variable Subtype'])
+        from utils.variable_overview_display import overview_html
+        markup=overview_html(pd.DataFrame({'flag':[0,1,0], 'text':['A','B','C']}),app.session_state['variable_metadata'])
+        self.assertIn('<th scope="col">Variable Type</th><th scope="col">Variable Subtype</th>',markup)
+        self.assertNotIn('Classification Source',markup)
+        self.assertNotIn('Category Order',markup)
         typ=next(s for s in app.selectbox if s.label=='Variable Type')
         typ.select('Categorical').run()
         sub=next(s for s in app.selectbox if s.label=='Variable Subtype')

@@ -6,7 +6,8 @@ Select a numeric response and one or more numeric/categorical predictors. Choose
 
 - Continuous variables remain in original units for ordinary additive models. Categorical factors use one observed reference level and readable indicator labels, with the reference displayed separately.
 - Select two-way interactions explicitly: numeric × numeric, numeric × categorical, or categorical × categorical. The model includes all relevant indicator products for a selected factor interaction.
-- Choose degree 1, 2 or 3 for each continuous predictor. Higher powers retain all lower powers.
+- Target, predictors, interactions and polynomial powers use checkboxes. Exactly one numeric target is selected; checking a different target switches it and excludes it from predictors. Predictors can be numeric or categorical.
+- Select quadratic/cubic powers separately (A², A³, etc.), or use Select all polynomial terms / Clear polynomial terms. Selecting a cubic checks and locks its square until the cubic is unchecked. All selected predictors supply main effects; interactions preserve both main effects. Removing a predictor prunes its dependent selections.
 - When interactions or powers are selected, all selected continuous predictors are centered using complete-case training means. These values are displayed; Y is not standardized. Prediction applies the same centers and category levels.
 - Complete cases are determined once for the original specification, including all selected variables; the sample stays fixed during elimination. Exclusions include missing and infinite values. Original row positions and index labels are retained for observation diagnostics.
 
@@ -18,7 +19,7 @@ The history shows the removal p-value before removal and adjusted R² after refi
 
 ## Results
 
-1. **Model Overview:** readable tables for sample counts, selected predictors, selected terms with retained/removed status, centering and equation components. Includes model performance: R², adjusted R², residual standard error, RMSE, MAE, degrees of freedom and overall F-test. Full equation and elimination history are expandable.
+1. **Model Overview:** labeled summary lines for response, specified predictors, row counts and model-building method, followed by the full fitted equation. The Selected terms table includes term type, final status and term-specific centering means/transformations. Includes model performance: R², adjusted R², residual standard error, RMSE, MAE, degrees of freedom and overall F-test. Elimination history remains expandable.
 2. **Predictor Analysis:** coefficients, standard errors, t statistics, p-values, 95% intervals, and joint term tests. Standardized coefficients are supplied only for ordinary numeric main effects without retained interactions/powers. Other term types show N/A. CSV export is available.
 3. **Diagnostics:** residual/fitted plot with a smooth trend, histogram, normal Q–Q plot, Omnibus/Jarque–Bera, and the Koenker variant of Breusch–Pagan. Durbin–Watson is interpreted only after meaningful original observation order is confirmed. Analysts can flag visible patterns for inclusion in Findings; no visual pattern is asserted solely from an unreviewed plot.
 4. **Multicollinearity & Influence:** VIF/tolerance for readable encoded columns; primary correlation matrix for original selected numeric predictors only; internally studentized residuals, leverage and Cook’s distance with original row/index identifiers, plots, rankings, and export of all observations. No rows are automatically deleted.

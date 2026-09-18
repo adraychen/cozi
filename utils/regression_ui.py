@@ -1,16 +1,15 @@
 """Interactive specification and reporting for exploratory OLS regression."""
 import hashlib
-from itertools import combinations
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from utils.regression_analysis import regression, predict
-from utils.regression_design import label
-from utils.regression_reporting import format_table, findings, equation, p_text
+from utils.regression_reporting import format_table, findings, equation, p_text, selected_terms_table
 from utils.regression_plots import actual_fitted, fitted_curve, coefficient_plot, partial_plot
 from utils.regression_validation_ui import render_validation
 from utils.regression_effect_plots import render_effect_plots
+from utils.regression_controls import render_checkbox_specification, render_term_checkboxes
 
 
 def fit_cached(df, target, predictors, categorical, interactions, degrees, elimination, threshold):
@@ -31,25 +30,14 @@ def render_regression(df, numerical, categorical):
     responses = [c for c in numerical if pd.api.types.is_numeric_dtype(df[c]) and not pd.api.types.is_bool_dtype(df[c])]
     if not responses:
         st.info('Select a numeric dependent variable.'); return
-    if st.session_state.get('rel_target_False') not in responses:
-        st.session_state.pop('rel_target_False',None)
-    target = st.selectbox('Target / dependent variable (Y)',responses,key='rel_target_False')
-    options = [c for c in dict.fromkeys(numerical+categorical) if c != target]
-    if 'rel_predictors' in st.session_state:
-        st.session_state['rel_predictors'] = [c for c in st.session_state['rel_predictors'] if c in options]
-    defaults = {} if 'rel_predictors' in st.session_state else {'default':options[:1]}
-    predictors = st.multiselect('Predictors / independent variables (X)',options,key='rel_predictors',**defaults)
+    target, predictors = render_checkbox_specification(responses,numerical,categorical)
     st.caption('Use meaningful measures rather than numeric identifiers. Ordered ratings assume equally spaced scores. Categorical predictors use reference-level 0/1 indicators.')
     if not predictors:
         st.info('Select at least one independent variable.'); return
     cats = [c for c in predictors if c in categorical]
     nums = [c for c in predictors if c not in cats]
     with st.expander('Model terms and elimination'):
-        pairs = list(combinations(predictors,2))
-        if 'reg_interactions' in st.session_state:
-            st.session_state['reg_interactions'] = [p for p in st.session_state['reg_interactions'] if p in pairs]
-        interactions = st.multiselect('Interaction terms',pairs,format_func=lambda pair:' × '.join(map(str,pair)),key='reg_interactions')
-        degrees = {c:st.selectbox(f'Polynomial degree: {c}',[1,2,3],key=f'reg_degree_{c}') for c in nums}
+        interactions, degrees = render_term_checkboxes(predictors,nums)
         mode = st.selectbox('Model-building method',['No elimination','Backward Elimination — Hierarchy Preserved'],key='reg_elimination')
         threshold = st.number_input('Removal p-value threshold',min_value=.001,max_value=.99,value=.05,step=.01,key='reg_threshold',disabled=mode=='No elimination')
         st.caption('Interactions are explicit. Hierarchy retains main effects and lower polynomial powers. Categorical factors and interactions are tested jointly as whole terms. Continuous predictors are mean-centered when interactions or powers are selected; Y remains in original units.')
@@ -61,18 +49,18 @@ def render_regression(df, numerical, categorical):
 
 
 def render_results(r,key):
-    spec = r['spec']; model = r['model']
+    spec = r['spec']
     tabs = st.tabs(['Model Overview','Predictor Analysis','Diagnostics',
                     'Multicollinearity & Influence','Visual Analysis','Prediction','Regression Findings'])
     with tabs[0]:
         st.markdown('**Model summary**')
-        summary = [('Response / dependent variable',str(spec['target'])),
-                   ('Original rows',str(r['original_n'])),('Rows used',str(r['n'])),
-                   ('Rows excluded (missing / nonfinite)',str(r['excluded'])),
-                   ('Retained model terms',str(len(r['active']))),
-                   ('Coefficients (including intercept)',str(r['k'])),
-                   ('Model-building method','Backward Elimination — Hierarchy Preserved' if r['elimination'] else 'No elimination')]
-        st.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        summary = [('Response / Dependent Variable',str(spec['target'])),
+                   ('Predictors / Independent Variables',', '.join(map(str,spec['predictors']))),
+                   ('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),
+                   ('Excluded missing/nonfinite rows',str(r['excluded'])),
+                   ('Model-building method','Backward elimination' if r['elimination'] else 'No elimination')]
+        st.text('\n'.join(f'{name}: {value}' for name,value in summary))
+        st.write(equation(r))
         st.markdown('**Model performance**')
         a,b,c = st.columns(3)
         a.metric('Adjusted R²',f"{r['adjusted_r2']:.3f}",help='R² adjusted for fitted model size.')
@@ -83,29 +71,13 @@ def render_results(r,key):
                  ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
         st.table(pd.DataFrame(stats,columns=['Performance measure','Value']))
         st.caption('Fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
-        st.markdown('**Specified predictors**')
-        st.table(pd.DataFrame([{'Predictor':str(c),'Type':'Categorical' if c in spec['categorical'] else 'Numeric',
-                              'Selected polynomial degree':'Not applicable' if c in spec['categorical'] else str(spec['degrees'].get(c,1))}
-                             for c in spec['predictors']]))
-        st.markdown('**Selected terms and final status**')
-        st.table(pd.DataFrame([{'Term':label(block),'Type':{'main':'Main effect','power':'Polynomial','interaction':'Interaction'}[block[0]],
-                              'Final status':'Retained' if block in r['active'] else 'Removed'} for block in spec['blocks']]))
+        st.markdown('**Selected terms**')
+        st.table(selected_terms_table(r))
         if not r['active']:
             st.info('The final model contains the intercept only.')
         if r['coding']:
             st.markdown('**Categorical reference coding**')
             st.table(pd.DataFrame(r['coding']))
-        st.markdown('**Centering**')
-        if spec['centered']:
-            st.table(pd.DataFrame([{'Predictor':str(c),'Mean subtracted':f'{mean:.6g}',
-                                   'Transformation':f'{c} (centered) = {c} − {mean:.6g}'} for c,mean in spec['means'].items()]))
-        else:
-            st.caption('Centering was not applied.')
-        st.markdown('**Fitted equation components**')
-        st.caption(f"Predicted {spec['target']} = intercept + the sum of each coefficient × its model term below.")
-        st.table(pd.DataFrame({'Model term':r['names'],'Coefficient':[f'{v:.5g}' for v in model.params]}))
-        with st.expander('Full equation (plain text)'):
-            st.text(equation(r))
         st.caption('Category terms are indicators (1 for that level, otherwise 0). Main effects in interaction/polynomial models are conditional at centered zero and reference categories.')
         with st.expander('Elimination history'):
             if r['history'].empty:

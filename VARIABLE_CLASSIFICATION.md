@@ -1,6 +1,8 @@
 # Variable classification
 
-Column Overview retains storage dtype, total/missing counts and missing percentages, and shows Variable Type followed immediately by Variable Subtype. Unique values, classification source and ordinal order are also visible. The associated column editor uses dependent dropdowns and an Apply button because subtype choices differ by row; the summary grid is read-only.
+Column Overview retains storage dtype, total/missing counts and missing percentages, and shows Variable Type followed immediately by Variable Subtype. Unique values include an expandable info control. A/M badges beside both classification fields show Automatic classification / Manual Override on hover and keyboard focus. Classification source and category order remain metadata but are not separate table columns. The associated column editor uses dependent dropdowns and an Apply button because subtype choices differ by row; the summary table is read-only, with inline HTML details controls. All dataset labels and values are HTML-escaped.
+
+Continuous and Discrete (>10 unique) details show min/max; Discrete (≤10) and Binary show all values; Nominal shows the first five unique values in observed order; Ordinal shows all values in configured order. Missing values are excluded. Date/time details show the parsed date range.
 
 ## Metadata and validation
 
