@@ -18,14 +18,13 @@ The history shows the removal p-value before removal and adjusted R² after refi
 
 ## Results
 
-1. **Model Overview:** selected/retained terms, reference coding, sample counts, equation, centering, and elimination history.
-2. **Model Performance:** R², emphasized adjusted R², residual RMSE and MAE, residual standard error, sample size, term/parameter counts, degrees of freedom, overall F and its p-value. Residual standard error uses residual degrees of freedom; RMSE uses the number of observations.
-3. **Predictor Analysis:** coefficients, standard errors, t statistics, p-values, 95% intervals, and joint term tests. Standardized coefficients are supplied only for ordinary numeric main effects without retained interactions/powers. Other term types show N/A. CSV export is available.
-4. **Diagnostics:** residual/fitted plot with a smooth trend, histogram, normal Q–Q plot, Omnibus/Jarque–Bera, and the Koenker variant of Breusch–Pagan. Durbin–Watson is interpreted only after meaningful original observation order is confirmed. Analysts can flag visible patterns for inclusion in Findings; no visual pattern is asserted solely from an unreviewed plot.
-5. **Multicollinearity & Influence:** VIF/tolerance for readable encoded columns; primary correlation matrix for original selected numeric predictors only; internally studentized residuals, leverage and Cook’s distance with original row/index identifiers, plots, rankings, and export of all observations. No rows are automatically deleted.
-6. **Visual Analysis:** one-predictor line or polynomial curve over its observed range, with both 95% mean-response confidence and individual-response prediction bands. All models provide actual/fitted plots with a perfect-agreement line and coefficient intervals. Partial residual plots are provided for continuous main effects (including their retained powers) without interactions.
-7. **Prediction:** original variables only; known-category dropdowns and numeric entries constrained to observed marginal ranges. The exact fitting transformation generates predictions and both intervals. Unusual multivariable combinations can still be unsupported even within marginal ranges.
-8. **Regression Findings:** deterministic, interaction/polynomial-aware descriptions of fit, joint significance, ordinary associations, diagnostics, multicollinearity, influence and interval interpretation. Text export is available.
+1. **Model Overview:** readable tables for sample counts, selected predictors, selected terms with retained/removed status, centering and equation components. Includes model performance: R², adjusted R², residual standard error, RMSE, MAE, degrees of freedom and overall F-test. Full equation and elimination history are expandable.
+2. **Predictor Analysis:** coefficients, standard errors, t statistics, p-values, 95% intervals, and joint term tests. Standardized coefficients are supplied only for ordinary numeric main effects without retained interactions/powers. Other term types show N/A. CSV export is available.
+3. **Diagnostics:** residual/fitted plot with a smooth trend, histogram, normal Q–Q plot, Omnibus/Jarque–Bera, and the Koenker variant of Breusch–Pagan. Durbin–Watson is interpreted only after meaningful original observation order is confirmed. Analysts can flag visible patterns for inclusion in Findings; no visual pattern is asserted solely from an unreviewed plot.
+4. **Multicollinearity & Influence:** VIF/tolerance for readable encoded columns; primary correlation matrix for original selected numeric predictors only; internally studentized residuals, leverage and Cook’s distance with original row/index identifiers, plots, rankings, and export of all observations. No rows are automatically deleted.
+5. **Visual Analysis:** one-predictor line or polynomial curve over its observed range, with both 95% mean-response confidence and individual-response prediction bands. All models provide actual/fitted plots with a perfect-agreement line and coefficient intervals. Partial residual plots are provided for continuous main effects (including their retained powers) without interactions.
+6. **Prediction:** original variables only; known-category dropdowns and numeric entries constrained to observed marginal ranges. The exact fitting transformation generates predictions and both intervals. Unusual multivariable combinations can still be unsupported even within marginal ranges.
+7. **Regression Findings:** deterministic, interaction/polynomial-aware descriptions of fit, joint significance, ordinary associations, diagnostics, multicollinearity, influence and interval interpretation. Text export is available.
 
 P-values below 0.001 display as `< 0.001`. The reporting significance level is 0.05; the configurable removal threshold applies only to elimination. Neither diagnostics nor a non-significant test prove assumptions. Associations are not causal claims.
 
@@ -44,7 +43,7 @@ The fit is cached per session and keyed by selected data values, row identifiers
 - `utils/regression_statistics.py`: extracted and reused existing coefficient/residual diagnostics.
 - `utils/regression_reporting.py`: deterministic findings and formatting.
 - `utils/regression_plots.py`: model-based plots using the prediction pipeline.
-- `utils/regression_ui.py`: controls, session cache and eight result areas.
+- `utils/regression_ui.py`: controls, session cache and seven result areas.
 - `utils/regression_validation_ui.py`: preserved diagnostic interface with consistent p-value display.
 - `utils/relationship_ui.py`: routes Linear regression to the expanded feature; correlation and other methods remain separate.
 

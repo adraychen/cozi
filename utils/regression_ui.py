@@ -62,53 +62,71 @@ def render_regression(df, numerical, categorical):
 
 def render_results(r,key):
     spec = r['spec']; model = r['model']
-    tabs = st.tabs(['Model Overview','Model Performance','Predictor Analysis','Diagnostics',
+    tabs = st.tabs(['Model Overview','Predictor Analysis','Diagnostics',
                     'Multicollinearity & Influence','Visual Analysis','Prediction','Regression Findings'])
     with tabs[0]:
-        st.write(f"Response: {spec['target']}; specified predictors: {', '.join(map(str,spec['predictors']))}.")
-        st.write(f"Original rows: {r['original_n']:,}; used: {r['n']:,}; excluded missing/nonfinite rows: {r['excluded']:,}.")
-        st.write(f"Fitted terms: {len(r['active'])}; fitted coefficients including intercept: {r['k']}.")
-        st.write('Retained terms: ' + (', '.join(label(b) for b in r['active']) or 'Intercept only'))
-        st.write('Categorical predictors: ' + (', '.join(map(str,spec['categorical'])) or 'None'))
+        st.markdown('**Model summary**')
+        summary = [('Response / dependent variable',str(spec['target'])),
+                   ('Original rows',str(r['original_n'])),('Rows used',str(r['n'])),
+                   ('Rows excluded (missing / nonfinite)',str(r['excluded'])),
+                   ('Retained model terms',str(len(r['active']))),
+                   ('Coefficients (including intercept)',str(r['k'])),
+                   ('Model-building method','Backward Elimination — Hierarchy Preserved' if r['elimination'] else 'No elimination')]
+        st.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        st.markdown('**Model performance**')
+        a,b,c = st.columns(3)
+        a.metric('Adjusted R²',f"{r['adjusted_r2']:.3f}",help='R² adjusted for fitted model size.')
+        b.metric('R²',f"{r['r2']:.3f}")
+        c.metric('Residual standard error',f"{r['residual_se']:.4g}")
+        stats = [('RMSE',f"{r['rmse']:.4g}"),('MAE',f"{r['mae']:.4g}"),
+                 ('Model degrees of freedom',str(r['model_df'])),('Residual degrees of freedom',str(r['residual_df'])),
+                 ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
+        st.table(pd.DataFrame(stats,columns=['Performance measure','Value']))
+        st.caption('Fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
+        st.markdown('**Specified predictors**')
+        st.table(pd.DataFrame([{'Predictor':str(c),'Type':'Categorical' if c in spec['categorical'] else 'Numeric',
+                              'Selected polynomial degree':'Not applicable' if c in spec['categorical'] else str(spec['degrees'].get(c,1))}
+                             for c in spec['predictors']]))
+        st.markdown('**Selected terms and final status**')
+        st.table(pd.DataFrame([{'Term':label(block),'Type':{'main':'Main effect','power':'Polynomial','interaction':'Interaction'}[block[0]],
+                              'Final status':'Retained' if block in r['active'] else 'Removed'} for block in spec['blocks']]))
+        if not r['active']:
+            st.info('The final model contains the intercept only.')
         if r['coding']:
-            st.dataframe(pd.DataFrame(r['coding']),hide_index=True,use_container_width=True)
-        st.write('Selected interactions: ' + (', '.join(' × '.join(map(str,p)) for p in spec['interactions']) or 'None'))
-        st.write('Selected polynomial degrees: ' + (', '.join(f'{c}: {d}' for c,d in spec['degrees'].items() if d>1) or 'None'))
+            st.markdown('**Categorical reference coding**')
+            st.table(pd.DataFrame(r['coding']))
+        st.markdown('**Centering**')
         if spec['centered']:
-            st.write('Centering applied: ' + '; '.join(f'{c} (centered) = {c} − {mean:.6g}' for c,mean in spec['means'].items()))
+            st.table(pd.DataFrame([{'Predictor':str(c),'Mean subtracted':f'{mean:.6g}',
+                                   'Transformation':f'{c} (centered) = {c} − {mean:.6g}'} for c,mean in spec['means'].items()]))
         else:
-            st.write('Centering: not applied.')
-        st.write(equation(r))
+            st.caption('Centering was not applied.')
+        st.markdown('**Fitted equation components**')
+        st.caption(f"Predicted {spec['target']} = intercept + the sum of each coefficient × its model term below.")
+        st.table(pd.DataFrame({'Model term':r['names'],'Coefficient':[f'{v:.5g}' for v in model.params]}))
+        with st.expander('Full equation (plain text)'):
+            st.text(equation(r))
         st.caption('Category terms are indicators (1 for that level, otherwise 0). Main effects in interaction/polynomial models are conditional at centered zero and reference categories.')
-        st.write('Elimination: ' + ('Backward Elimination — Hierarchy Preserved' if r['elimination'] else 'No elimination'))
-        if r['history'].empty:
-            st.write('No terms were removed.')
-        else:
-            st.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
-            st.caption('Removal p-values are joint partial F-tests for the removed blocks before removal. Adjusted R² is for the refitted model after each removal. The complete-case sample stays fixed throughout.')
+        with st.expander('Elimination history'):
+            if r['history'].empty:
+                st.write('No terms were removed.')
+            else:
+                st.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
+                st.caption('Removal p-values are joint partial F-tests before removal. Adjusted R² describes the refitted model after each removal. The complete-case sample stays fixed throughout.')
         for note in r['warnings']:
             st.warning(note)
     with tabs[1]:
-        a,b,c = st.columns(3)
-        a.metric('Adjusted R²',f"{r['adjusted_r2']:.3f}",help='R² adjusted for fitted model size; emphasized for multiple regression.')
-        b.metric('R²',f"{r['r2']:.3f}")
-        c.metric('Residual standard error',f"{r['residual_se']:.4g}")
-        stats = {'RMSE':r['rmse'],'MAE':r['mae'],'Observations':r['n'],'Model terms':len(r['active']),
-                 'Model degrees of freedom':r['model_df'],'Residual degrees of freedom':r['residual_df'],'F-statistic':r['f_stat'],'p-value':r['f_p']}
-        st.dataframe(format_table(pd.DataFrame([stats])),hide_index=True,use_container_width=True)
-        st.caption('Descriptive fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
-    with tabs[2]:
         st.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
         st.caption('Standardized coefficients = coefficient × SD(X)/SD(Y), only for ordinary numeric main effects without retained interactions or powers. N/A for other terms. Interactions describe changing associations; powers jointly describe a curve, not constant slopes.')
         if not r['term_tests'].empty:
             st.dataframe(format_table(r['term_tests'].drop(columns='block')),hide_index=True,use_container_width=True)
             st.caption('Joint term tests keep categorical levels together. Hierarchy-protected terms cannot be removed while their dependent higher-order terms remain.')
         st.download_button('Download regression coefficients (CSV)',r['coefficients'].to_csv(index=False),file_name='regression_coefficients.csv',key='reg_coeff_download')
-    with tabs[3]:
+    with tabs[2]:
         render_validation(r)
         visual_concerns = st.multiselect('Patterns observed when reviewing the plots',
             ['Systematic residual pattern','Funnel-shaped residual spread','Large Q–Q departures'],key='reg_visual_'+key[:12])
-    with tabs[4]:
+    with tabs[3]:
         st.markdown('**Multicollinearity**')
         if r['vif'].empty:
             st.info('No predictor terms remain for VIF analysis.')
@@ -139,7 +157,7 @@ def render_results(r,key):
                 fig.add_hline(y=-2,line_dash='dash'); fig.add_hline(y=3,line_dash='dot'); fig.add_hline(y=-3,line_dash='dot')
             st.plotly_chart(fig,use_container_width=True)
         st.download_button('Download all observation diagnostics (CSV)',inf.to_csv(index=False),file_name='regression_influence.csv',key='reg_inf_download')
-    with tabs[5]:
+    with tabs[4]:
         render_effect_plots(r,key)
         if len(spec['predictors'])==1 and not spec['categorical'] and not any(b[0]=='power' for b in r['active']):
             st.plotly_chart(fitted_curve(r),use_container_width=True)
@@ -155,9 +173,9 @@ def render_results(r,key):
             st.caption('Residual plus this predictor’s fitted component, including retained powers. This checks form after accounting for the other fitted components.')
         else:
             st.info('A partial residual plot is not shown when no continuous main effect without interactions remains; its interpretation would be ambiguous.')
-    with tabs[6]:
+    with tabs[5]:
         prediction_ui(r,key)
-    with tabs[7]:
+    with tabs[6]:
         lines = findings(r,st.session_state.get('rel_reg_ordered',False),visual_concerns)
         for text in lines:
             st.write(text)

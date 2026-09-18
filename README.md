@@ -666,9 +666,11 @@ In EDA → Relationship, select two or more numeric columns and choose **Correla
 
 ## Extended Linear Regression
 
-Linear regression now supports explicitly selected numeric/categorical interactions, centered quadratic/cubic terms, hierarchy-preserving backward elimination, detailed fit/coefficient analysis, VIF/tolerance, studentized residuals and influence plots, confidence and prediction bands, original-unit prediction with both intervals, and deterministic Regression Findings. Results are organized into eight areas and fitted models are cached per session. See [the regression guide](REGRESSION.md) for methods, model hierarchy, validation rules, files and tests. Correlation remains a separate Relationship analysis.
+Linear regression now supports explicitly selected numeric/categorical interactions, centered quadratic/cubic terms, hierarchy-preserving backward elimination, detailed fit/coefficient analysis, VIF/tolerance, studentized residuals and influence plots, confidence and prediction bands, original-unit prediction with both intervals, and deterministic Regression Findings. Results are organized into seven areas and fitted models are cached per session. See [the regression guide](REGRESSION.md) for methods, model hierarchy, validation rules, files and tests. Correlation remains a separate Relationship analysis.
 
 
 ### Retained interaction and polynomial plots
 
 Regression Visual Analysis shows interaction plots only for interactions retained in the final model, and polynomial plots only for retained powers. Numeric moderators use their complete-case 25th, 50th and 75th percentiles; categorical moderators use separate curves by level. Categorical-by-categorical plots use category axes with confidence bars. Other predictors are held at displayed complete-case means or reference categories. Predictions reuse the fitted design and show pointwise 95% mean-response confidence intervals. Numeric axes stay within observed ranges, including category-specific ranges where applicable. These conditional displays do not adjust for model-selection uncertainty. Polynomial predictors with retained interactions show curves by an interacting predictor. Single-predictor polynomial plots preserve observed points and both confidence and prediction bands.
+
+Regression Model Overview combines model performance with readable summary, predictor, term-status, centering and equation-component tables. The full equation and elimination history remain available in expandable sections.
