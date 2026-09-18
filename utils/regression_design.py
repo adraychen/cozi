@@ -40,7 +40,10 @@ def specification(df, target, predictors, categorical=None, interactions=(), deg
         if clean[c].nunique() < 2:
             raise ValueError(f'Predictor {c} is constant or has only one observed category after cleaning.')
         if c in categorical:
-            levels[c] = sorted(pd.unique(clean[c]), key=lambda v: (type(v).__name__, str(v)))
+            if isinstance(clean[c].dtype, pd.CategoricalDtype) and clean[c].cat.ordered:
+                levels[c] = [v for v in clean[c].cat.categories if v in set(clean[c].dropna())]
+            else:
+                levels[c] = sorted(pd.unique(clean[c]), key=lambda v: (type(v).__name__, str(v)))
             if len(levels[c]) > 100:
                 raise ValueError(f'{c} has over 100 observed levels; remove identifiers or reduce categories.')
     center = bool(pairs or any(d > 1 for d in degrees.values()))

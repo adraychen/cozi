@@ -85,7 +85,7 @@ def make_bar_chart(series: pd.Series, max_bars: int = 10, height: int = 300) -> 
     Vertical bar chart of value counts, sorted descending.
     Returns (figure, was_truncated, total_unique).
     """
-    counts = series.value_counts()
+    counts = series.value_counts(sort=not (isinstance(series.dtype, pd.CategoricalDtype) and series.cat.ordered))
     total_unique = len(counts)
     truncated = total_unique > max_bars
     counts = counts.head(max_bars)

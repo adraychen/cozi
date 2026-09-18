@@ -9,7 +9,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | Section | What it does |
 |---|---|
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
-| **Column Overview** | Per-column table: data type, column type, total values, missing values, missing % (colour-coded) |
+| **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values, source, and ordinal order; classification editor |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
 | **Exploratory Data Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
 | **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
@@ -63,18 +63,23 @@ One row per column showing:
 |---|---|
 | Column Name | Original column name |
 | Data Type | Plain-language dtype: Whole Number, Decimal Number, Text, True/False, Date/Time |
-| Column Type | Classified as Numerical, Categorical, or Date/Time |
+| Variable Type | Effective Numerical, Categorical, or Date/Time classification |
+| Variable Subtype | Discrete / Continuous; Binary / Nominal / Ordinal; Date / Time |
 | Total Values | Total row count |
 | Missing Values | Count of missing entries |
 | Missing % | Percentage missing, formatted to 2 decimal places |
 
 **Colour coding:** Red = 20%+ missing. Yellow = 5–19% missing.
 
-**Date/Time override:** A multiselect below the table lets users reclassify any column as Date/Time. Columns where fewer than 80% of values parse as valid dates are rejected with a warning message.
+**Classification editor:** Select a column below the overview table, choose Variable Type and its dependent Variable Subtype, then Apply classification. Binary requires exactly two non-missing values. Numeric classifications require safe numeric conversion; Discrete requires integer-valued finite numbers. Date/Time retains the existing 80% parsing threshold for date-like values; numeric timestamps require prior explicit conversion. The original dataset is preserved.
+
+Integers default to Discrete, floats to Continuous. Categorical pairs default to Binary; other categories default to Nominal unless an explicit ordered dtype or recognized complete semantic sequence identifies Ordinal. Numeric 0/1 values remain numerical until overridden. Ordinal order is editable using category numbers from lowest to highest, preserving the original labels. Automatic and user-overridden classifications are distinguished in the table. Overrides persist in session metadata and reset when the dataset is replaced. Upload identity includes a content hash, preventing equal-name/equal-size replacements from retaining stale metadata.
+
+The overview also shows Unique Values, Classification Source and Category Order. Missing percentages retain their color coding. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md) for implementation and validation details.
 
 ---
 
-## Column Type Detection
+## Variable Type Detection
 
 | Type | Detection logic |
 |---|---|
@@ -92,15 +97,15 @@ Three tabbed panels, each rendered as bordered cards (two per row):
 
 ### Numerical Columns
 
-**Continuous** (15 or more unique values):
+**Continuous** (effective Variable Subtype):
 - Left: histogram stacked above a boxplot
 - Right: Missing Values, Missing %, Unique Values, Unique %, Minimum, Maximum, Average (all to 2 dp)
 
-**Discrete** (fewer than 15 unique values):
+**Discrete** (effective Variable Subtype):
 - Left: vertical bar chart sorted descending, capped at 10 bars
 - Right: same stats as continuous
 
-> The threshold of 15 unique values is defined as `DISCRETE_THRESHOLD = 15` in `utils/charts.py` used for chart selection and target type detection in Predictive Analytics. The separate theoretical distribution fitter uses integer-valued observations for automatic discrete detection, with a user override.
+> Charts use the effective Variable Subtype. The theoretical distribution fitter’s Auto option also uses this subtype; its explicit family selector remains available.
 
 ### Categorical Columns
 - Left: vertical bar chart, top 10 by frequency, sorted descending
@@ -156,7 +161,7 @@ Below the numeric distribution chart, only these three results are shown by defa
 - **Goodness of fit**
 - **Conclusion**
 
-The collapsed **Fit details** expander contains the type selector and detected type, optional known binomial trials, SSE, AIC, KS statistic, candidate comparison table, bootstrap p-values, sampling information, and assumptions. Lowest AIC identifies the best candidate among tested families; it does not establish adequate fit. Automatic type detection uses integer-valued observations, independently of the chart's unique-value threshold; users can override rounded continuous measurements. Integers/ordinal values do not establish a count process.
+The collapsed **Fit details** expander contains the type selector and detected type, optional known binomial trials, SSE, AIC, KS statistic, candidate comparison table, bootstrap p-values, sampling information, and assumptions. Lowest AIC identifies the best candidate among tested families; it does not establish adequate fit. Auto uses Variable Subtype from Column Overview; direct calls without metadata retain the integer-valued fallback. Users can explicitly select the family for rounded continuous measurements. Integers/ordinal values do not establish a count process.
 
 Continuous candidates: Normal, Uniform, and strictly positive Lognormal/Exponential (location fixed at zero). Discrete candidates: Poisson and zero-based geometric, plus binomial only when the user supplies a known trial count. Unsupported discrete support and insufficient/constant data get explanatory messages.
 
@@ -229,7 +234,7 @@ Select columns using checkboxes grouped by type. Available chart types appear au
 ### Flow
 
 1. **Select Target Column** — the column to predict
-2. **Predictor Columns** — checkboxes grouped by column type; **✅ Select All** and **☐ Deselect All** buttons for quick selection; columns suspected of being identifiers are flagged with a warning
+2. **Predictor Columns** — checkboxes grouped by variable type; **✅ Select All** and **☐ Deselect All** buttons for quick selection; columns suspected of being identifiers are flagged with a warning
 3. **Model** — the app detects the problem type, explains the model choice, and shows a hyperparameter configuration table with an estimated training time
 4. **▶ Run** — trains models, displays results, and generates an AI interpretation
 
@@ -237,12 +242,11 @@ Select columns using checkboxes grouped by type. Available chart types appear au
 
 | Condition | Type | Models run |
 |---|---|---|
-| Exactly 2 unique values (any dtype including 0/1) | Binary | Logistic Regression vs RF Classifier |
-| Numerical, 3–14 unique values | Discrete (multi-class) | Multinomial LR vs RF Classifier |
-| Numerical, 15 or more unique values | Continuous (regression) | Lasso vs RF Regressor |
-| Categorical, 3 or more unique values | Multi-class | Multinomial LR vs RF Classifier |
+| Categorical → Binary | Binary | Logistic Regression vs RF Classifier |
+| Numerical → Discrete or Continuous | Numerical regression | Lasso vs RF Regressor |
+| Categorical → Nominal or Ordinal | Classification | Multinomial LR vs RF Classifier |
 
-> Numerical columns with exactly 2 unique values (e.g. 0/1) are treated as binary classification, not regression. The binary check runs before the numerical type check.
+> For binary classification of numeric 0/1 values, set Categorical → Binary. Two-label targets are encoded internally for logistic F1/ROC scoring; results preserve the original class labels. Ordinal predictors currently use categorical encoding, not an ordinal-specific regression model.
 
 ### Regression Comparison (Lasso vs Random Forest)
 
@@ -369,7 +373,7 @@ All charts use a consistent visual style: blue primary colour (`#4C72B0`), white
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `DISCRETE_THRESHOLD` | `15` | Columns with fewer unique values are treated as discrete (bar chart). 15 or more treated as continuous (histogram + boxplot). Also used by target type detection. |
+| `DISCRETE_THRESHOLD` | `15` | Legacy fallback for callers without classification metadata; app routing uses effective Variable Subtype. |
 | `CHART_COLOR` | `#4C72B0` | Primary blue used for all single-series charts |
 | `LINE_COLORS` | 8-colour palette | Cycle of colours for multi-series charts |
 
@@ -539,7 +543,7 @@ Uses **OpenAI GPT-OSS 120B** (`openai/gpt-oss-120b`) via Groq through LangChain 
 
 | Function | When it runs | Output |
 |---|---|---|
-| `interpret_dataset_overview` | After data quality summary loads | 4–5 sentences on dataset type, missing values, and column types |
+| `interpret_dataset_overview` | After data quality summary loads | 4–5 sentences on dataset type, missing values, and variable types |
 | `interpret_single_column` | On Data Profile deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
 | `interpret_predictive_results` | After model training completes | 4–5 sentences on winning model, key features, SHAP impact, overfitting, and recommendation |
 

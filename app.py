@@ -4,8 +4,7 @@ import streamlit as st
 
 from utils.database import record_visit, get_stats, submit_feedback
 
-from utils.loader import load_dataset, get_dataframe_info
-from utils.detector import detect_data_types, convert_to_datetime
+from utils.loader import load_dataset
 from utils.charts import (
     make_histogram_boxplot, make_bar_chart, make_violin,
     make_time_series, make_line_chart, make_scatter,
@@ -14,7 +13,6 @@ from utils.charts import (
     make_confusion_matrix, make_roc_curve,
     make_feature_importance_chart, make_learning_curve_chart,
     make_coefficient_chart,
-    DISCRETE_THRESHOLD,
 )
 from utils.exploration import (
     numerical_stats, detect_outliers,
@@ -168,13 +166,13 @@ with st.expander("📂 Try with sample data", expanded=False):
                     _sample_fid = f"sample__{_ds['name']}"
                     st.session_state["df"]      = _sample_df
                     st.session_state["file_id"] = _sample_fid
-                    for _k in ("col_types", "ai_summary", "datetime_overrides",
+                    for _k in ("variable_metadata", "variable_dataset_id", "col_types", "ai_summary", "datetime_overrides",
                                "override_warnings", "pa_results", "pa_cache_key",
                                "pa_train_error"):
                         st.session_state.pop(_k, None)
                     for _k in list(st.session_state.keys()):
                         if any(_k.startswith(_p) for _p in
-                               ("col_ai_", "heatmap_ai_", "pa_pred_", "mc_")):
+                               ("vm_", "va_", "rel_", "dist_", "gs_", "col_ai_", "heatmap_ai_", "pa_pred_", "mc_")):
                             st.session_state.pop(_k, None)
                     st.session_state["upload_epoch"] = st.session_state.get("upload_epoch", 0) + 1
                     st.rerun()
@@ -187,18 +185,19 @@ if uploaded_file is None and "df" not in st.session_state:
 
 try:
     if uploaded_file is not None:
-        _file_id = f"{uploaded_file.name}_{uploaded_file.size}"
+        import hashlib
+        _file_id = uploaded_file.name + "_" + hashlib.sha256(uploaded_file.getvalue()).hexdigest()
         if st.session_state.get("file_id") != _file_id:
             df = load_dataset(uploaded_file)
             st.session_state["df"]      = df
             st.session_state["file_id"] = _file_id
-            for _k in ("col_types", "ai_summary", "datetime_overrides",
+            for _k in ("variable_metadata", "variable_dataset_id", "col_types", "ai_summary", "datetime_overrides",
                        "override_warnings", "pa_results", "pa_cache_key",
                        "pa_train_error"):
                 st.session_state.pop(_k, None)
             for _k in list(st.session_state.keys()):
                 if any(_k.startswith(_p) for _p in
-                       ("col_ai_", "heatmap_ai_", "pa_pred_", "mc_")):
+                       ("vm_", "va_", "rel_", "dist_", "gs_", "col_ai_", "heatmap_ai_", "pa_pred_", "mc_")):
                     st.session_state.pop(_k, None)
         df = st.session_state["df"]
     else:
@@ -235,80 +234,12 @@ st.divider()
 
 # ── Column Overview ───────────────────────────────────────────────────────────
 st.subheader("Column Overview")
-st.caption(
-    "Each column's data type, category, total values, and missing values. "
-    "Red = 20%+ missing. Yellow = 5–19% missing."
-)
+from utils.variable_metadata_ui import render_column_overview
 
-stored_overrides = st.session_state.get("datetime_overrides", [])
-if stored_overrides:
-    df = convert_to_datetime(df, stored_overrides)
-    st.session_state["df"] = df
-
-col_types = detect_data_types(df)
-st.session_state["col_types"] = col_types
-
-info_df = get_dataframe_info(df)
-type_label_map = {"numerical": "Numerical", "categorical": "Categorical", "datetime": "Date / Time"}
-col_to_type = {c: type_label_map[k] for k, cols in col_types.items() for c in cols}
-dt_index = info_df.columns.tolist().index("Data Type")
-info_df.insert(dt_index + 1, "Column Type", info_df["Column Name"].map(col_to_type))
-
-
-def highlight_missing_pct(val):
-    try:
-        v = float(val)
-        if v >= 20:
-            return "background-color: #f8d7da; color: #842029"
-        elif v >= 5:
-            return "background-color: #fff3cd; color: #664d03"
-        return ""
-    except (ValueError, TypeError):
-        return ""
-
-
-st.dataframe(
-    info_df.style
-        .map(highlight_missing_pct, subset=["Missing %"])
-        .format({"Missing %": "{:.2f}"}),
-    use_container_width=True,
-    hide_index=True,
-)
-
-if st.session_state.get("override_warnings"):
-    for w in st.session_state["override_warnings"]:
-        st.warning(w)
-    st.session_state["override_warnings"] = []
-
-non_datetime_cols = col_types["numerical"] + col_types["categorical"]
-if non_datetime_cols:
-    new_overrides = st.multiselect(
-        "Mark additional columns as Date / Time (optional)",
-        options=non_datetime_cols,
-        default=[c for c in stored_overrides if c in non_datetime_cols],
-        help="Select any column that contains dates but was not detected automatically.",
-    )
-    if set(new_overrides) != set(stored_overrides):
-        valid, warnings = [], []
-        for col in new_overrides:
-            non_null = df[col].dropna()
-            if len(non_null) == 0:
-                warnings.append(f"'{col}' has no values to check — it was not converted.")
-                continue
-            converted = pd.to_datetime(non_null, errors="coerce")
-            ratio = converted.notna().sum() / len(non_null)
-            if ratio >= 0.8:
-                valid.append(col)
-            else:
-                warnings.append(
-                    f"'{col}' was not converted — only {ratio * 100:.0f}% of its values "
-                    f"look like dates. Please check the column and try again."
-                )
-        st.session_state["datetime_overrides"] = valid
-        st.session_state["override_warnings"] = warnings
-        if valid:
-            st.session_state.pop("ai_summary", None)
-        st.rerun()
+df, col_types = render_column_overview(df, st.session_state.get("file_id"))
+variable_metadata = st.session_state["variable_metadata"]
+st.session_state["col_types"] = col_types  # Compatibility for existing analysis modules.
+col_to_type = {c: m["variable_type"] for c, m in variable_metadata.items()}
 
 st.divider()
 
@@ -332,7 +263,7 @@ def render_numerical_panel(col_name: str) -> None:
     missing = int(series.isna().sum())
     missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
     unique = int(series.nunique())
-    is_discrete = unique < DISCRETE_THRESHOLD
+    is_discrete = variable_metadata[col_name]["variable_subtype"] == "Discrete"
     has_data = not series.isna().all()
 
     mn  = f"{series.min():.2f}"  if has_data else "—"
@@ -535,7 +466,7 @@ with profile_tab:
         if col_type == "Numerical":
             series = df[selected_col]
             unique = int(series.nunique())
-            is_discrete = unique < DISCRETE_THRESHOLD
+            is_discrete = variable_metadata[selected_col]["variable_subtype"] == "Discrete"
 
             chart_l, chart_r = st.columns([3, 2])
             with chart_l:
@@ -548,7 +479,7 @@ with profile_tab:
                 else:
                     st.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
                 from utils.distribution_fit_ui import render_distribution_fit
-                render_distribution_fit(series, selected_col)
+                render_distribution_fit(series, selected_col, variable_metadata[selected_col]["variable_subtype"])
             with chart_r:
                 st.markdown("**Violin Plot**")
                 st.plotly_chart(make_violin(series, height=360), use_container_width=True)
@@ -623,7 +554,7 @@ with profile_tab:
             fig, truncated, total_unique = make_bar_chart(series, max_bars=max_bars, height=400)
             st.plotly_chart(fig, use_container_width=True)
             if truncated:
-                st.caption(f"Showing top {max_bars} of {total_unique} unique values, sorted by frequency.")
+                st.caption(f"Showing {max_bars} of {total_unique} categories; ordinal variables follow their configured order, others follow frequency.")
 
             st.markdown("**Frequency Table**")
             st.caption("Rows highlighted in yellow appear in less than 1% of records.")
@@ -730,7 +661,7 @@ with relationships_tab:
     st.markdown("#### Relationship")
     st.caption("Select a numerical target and one or more numerical or categorical predictors below, then choose Linear regression. Other analyses and charts depend on your selection.")
 
-    # ── Grouped checkboxes by column type ────────────────────────────────────────
+    # ── Grouped checkboxes by variable type ────────────────────────────────────────
     selected_cols = []
     checkbox_groups = [
         ("Numerical",   col_types["numerical"]),
@@ -917,7 +848,7 @@ if pa_predictors:
 if pa_predictors:
     st.markdown("#### Model")
 
-    pa_target_type = detect_target_type(df[pa_target], col_to_type.get(pa_target, "Categorical"))
+    pa_target_type = detect_target_type(df[pa_target], col_to_type.get(pa_target, "Categorical"), variable_metadata[pa_target]["variable_subtype"])
     st.markdown(get_model_explanation(pa_target_type))
     st.divider()
 
@@ -1157,6 +1088,7 @@ if st.session_state.get("pa_results"):
 
     # ── Binary comparison ─────────────────────────────────────────────────────
     elif model_type == "binary_comparison":
+        st.caption(f"Positive class for precision, recall, F1 and ROC: {results['class_labels'][1]}")
         winner = results["winner"]
         st.success(f"🏆 **{winner}** performs better on this dataset (higher Test F1 Score).")
 

@@ -44,7 +44,7 @@ def parse_csv(text):
 
 def activate_dataset(frame, name):
     for key in list(st.session_state):
-        if key in ('col_types', 'ai_summary', 'datetime_overrides', 'override_warnings', 'pa_results', 'pa_cache_key', 'pa_train_error') or key.startswith(('col_ai_', 'heatmap_ai_', 'pa_pred_', 'mc_', 'gs_', 'rel_', 'dist_')):
+        if key in ('variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summary', 'datetime_overrides', 'override_warnings', 'pa_results', 'pa_cache_key', 'pa_train_error') or key.startswith(('vm_', 'va_', 'col_ai_', 'heatmap_ai_', 'pa_pred_', 'mc_', 'gs_', 'rel_', 'dist_')):
             del st.session_state[key]
     st.session_state['df'] = frame
     st.session_state['file_id'] = f'manual__{uuid.uuid4().hex}'

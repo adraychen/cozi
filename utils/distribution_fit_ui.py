@@ -8,20 +8,20 @@ def cached_fit(series, kind, trials):
     return fit_distributions(series, kind, trials)
 
 
-def render_distribution_fit(series, column):
+def render_distribution_fit(series, column, subtype=None):
     st.markdown('**Theoretical distribution fit**')
     summary = st.container()
     details = st.expander('Fit details', expanded=False)
     with details:
         kind = st.selectbox('Distribution type', ['Auto', 'Discrete', 'Continuous'], key=f'dist_kind_{column}',
-                            help='Auto treats integer-valued observations as discrete. Override for rounded continuous measurements. This is a data representation rule, not a claim about its generating process.')
+                            help='Auto uses Variable Subtype from Column Overview when available; otherwise it checks for integer-valued observations. Override for rounded continuous measurements. This is a data representation rule, not a claim about its generating process.')
         trials = None
         if kind != 'Continuous' and st.checkbox('Include binomial with known number of trials', key=f'dist_binom_{column}'):
             trials = int(st.number_input('Known trials per observation', min_value=1, value=10, key=f'dist_trials_{column}'))
             st.caption('Use only for successes out of a fixed known number of trials; the observed maximum is not an estimate of this number.')
     with st.spinner('Comparing distributions and checking fit…'):
         try:
-            result = cached_fit(series, kind, trials)
+            result = cached_fit(series, subtype if kind == 'Auto' and subtype in ('Discrete','Continuous') else kind, trials)
         except (ValueError, TypeError) as exc:
             st.info(str(exc))
             return

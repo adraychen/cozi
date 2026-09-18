@@ -52,11 +52,11 @@ def convert_to_datetime(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
 def build_type_summary(col_types: Dict[str, List[str]]) -> pd.DataFrame:
     """Return a summary table of column type counts."""
     rows = [
-        {"Column Type": "Numerical", "Count": len(col_types["numerical"]),
+        {"Variable Type": "Numerical", "Count": len(col_types["numerical"]),
          "Columns": ", ".join(col_types["numerical"]) or "—"},
-        {"Column Type": "Categorical (Text)", "Count": len(col_types["categorical"]),
+        {"Variable Type": "Categorical", "Count": len(col_types["categorical"]),
          "Columns": ", ".join(col_types["categorical"]) or "—"},
-        {"Column Type": "Date / Time", "Count": len(col_types["datetime"]),
+        {"Variable Type": "Date / Time", "Count": len(col_types["datetime"]),
          "Columns": ", ".join(col_types["datetime"]) or "—"},
     ]
     return pd.DataFrame(rows)

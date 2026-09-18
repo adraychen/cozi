@@ -31,7 +31,7 @@ TOTAL_FITS        = TOTAL_COMBOS * CV_FOLDS   # 40
 _TARGET_DISCRETE_THRESHOLD = 15
 
 
-def detect_target_type(series: pd.Series, col_type: str) -> str:
+def detect_target_type(series: pd.Series, col_type: str, subtype=None) -> str:
     """
     Return one of four target types:
     - 'binary'              : exactly 2 unique values (any dtype)
@@ -39,6 +39,9 @@ def detect_target_type(series: pd.Series, col_type: str) -> str:
     - 'continuous_numerical': numerical, 15+ unique values → treat as regression
     - 'multiclass'          : categorical, 3+ unique values
     """
+    if subtype is not None:
+        from utils.variable_metadata import metadata_target_type
+        return metadata_target_type(series, col_type, subtype)
     unique_vals = series.dropna().nunique()
     if unique_vals == 2:
         return "binary"
@@ -867,7 +870,9 @@ def run_binary_classification_comparison(
     mask = y.notna()
     X, y = X[mask], y[mask]
 
-    class_labels = sorted(y.unique().tolist())
+    from utils.variable_metadata import encode_binary_target
+    y, original_class_labels = encode_binary_target(y)
+    class_labels = [0, 1]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y,
@@ -1016,7 +1021,7 @@ def run_binary_classification_comparison(
         "cm":             cm,
         "fpr":            fpr,
         "tpr":            tpr,
-        "class_labels":   [str(c) for c in class_labels],
+        "class_labels":   [str(c) for c in original_class_labels],
         "feat_imp":       feat_imp,
         "coefficients":   coefficients,
         "odds_ratio_df":  odds_ratio_df,

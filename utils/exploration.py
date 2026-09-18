@@ -87,7 +87,7 @@ def categorical_stats(series: pd.Series) -> dict:
 def frequency_table(series: pd.Series) -> pd.DataFrame:
     """Return a frequency table with Count and Percentage columns."""
     total = len(series)
-    counts = series.value_counts(dropna=False)
+    counts = series.value_counts(dropna=False, sort=not (isinstance(series.dtype, pd.CategoricalDtype) and series.cat.ordered))
     pct = (counts / total * 100).round(2)
 
     df = pd.DataFrame({

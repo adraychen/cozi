@@ -77,6 +77,8 @@ def render_visual_analysis(df, col_types):
         data[key[c]] = pd.to_datetime(data[key[c]],errors='coerce')
     for c in cats:
         data[key[c]] = data[key[c]].astype('string')
+        if isinstance(df[c].dtype,pd.CategoricalDtype) and df[c].cat.ordered:
+            data[key[c]]=pd.Categorical(data[key[c]],categories=[str(v) for v in df[c].cat.categories],ordered=True)
     try:
         fig = None
         if chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
@@ -222,6 +224,16 @@ def render_visual_analysis(df, col_types):
                 raise ValueError('No values available for the heatmap.')
             fig=px.imshow(matrix,aspect='auto',color_continuous_scale='Blues')
         if fig is not None:
+            if chart != 'Pareto chart':
+                for col in cats:
+                    if isinstance(df[col].dtype,pd.CategoricalDtype) and df[col].cat.ordered:
+                        order=[str(v) for v in df[col].cat.categories]
+                        for axis in fig.select_xaxes():
+                            if axis.title.text in (str(col),key[col]):
+                                axis.update(categoryorder='array',categoryarray=order)
+                        for axis in fig.select_yaxes():
+                            if axis.title.text in (str(col),key[col]):
+                                axis.update(categoryorder='array',categoryarray=order)
             st.plotly_chart(fig,use_container_width=True)
         st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
     except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
