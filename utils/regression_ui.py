@@ -25,12 +25,12 @@ def fit_cached(df, target, predictors, categorical, interactions, degrees, elimi
     return key, st.session_state['regression_cached_fit'][1]
 
 
-def render_regression(df, numerical, categorical):
+def render_regression(df, numerical, categorical, selection=None):
     st.markdown('##### Linear regression')
     responses = [c for c in numerical if pd.api.types.is_numeric_dtype(df[c]) and not pd.api.types.is_bool_dtype(df[c])]
     if not responses:
         st.info('Select a numeric dependent variable.'); return
-    target, predictors = render_checkbox_specification(responses,numerical,categorical)
+    target, predictors = selection if selection is not None else render_checkbox_specification(responses,numerical,categorical)
     st.caption('Use meaningful measures rather than numeric identifiers. Ordered ratings assume equally spaced scores. Categorical predictors use reference-level 0/1 indicators.')
     if not predictors:
         st.info('Select at least one independent variable.'); return

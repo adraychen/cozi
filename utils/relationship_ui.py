@@ -4,15 +4,15 @@ import plotly.express as px
 import streamlit as st
 from utils.anova_ui import render_anova
 from utils.regression_analysis import regression
-from utils.regression_ui import render_regression
+from utils.regression_router import render_regression, response_candidates
 from utils.contingency_ui import render_contingency
 from utils.correlation_ui import render_correlation
 
 
 def render_relationship_analysis(df, numerical, categorical, dates):
     methods = []
-    if numerical and len(numerical) + len(categorical) >= 2:
-        methods.append('Linear regression')
+    if response_candidates(df,numerical,categorical,st.session_state.get('variable_metadata',{})) and len(numerical) + len(categorical) >= 2:
+        methods.append('Regression')
     if len(numerical) >= 2:
         methods.append('Correlation')
     if categorical and numerical:
@@ -24,6 +24,8 @@ def render_relationship_analysis(df, numerical, categorical, dates):
     if not methods:
         return
     st.markdown('##### Relationship analysis')
+    if st.session_state.get('rel_method') not in methods:
+        st.session_state.pop('rel_method',None)
     method = st.selectbox('Analysis method', methods, key='rel_method')
     try:
         if method == 'Correlation':

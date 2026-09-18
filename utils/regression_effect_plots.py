@@ -17,7 +17,7 @@ def retained_polynomials(result):
     return list(dict.fromkeys(b[1] for b in result['active'] if b[0] == 'power'))
 
 
-def adjusted_curves(result, xvar, moderator=None, selected_levels=None):
+def adjusted_curves(result, xvar, moderator=None, selected_levels=None, prediction_function=predict):
     """Generate original-unit prediction grids without refitting or re-centering."""
     spec, clean = result['spec'], result['clean']
     if xvar not in spec['predictors'] or moderator == xvar or (moderator is not None and moderator not in spec['predictors']):
@@ -49,11 +49,11 @@ def adjusted_curves(result, xvar, moderator=None, selected_levels=None):
         grid[xvar] = xs
         if moderator is not None:
             grid[moderator] = value
-        curves.append({'label':name, 'input':grid, 'prediction':predict(result, grid)})
+        curves.append({'label':name, 'input':grid, 'prediction':prediction_function(result, grid)})
     return curves, pd.DataFrame(settings, columns=['Predictor','Held at','Setting'])
 
 
-def effect_figure(result, xvar, curves, title):
+def effect_figure(result, xvar, curves, title, confidence=.95):
     categorical_x = xvar in result['spec']['categorical']
     fig = go.Figure()
     colors = px.colors.qualitative.Plotly
@@ -79,7 +79,7 @@ def effect_figure(result, xvar, curves, title):
         custom = np.column_stack([values['mean_ci_lower'], values['mean_ci_upper']])
         fig.add_trace(go.Scatter(x=x,y=values['mean'],mode='lines+markers' if categorical_x else 'lines',
                                 name=curve['label'],legendgroup=group,line=dict(color=color),error_y=error,
-                                customdata=custom,hovertemplate='%{x}<br>Adjusted mean: %{y:.4g}<br>95% CI: %{customdata[0]:.4g} to %{customdata[1]:.4g}<extra>%{fullData.name}</extra>'))
+                                customdata=custom,hovertemplate='%{x}<br>Adjusted mean: %{y:.4g}<br>CI: %{customdata[0]:.4g} to %{customdata[1]:.4g}<extra>%{fullData.name}</extra>'))
     fig.update_layout(title=title,xaxis_title=str(xvar),yaxis_title=f"Adjusted predicted {result['spec']['target']}",
                       legend_title_text='Model prediction at',legend=dict(groupclick='togglegroup'))
     if categorical_x:

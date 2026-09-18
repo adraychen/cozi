@@ -1,6 +1,6 @@
 # Linear Regression in EDA → Relationship
 
-Select a numeric response and one or more numeric/categorical predictors. Choose **Linear regression**. This is an exploratory, descriptive OLS analysis; all fit measures describe the observations used for estimation.
+Select a numeric response and one or more numeric/categorical predictors. Choose **Regression** and a Numerical response. This is an exploratory, descriptive OLS analysis; all fit measures describe the observations used for estimation.
 
 ## Model specification
 
@@ -62,3 +62,8 @@ Column Overview now supplies effective Variable Type and Variable Subtype metada
 Regression response selection is labeled **Response / dependent variable (Y)**. Predictors and Interaction terms each provide Select all and Clear all buttons; the response is excluded from predictors and clearing predictors removes dependent terms. The summary is a two-column table, followed by the **Fitted regression equation** heading and equation. Checkbox controls retain their existing layout.
 
 Relationship provides independent Select all / Clear all controls for Numerical and Categorical columns. Polynomial terms use the same concise button labels and have no extra Select powers subheading.
+
+
+## Shared Regression entry point
+
+`utils/regression_router.py` routes from effective response metadata: Numerical remains OLS (including numerical 0/1), while Categorical → Binary selects classical logistic regression. Both reuse `regression_controls.py`, `regression_design.py`, the Selected terms reporting and adjusted-curve grid construction. Logistic fitting, diagnostics and UI are separate so OLS assumptions and tests are not reused for binary responses. See [LOGISTIC_REGRESSION.md](LOGISTIC_REGRESSION.md).
