@@ -668,10 +668,20 @@ with relationships_tab:
         ("Categorical", col_types["categorical"]),
         ("Date / Time", col_types["datetime"]),
     ]
+    def set_relationship_group(columns, selected):
+        for column in columns:
+            st.session_state[f'mc_{column}'] = selected
+
     for group_label, group_cols in checkbox_groups:
         if not group_cols:
             continue
         st.markdown(f"**{group_label}**")
+        if group_label in ("Numerical", "Categorical"):
+            select_button, clear_button = st.columns(2)
+            select_button.button("Select all", key=f"mc_all_{group_label}",
+                                 on_click=set_relationship_group, args=(group_cols, True))
+            clear_button.button("Clear all", key=f"mc_clear_{group_label}",
+                                on_click=set_relationship_group, args=(group_cols, False))
         n_per_row = 4
         for i in range(0, len(group_cols), n_per_row):
             row_cols = st.columns(n_per_row)

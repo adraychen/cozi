@@ -35,7 +35,8 @@ def set_selection(state_key, options, selected):
 
 
 def checkbox_group(title, options, state_key, group, default=(), formatter=str, powers=False, bulk=False):
-    st.markdown('**'+title+'**')
+    if title:
+        st.markdown('**'+title+'**')
     if bulk:
         a,b=st.columns(2)
         a.button('Select all',key='rel_'+group+'_all',on_click=set_selection,args=(state_key,options,True),disabled=not options)
@@ -88,9 +89,9 @@ def render_term_checkboxes(predictors, nums):
     terms=[(c,d) for c in nums for d in (2,3)]
     st.markdown('**Polynomial terms**')
     a,b=st.columns(2)
-    a.button('Select all polynomial terms',key='rel_poly_all',on_click=set_powers,args=(terms,True),disabled=not terms)
-    b.button('Clear polynomial terms',key='rel_poly_clear',on_click=set_powers,args=(terms,False),disabled=not terms)
-    selected=checkbox_group('Select powers',terms,'rel_polynomial_terms','power',formatter=lambda p:str(p[0])+('²' if p[1]==2 else '³'),powers=True)
+    a.button('Select all',key='rel_poly_all',on_click=set_powers,args=(terms,True),disabled=not terms)
+    b.button('Clear all',key='rel_poly_clear',on_click=set_powers,args=(terms,False),disabled=not terms)
+    selected=checkbox_group(None,terms,'rel_polynomial_terms','power',formatter=lambda p:str(p[0])+('²' if p[1]==2 else '³'),powers=True)
     st.caption('Cubic terms include the corresponding square. Selected predictors supply all main effects; interactions retain both main effects.')
     degrees={c:max([1]+[d for variable,d in selected if variable==c]) for c in nums}
     return interactions,degrees

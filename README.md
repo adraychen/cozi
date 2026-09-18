@@ -682,3 +682,5 @@ Regression Model Overview combines model performance with a two-column Model det
 Linear Regression uses checkbox controls for its target (exactly one), predictors, interaction pairs, and individual quadratic/cubic terms. Polynomial controls include Select all and Clear; cubic terms automatically include their squares. Unavailable dependent terms are cleared when predictors change.
 
 Regression response selection is labeled **Response / dependent variable (Y)**. Predictors and Interaction terms each provide Select all and Clear all buttons; the response is excluded from predictors and clearing predictors removes dependent terms. The summary is a two-column table, followed by the **Fitted regression equation** heading and equation. Checkbox controls retain their existing layout.
+
+Relationship provides independent Select all / Clear all controls for Numerical and Categorical columns. Polynomial terms use the same concise button labels and have no extra Select powers subheading.

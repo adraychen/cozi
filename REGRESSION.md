@@ -7,7 +7,7 @@ Select a numeric response and one or more numeric/categorical predictors. Choose
 - Continuous variables remain in original units for ordinary additive models. Categorical factors use one observed reference level and readable indicator labels, with the reference displayed separately.
 - Select two-way interactions explicitly: numeric × numeric, numeric × categorical, or categorical × categorical. The model includes all relevant indicator products for a selected factor interaction.
 - Target, predictors, interactions and polynomial powers use checkboxes. Exactly one numeric target is selected; checking a different target switches it and excludes it from predictors. Predictors can be numeric or categorical.
-- Select quadratic/cubic powers separately (A², A³, etc.), or use Select all polynomial terms / Clear polynomial terms. Selecting a cubic checks and locks its square until the cubic is unchecked. All selected predictors supply main effects; interactions preserve both main effects. Removing a predictor prunes its dependent selections.
+- Select quadratic/cubic powers separately (A², A³, etc.), or use Select all / Clear all. Selecting a cubic checks and locks its square until the cubic is unchecked. All selected predictors supply main effects; interactions preserve both main effects. Removing a predictor prunes its dependent selections.
 - When interactions or powers are selected, all selected continuous predictors are centered using complete-case training means. These values are displayed; Y is not standardized. Prediction applies the same centers and category levels.
 - Complete cases are determined once for the original specification, including all selected variables; the sample stays fixed during elimination. Exclusions include missing and infinite values. Original row positions and index labels are retained for observation diagnostics.
 
@@ -60,3 +60,5 @@ Regression Visual Analysis shows interaction plots only for interactions retaine
 Column Overview now supplies effective Variable Type and Variable Subtype metadata. Discrete and Continuous predictors remain numeric; Binary, Nominal and Ordinal predictors use categorical handling. Ordinal order is preserved as metadata and in frequency displays; regression still uses categorical indicators. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md).
 
 Regression response selection is labeled **Response / dependent variable (Y)**. Predictors and Interaction terms each provide Select all and Clear all buttons; the response is excluded from predictors and clearing predictors removes dependent terms. The summary is a two-column table, followed by the **Fitted regression equation** heading and equation. Checkbox controls retain their existing layout.
+
+Relationship provides independent Select all / Clear all controls for Numerical and Categorical columns. Polynomial terms use the same concise button labels and have no extra Select powers subheading.
