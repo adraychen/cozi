@@ -10,6 +10,7 @@ from utils.regression_design import label
 from utils.regression_reporting import format_table, findings, equation, p_text
 from utils.regression_plots import actual_fitted, fitted_curve, coefficient_plot, partial_plot
 from utils.regression_validation_ui import render_validation
+from utils.regression_effect_plots import render_effect_plots
 
 
 def fit_cached(df, target, predictors, categorical, interactions, degrees, elimination, threshold):
@@ -139,7 +140,8 @@ def render_results(r,key):
             st.plotly_chart(fig,use_container_width=True)
         st.download_button('Download all observation diagnostics (CSV)',inf.to_csv(index=False),file_name='regression_influence.csv',key='reg_inf_download')
     with tabs[5]:
-        if len(spec['predictors'])==1 and not spec['categorical']:
+        render_effect_plots(r,key)
+        if len(spec['predictors'])==1 and not spec['categorical'] and not any(b[0]=='power' for b in r['active']):
             st.plotly_chart(fitted_curve(r),use_container_width=True)
             st.caption('Curve covers the observed predictor range. Blue confidence band: uncertainty around the mean response. Orange prediction band: uncertainty for an individual future observation. Bands rely on the regression assumptions; they are not guarantees.')
         st.plotly_chart(actual_fitted(r),use_container_width=True)

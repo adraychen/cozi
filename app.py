@@ -8,7 +8,7 @@ from utils.loader import load_dataset, get_dataframe_info
 from utils.detector import detect_data_types, convert_to_datetime
 from utils.charts import (
     make_histogram_boxplot, make_bar_chart, make_violin,
-    make_time_series, make_line_chart, make_heatmap, make_scatter,
+    make_time_series, make_line_chart, make_scatter,
     make_density_contour, make_occurrence_heatmap, make_grouped_bar,
     make_boxplot_by_category, make_pivot_heatmap,
     make_confusion_matrix, make_roc_curve,
@@ -24,7 +24,6 @@ from utils.exploration import (
 from utils.ai_interpreter import (
     interpret_dataset_overview,
     interpret_single_column,
-    interpret_heatmap,
     interpret_predictive_results,
 )
 from utils.quality import (
@@ -768,17 +767,15 @@ with relationships_tab:
             available.append("Line Chart — Trend")
         if n_num == 2 and n_cat == 0 and n_dt == 0:
             available += ["Scatter Plot — Correlation", "Interaction Chart — Density"]
-        if n_num >= 2 and n_cat == 0 and n_dt == 0:
-            available.append("Heatmap — Multiple Correlations")
         if n_cat == 2 and n_num == 0 and n_dt == 0:
             available += ["Heatmap — Occurrence", "Interaction Chart — Grouped Bar"]
 
-        if not available:
+        if not available and n_num < 2:
             st.info(
                 "No charts available for this combination. Try selecting: "
                 "1 date + 1 or more numerical, 2 or more numerical, or exactly 2 categorical columns."
             )
-        else:
+        elif available:
             chart_type = st.radio("Chart type", available, horizontal=True)
 
             # ── Heatmap — Numerical Values ────────────────────────────────────────
@@ -826,34 +823,6 @@ with relationships_tab:
                     make_density_contour(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
                     use_container_width=True,
                 )
-
-            # ── Heatmap — Multiple Correlations ──────────────────────────────────
-            elif chart_type == "Heatmap — Multiple Correlations":
-                corr_df = df[sel_num].corr()
-                st.plotly_chart(make_heatmap(corr_df), use_container_width=True)
-
-                pairs = [
-                    f"{corr_df.columns[i]} × {corr_df.columns[j]}: {corr_df.iloc[i, j]:.2f}"
-                    for i in range(len(corr_df.columns))
-                    for j in range(i + 1, len(corr_df.columns))
-                ]
-                hm_key = f"heatmap_ai_{'_'.join(sorted(sel_num))}"
-                with st.expander("🤖 AI Interpretation"):
-                    if hm_key not in st.session_state:
-                        with st.spinner("Generating interpretation…"):
-                            try:
-                                st.session_state[hm_key] = interpret_heatmap(
-                                    corr_pairs="\n".join(pairs),
-                                    col_names=sel_num,
-                                )
-                            except Exception as e:
-                                st.session_state[hm_key] = None
-                                st.error(f"Could not generate interpretation: {e}")
-                    if st.session_state.get(hm_key):
-                        st.info(st.session_state[hm_key])
-                        if st.button("🔄 Refresh", key="refresh_heatmap"):
-                            st.session_state.pop(hm_key, None)
-                            st.rerun()
 
             # ── Heatmap — Occurrence ──────────────────────────────────────────────
             elif chart_type == "Heatmap — Occurrence":

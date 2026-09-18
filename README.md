@@ -219,7 +219,7 @@ Select columns using checkboxes grouped by type. Available chart types appear au
 | 1 numerical + 1 categorical | Boxplot — Distribution by Category |
 | 1 datetime + 1 or more numerical | Line Chart — Trend |
 | Exactly 2 numerical | Scatter Plot — Correlation, Interaction Chart — Density |
-| 2 or more numerical | Heatmap — Multiple Correlations (with AI interpretation) |
+| More than 2 numerical | Pearson or Spearman matrix within the Correlation analysis |
 | Exactly 2 categorical | Heatmap — Occurrence, Interaction Chart — Grouped Bar |
 
 ---
@@ -541,7 +541,6 @@ Uses **OpenAI GPT-OSS 120B** (`openai/gpt-oss-120b`) via Groq through LangChain 
 |---|---|---|
 | `interpret_dataset_overview` | After data quality summary loads | 4–5 sentences on dataset type, missing values, and column types |
 | `interpret_single_column` | On Data Profile deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
-| `interpret_heatmap` | On Heatmap — Multiple Correlations | 3–5 sentences on strongest correlations and unexpected relationships |
 | `interpret_predictive_results` | After model training completes | 4–5 sentences on winning model, key features, SHAP impact, overfitting, and recommendation |
 
 All interpretations are cached in `st.session_state`. Dataset-level and predictive analytics interpretations regenerate only when the data or model selection changes. Column-level interpretations have a **🔄 Refresh** button.
@@ -668,3 +667,8 @@ In EDA → Relationship, select two or more numeric columns and choose **Correla
 ## Extended Linear Regression
 
 Linear regression now supports explicitly selected numeric/categorical interactions, centered quadratic/cubic terms, hierarchy-preserving backward elimination, detailed fit/coefficient analysis, VIF/tolerance, studentized residuals and influence plots, confidence and prediction bands, original-unit prediction with both intervals, and deterministic Regression Findings. Results are organized into eight areas and fitted models are cached per session. See [the regression guide](REGRESSION.md) for methods, model hierarchy, validation rules, files and tests. Correlation remains a separate Relationship analysis.
+
+
+### Retained interaction and polynomial plots
+
+Regression Visual Analysis shows interaction plots only for interactions retained in the final model, and polynomial plots only for retained powers. Numeric moderators use their complete-case 25th, 50th and 75th percentiles; categorical moderators use separate curves by level. Categorical-by-categorical plots use category axes with confidence bars. Other predictors are held at displayed complete-case means or reference categories. Predictions reuse the fitted design and show pointwise 95% mean-response confidence intervals. Numeric axes stay within observed ranges, including category-specific ranges where applicable. These conditional displays do not adjust for model-selection uncertainty. Polynomial predictors with retained interactions show curves by an interacting predictor. Single-predictor polynomial plots preserve observed points and both confidence and prediction bands.
