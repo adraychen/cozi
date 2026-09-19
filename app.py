@@ -61,13 +61,13 @@ _SAMPLE_DATASETS = [
     },
     {
         "name": "PlantGrowth.csv",
-        "id":   "17T-JKEtpnihUIkkiPq8L7c3eGEMStRlg",
+        "id":   "19w_ELwkTJ_5fKWUi0Rh7YuLz8rNoFeB7",
         "desc": "ANOVA analysis",
         "separator": "-",
     },
     {
         "name": "Galton_Family_Heights.csv",
-        "id":   "1uDH7warzjl5wGV7whSdKHK7Fwb4nwlkw",
+        "id":   "18k9ocHuBFGFb9YTY64tk6Ug5iRlUdArh",
         "desc": "linear regression analysis",
         "separator": "-",
     },
