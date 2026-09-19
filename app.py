@@ -466,7 +466,7 @@ st.divider()
 # ── Exploratory Data Analysis ─────────────────────────────────────────────────
 st.subheader("Exploratory Data Analysis")
 
-profile_tab, group_tab, relationships_tab = st.tabs(["Data Profile", "Group Statistics", "Relationship"])
+profile_tab, group_tab, relationships_tab, comparison_tab = st.tabs(["Data Profile", "Group Statistics", "Relationship", "Comparison"])
 
 with profile_tab:
     # ── Single Column ─────────────────────────────────────────────────────────────
@@ -673,6 +673,10 @@ with profile_tab:
 with group_tab:
     from utils.group_statistics_ui import render_group_statistics
     render_group_statistics(df, col_types)
+
+with comparison_tab:
+    from utils.comparison_ui import render_comparison
+    render_comparison(df, col_types)
 
 with relationships_tab:
     # ── Multi-Column Analysis ─────────────────────────────────────────────────────

@@ -77,13 +77,13 @@ class AnovaUITests(unittest.TestCase):
         app = AppTest.from_string('''
 import streamlit as st
 import pandas as pd
-from utils.relationship_ui import render_relationship_analysis
+from utils.comparison_ui import render_comparison
 dataset = st.selectbox('Dataset', ['one', 'two'], key='fixture_dataset')
 st.session_state['file_id'] = dataset
 df = pd.DataFrame({'g': ['a']*5 + ['b']*5, 'v': [1.,2,4,3,6, 3,5,8,6,10]})
-render_relationship_analysis(df, ['v'], ['g'], [])
+render_comparison(df, {'numerical':['v'], 'categorical':['g'], 'datetime':[]})
 ''').run(timeout=30)
-        app.selectbox(key='rel_method').select('Categorical–numerical: group summaries and ANOVA').run(timeout=30)
+        app.selectbox(key='gs_cmp_analysis').select('Group Comparison (ANOVA)').run(timeout=30)
         self.assertFalse(app.exception)
         self.assertFalse(any('one-way ANOVA**' in m.value for m in app.markdown))
         app.checkbox(key='rel_anova_independent').check().run(timeout=30)

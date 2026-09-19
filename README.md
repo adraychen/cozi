@@ -11,7 +11,7 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values with expandable details and A/M classification badges; classification editor |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
-| **Exploratory Data Analysis** | Three tabs: Data Profile, Group Statistics, and Relationship |
+| **Exploratory Data Analysis** | Four tabs: Data Profile, Group Statistics, Relationship, and Comparison |
 | **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
@@ -125,7 +125,7 @@ After all quality panels load, the app generates a 4–5 sentence plain-English 
 
 ## Exploratory Data Analysis
 
-Tab order: **Data Profile → Group Statistics → Relationship**.
+Tab order: **Data Profile → Group Statistics → Relationship → Comparison**.
 
 ### Data Profile (single column)
 
@@ -171,11 +171,9 @@ Requires 20 finite observations and two distinct values. Above 3,000 observation
 
 ### Group Statistics
 
-Exploratory Data Analysis now has three tabs: **Data Profile → Group Statistics → Relationship**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+Exploratory Data Analysis now has four tabs: **Data Profile → Group Statistics → Relationship → Comparison**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
 
 - **Group Summary:** sum, mean, median, min/max, sample standard deviation, non-missing numerical count, or row count.
-- **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
-- **Period-over-Period Comparison:** previous calendar period, or same period last year for monthly/quarterly/yearly data.
 - **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
 - **Rolling Averages:** moving mean over a complete window of calendar periods.
 - **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
@@ -184,6 +182,16 @@ Time analysis requires a detected Date/Time column (or Column Overview override)
 
 Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
 
+
+### Comparison
+
+The **Comparison** tab sits immediately after **Relationship** and contains:
+
+- **Group Comparison (ANOVA):** categorical grouping and numerical outcome, group summaries and box plots, normality/variance diagnostics, and Welch or classical ANOVA. The existing independence confirmation and validation are preserved.
+- **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
+- **Period-over-Period Comparison:** previous calendar period or same period last year for monthly/quarterly/yearly data.
+
+Segment and period comparisons reuse the existing calculations, missing-value/calendar behavior, charts and CSV downloads. Their controls have independent state from Group Statistics. ANOVA is no longer listed under Relationship. Regression, correlation, cross-tabulation/chi-square and time–numerical trends remain there. The new renderer is `utils/comparison_ui.py`.
 
 #### Categorical group statistics and contingency tables
 
@@ -208,7 +216,6 @@ Select variables with the existing checkboxes, then choose an available **Analys
 | Variables | Added methods |
 |---|---|
 | Numerical–numerical | Scatterplot with OLS line; Pearson correlation and p-value; Spearman correlation; simple regression coefficients, standard errors, 95% intervals, and in-sample R² |
-| Categorical–numerical | Per-group count/mean/median/SD/min/max, boxplot, validated Welch or classical one-way ANOVA |
 | Categorical–categorical | Stacked cross-tabulation report and Pearson chi-square, available only in Relationship |
 | Time–numerical | Daily/weekly/monthly/quarterly/yearly mean or sum, aggregated time-series plot and descriptive linear trend per elapsed day |
 | Multiple variables | Numerical outcome with two or more numerical predictors; multivariable OLS coefficients, intervals, p-values, adjusted R², and observed-versus-fitted plot |
@@ -647,11 +654,11 @@ Grouped bars use both categories (axis and color), with the numeric measure requ
 
 ## Relationship validation update
 
-Cross-tabulation and chi-square are available only in **EDA → Relationship**. Group Statistics retains its six summary/comparison methods. The renderer is `utils/contingency_ui.py`; existing counts, percentages/residual report, sparse-table warning and CSV download are preserved.
+Cross-tabulation and chi-square are available only in **EDA → Relationship**. Group Statistics retains four descriptive methods; Segment Comparison and Period-over-Period Comparison are in Comparison. The renderer is `utils/contingency_ui.py`; existing counts, percentages/residual report, sparse-table warning and CSV download are preserved.
 
 **Regression:** OLS equations, coefficient explanations, 95% mean-response bands for a single predictor, and an expandable Model validation panel. Checks include residual histogram, Q–Q plot, Omnibus and Jarque–Bera tests, residual/fitted plot with a smooth trend, Koenker Breusch–Pagan variance test, and Cook's distance/leverage screening. Durbin–Watson and the residual sequence plot require meaningful original row order. Missing/nonfinite values, rank-deficient predictors, small samples and perfect fits are handled explicitly. Perfect fits suppress inference. Diagnostics warn rather than certify assumptions; non-normality alone does not bias OLS under a correct conditional-mean model, and constant variance does not imply independence. Conventional intervals are not automatically replaced by robust intervals.
 
-**ANOVA:** choose a categorical group and numeric outcome. Group summaries, box plots, Shapiro–Wilk within each nonconstant group (3–5,000 observations), group Q–Q plots and median-centered Levene/Brown–Forsythe variance diagnostics are provided. Welch is the default; classical is explicitly selectable. At least two groups with two usable observations each are required. Welch needs positive variance in every group; classical needs positive pooled within-group variance. Missing pairs and lost groups are reported. Small groups, imbalance and outliers trigger warnings without automatic removal. Users must confirm independent observations before results appear; confirmation resets with the dataset or selected columns. Repeated/clustered measurements need a suitable alternative model. The result reports F, degrees of freedom and p-value; no automatic post-hoc tests are run.
+**ANOVA (EDA → Comparison → Group Comparison):** choose a categorical group and numeric outcome. Group summaries, box plots, Shapiro–Wilk within each nonconstant group (3–5,000 observations), group Q–Q plots and median-centered Levene/Brown–Forsythe variance diagnostics are provided. Welch is the default; classical is explicitly selectable. At least two groups with two usable observations each are required. Welch needs positive variance in every group; classical needs positive pooled within-group variance. Missing pairs and lost groups are reported. Small groups, imbalance and outliers trigger warnings without automatic removal. Users must confirm independent observations before results appear; confirmation resets with the dataset or selected columns. Repeated/clustered measurements need a suitable alternative model. The result reports F, degrees of freedom and p-value; no automatic post-hoc tests are run.
 
 Install with the project's `requirements.txt`, including statsmodels. Run checks with `python -m unittest discover -s tests -p "test_*.py"`.
 

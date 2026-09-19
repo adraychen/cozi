@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.anova_ui import render_anova
 from utils.regression_analysis import regression
 from utils.regression_router import render_regression, response_candidates
 from utils.contingency_ui import render_contingency
@@ -15,8 +14,6 @@ def render_relationship_analysis(df, numerical, categorical, dates):
         methods.append('Regression')
     if len(numerical) >= 2:
         methods.append('Correlation')
-    if categorical and numerical:
-        methods.append('Categorical–numerical: group summaries and ANOVA')
     if len(categorical)>=2:
         methods.append('Categorical–categorical: cross-tabulation and chi-square')
     if dates and numerical:
@@ -32,10 +29,6 @@ def render_relationship_analysis(df, numerical, categorical, dates):
             render_correlation(df, numerical)
         elif method.startswith('Categorical–categorical'):
             render_contingency(df, categorical, key_prefix='rel_ct')
-        elif method.startswith('Categorical–numerical'):
-            cat = st.selectbox('Grouping variable', categorical, key='rel_group')
-            num = st.selectbox('Numerical outcome', numerical, key='rel_group_y')
-            render_anova(df, cat, num)
         elif method.startswith('Time–numerical'):
             date = st.selectbox('Time variable', dates, key='rel_date')
             num = st.selectbox('Measure', numerical, key='rel_time_y')

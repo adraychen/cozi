@@ -8,36 +8,43 @@ ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Compariso
             "Running & Cumulative Statistics", "Rolling Averages", "Contribution to Total"]
 
 
-def render_group_statistics(df, col_types):
-    st.markdown("#### Group Statistics")
+GROUP_ANALYSES = ["Group Summary", "Running & Cumulative Statistics", "Rolling Averages", "Contribution to Total"]
+
+
+def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_heading=True):
+    if show_heading:
+        st.markdown("#### Group Statistics")
     measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
                            format_func=lambda value: "None (categorical data / row counts)" if value is None else value,
-                           key="gs_measure_optional")
-    dimensions = st.multiselect("Categorical columns", col_types["categorical"], key="gs_dimensions",
+                           key=key_prefix + "_measure_optional")
+    dimensions = st.multiselect("Categorical columns", col_types["categorical"], key=key_prefix + "_dimensions",
                                 help="Select one or more dimensions. Leave empty for the whole dataset.")
-    analysis = st.selectbox("Analysis type", ANALYSES, key="gs_analysis")
+    if analysis is None:
+        if st.session_state.get(key_prefix + "_analysis") not in GROUP_ANALYSES:
+            st.session_state.pop(key_prefix + "_analysis", None)
+        analysis = st.selectbox("Analysis type", GROUP_ANALYSES, key=key_prefix + "_analysis")
     time_based = analysis in ANALYSES[2:5]
     allowed = ["Row count"] if measure is None else (["Sum", "Non-missing count", "Row count"] if analysis == ANALYSES[5] else list(STATISTICS))
-    statistic = st.selectbox("Statistic", allowed, key="gs_stat_" + analysis + ("_counts" if measure is None else "_numeric"))
+    statistic = st.selectbox("Statistic", allowed, key=key_prefix + "_stat_" + analysis + ("_counts" if measure is None else "_numeric"))
     st.caption("Missing categories are included. Row count counts all rows, including missing measures. Non-missing count counts valid numerical values. Standard deviation uses the sample definition.")
     try:
         if time_based:
             if not col_types["datetime"]:
                 st.info("Select a Date/Time override in Column Overview to enable time-based analysis.")
                 return
-            date = st.selectbox("Date column", col_types["datetime"], key="gs_date")
-            frequency = st.selectbox("Period frequency", list(FREQUENCIES), index=2, key="gs_frequency")
-            zero = st.checkbox("Treat missing period values as zero", key="gs_zero",
+            date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
+            frequency = st.selectbox("Period frequency", list(FREQUENCIES), index=2, key=key_prefix + "_frequency")
+            zero = st.checkbox("Treat missing period values as zero", key=key_prefix + "_zero",
                                help="Off by default. Enable only when missing values mean no activity.")
             lag, window = 1, 3
             if analysis == ANALYSES[2]:
                 options = ["Previous period"]
                 if frequency in ("Monthly", "Quarterly", "Yearly"):
                     options.append("Same period last year")
-                mode = st.selectbox("Compare with", options, key="gs_comparison_" + frequency)
+                mode = st.selectbox("Compare with", options, key=key_prefix + "_comparison_" + frequency)
                 lag = {"Monthly": 12, "Quarterly": 4, "Yearly": 1}.get(frequency, 1) if mode == "Same period last year" else 1
             if analysis == ANALYSES[4]:
-                window = int(st.number_input("Window size (calendar periods)", min_value=2, max_value=365, value=3, key="gs_window"))
+                window = int(st.number_input("Window size (calendar periods)", min_value=2, max_value=365, value=3, key=key_prefix + "_window"))
                 st.caption("A rolling average requires a complete window of non-missing period values.")
             result, keys = temporal(df, measure, dimensions, date, frequency, statistic, analysis, window, lag, zero)
             invalid = pd.to_datetime(df[date], errors="coerce").isna().sum()
@@ -49,7 +56,7 @@ def render_group_statistics(df, col_types):
             if latest.to_period(FREQUENCIES[frequency]) >= current:
                 st.warning("The data includes the current or a future period. The current period may be incomplete.")
             st.caption("First and last periods may also be partial depending on dataset coverage.")
-            plotted = ["Value", "Previous"] if analysis == ANALYSES[2] else (["Value", "Rolling average"] if analysis == ANALYSES[4] else [st.selectbox("Running statistic", ["Cumulative sum", "Expanding mean", "Observed periods"], key="gs_running")])
+            plotted = ["Value", "Previous"] if analysis == ANALYSES[2] else (["Value", "Rolling average"] if analysis == ANALYSES[4] else [st.selectbox("Running statistic", ["Cumulative sum", "Expanding mean", "Observed periods"], key=key_prefix + "_running")])
         else:
             result, keys = summary(df, measure, dimensions, statistic)
             if result.empty:
@@ -57,11 +64,11 @@ def render_group_statistics(df, col_types):
                 return
             if analysis == ANALYSES[1]:
                 baseline = st.selectbox("Reference segment", list(result.index),
-                    format_func=lambda i: "; ".join(f"{dimensions[j] if dimensions else 'Dataset'}: {result.loc[i, key]}" for j, key in enumerate(keys)), key="gs_reference")
+                    format_func=lambda i: "; ".join(f"{dimensions[j] if dimensions else 'Dataset'}: {result.loc[i, key]}" for j, key in enumerate(keys)), key=key_prefix + "_reference")
                 result = compare(result, result.loc[baseline, "Value"])
                 st.caption("Percentage difference uses the absolute reference value; zero or missing references show N/A.")
             if analysis == ANALYSES[5]:
-                parent = st.checkbox("Share within parent group", key="gs_parent", disabled=len(keys) < 2)
+                parent = st.checkbox("Share within parent group", key=key_prefix + "_parent", disabled=len(keys) < 2)
                 result = contribution(result, keys, parent)
                 st.caption("Denominator: " + ("each combination of dimensions except the last." if parent and len(keys) > 1 else "the whole dataset."))
                 if (result["Value"] < 0).any():
@@ -69,7 +76,7 @@ def render_group_statistics(df, col_types):
             plotted = ["Contribution %"] if analysis == ANALYSES[5] else ["Value"]
         result["Segment"] = result[keys].apply(lambda row: "; ".join(f"{dimensions[i] if dimensions else 'Dataset'}: {v}" for i, v in enumerate(row)), axis=1)
         labels = result["Segment"].unique().tolist()
-        chosen = st.multiselect("Segments to chart", labels, default=labels[:10], key="gs_chart_" + analysis)
+        chosen = st.multiselect("Segments to chart", labels, default=labels[:10], key=key_prefix + "_chart_" + analysis)
         chart = result[result["Segment"].isin(chosen)]
         if not chart.empty:
             if time_based:
@@ -77,10 +84,10 @@ def render_group_statistics(df, col_types):
                 fig = px.line(long, x="Period", y="Result", color="Segment", line_dash="Statistic")
             else:
                 fig = px.bar(chart, x="Segment", y=plotted[0], color="Segment")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key=key_prefix + "_chart")
         display = result.drop(columns=keys)
         st.dataframe(display.style.format(precision=2, na_rep="N/A"), use_container_width=True)
         st.download_button("Download statistics (CSV)", display.to_csv(index=False).encode("utf-8-sig"),
-                           file_name="group_statistics.csv", mime="text/csv", key="gs_download")
+                           file_name="comparison.csv" if key_prefix != "gs" else "group_statistics.csv", mime="text/csv", key=key_prefix + "_download")
     except (ValueError, TypeError) as exc:
         st.warning(f"Unable to calculate these statistics: {exc}")
