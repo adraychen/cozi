@@ -16,6 +16,9 @@ def choose_target(column, options):
 
 
 def change_selection(state_key, option, key, powers=False):
+    # Classification changes can clear widget state before queued callbacks run.
+    if key not in st.session_state:
+        return
     selected=list(st.session_state.get(state_key,[]))
     if st.session_state[key]:
         if option not in selected: selected.append(option)

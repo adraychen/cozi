@@ -53,6 +53,24 @@ _SAMPLE_DATASETS = [
         "desc": "Statistical Analysis (120 rows)",
         "separator": "-",
     },
+    {
+        "name": "UCLA_admission.csv",
+        "id":   "1AKC6ShNS0Z0YaIECjl25s4fILPpUb7jL",
+        "desc": "binary logistic regression analysis",
+        "separator": "-",
+    },
+    {
+        "name": "PlantGrowth.csv",
+        "id":   "17T-JKEtpnihUIkkiPq8L7c3eGEMStRlg",
+        "desc": "ANOVA analysis",
+        "separator": "-",
+    },
+    {
+        "name": "Galton_Family_Heights.csv",
+        "id":   "1uDH7warzjl5wGV7whSdKHK7Fwb4nwlkw",
+        "desc": "linear regression analysis",
+        "separator": "-",
+    },
 ]
 
 
