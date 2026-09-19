@@ -187,6 +187,7 @@ Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `
 
 The **Comparison** tab sits immediately after **Relationship** and contains:
 
+- **t-Test:** one-sample, independent samples (stacked or separate columns), and paired samples. Welch is the independent-sample default; pooled Student is optional. Directional hypotheses, confidence intervals, effect sizes, graphical diagnostics and CSV exports are included. See [TTEST.md](TTEST.md).
 - **Group Comparison (ANOVA):** categorical grouping and numerical outcome, group summaries and box plots, normality/variance diagnostics, and Welch or classical ANOVA. The existing independence confirmation and validation are preserved.
 - **Segment Comparison:** compare groups with a reference segment using absolute and percentage differences.
 - **Period-over-Period Comparison:** previous calendar period or same period last year for monthly/quarterly/yearly data.
@@ -700,3 +701,15 @@ Relationship provides independent Select all / Clear all controls for Numerical 
 Both models use the same response/predictor checkboxes, interaction/polynomial controls, hierarchy rules and seven result tabs. Logistic regression requires an explicit modeled event and supports categorical reference choices and a configurable confidence level. It uses statsmodels binomial-logit maximum likelihood, coefficient/odds-ratio inference, LR model tests, AIC/BIC, deviance and McFadden Pseudo-R². No elimination is the default; optional backward AIC selection preserves hierarchy.
 
 Logistic diagnostics cover separation, convergence, outcome information, sparse categories, VIF, logit functional form, residuals, influence and in-sample calibration. Predictions are probabilities with confidence intervals. ROC/AUC is optional and secondary. There is no train/test split, cross-validation, threshold optimization or automatic alternative model in this Relationship workflow. See [LOGISTIC_REGRESSION.md](LOGISTIC_REGRESSION.md) for implementation, limitations and verification.
+
+### Comparison selection and ANOVA results
+
+Comparison uses grouped Numerical, Categorical and Date / Time checkboxes with Select all/Clear all, matching Relationship. Only selected variables are offered in the analysis controls. ANOVA requires numerical and categorical selections; Segment Comparison requires a categorical selection; Period-over-Period Comparison requires a date/time selection and supports row counts without a numerical measure. Unavailable analysis selections reset automatically.
+
+ANOVA has five result tabs: Model Overview (summary table and overall test), Group Analysis (descriptive statistics), Diagnostics (normality, variance and warnings), Visual Analysis (group box plots), and ANOVA Findings (interpretation). Method selection and independence confirmation remain above the tabs; descriptive results remain available before confirmation. Existing statistical validation is unchanged.
+
+### t-Test in Comparison
+
+Select at least one quantitative Numerical variable to enable **t-Test**. The selected variables constrain the response, group and sample controls. Classification overrides are respected, including Categorical → Binary columns stored as integers. Automatically classified identifier-like names are excluded unless deliberately overridden to Numerical.
+
+The five result tabs are **Test Configuration**, **Descriptive Statistics**, **Diagnostics**, **t-Test Results**, and **Interpretation**. All three modes support two-sided/greater/less hypotheses, a configurable confidence level (95% default), and matching confidence bounds for the signed difference. Significance alpha is 1 minus confidence. Diagnostics use the existing histogram/box plot and IQR outlier helpers, Q–Q plots and skewness; no Shapiro–Wilk or other formal normality test is run, and outliers are retained. Paired calculations and diagnostics use complete-pair differences. Statistical implementation, assumptions, effect-size definitions and verification are documented in [TTEST.md](TTEST.md).

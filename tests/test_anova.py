@@ -83,6 +83,8 @@ st.session_state['file_id'] = dataset
 df = pd.DataFrame({'g': ['a']*5 + ['b']*5, 'v': [1.,2,4,3,6, 3,5,8,6,10]})
 render_comparison(df, {'numerical':['v'], 'categorical':['g'], 'datetime':[]})
 ''').run(timeout=30)
+        app.checkbox(key='gs_cmp_variable_v').check().run(timeout=30)
+        app.checkbox(key='gs_cmp_variable_g').check().run(timeout=30)
         app.selectbox(key='gs_cmp_analysis').select('Group Comparison (ANOVA)').run(timeout=30)
         self.assertFalse(app.exception)
         self.assertFalse(any('one-way ANOVA**' in m.value for m in app.markdown))
