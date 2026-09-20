@@ -357,6 +357,12 @@ def render_categorical_panel(col_name: str) -> None:
 
 
 def render_datetime_panel(col_name: str) -> None:
+    subtype = variable_metadata[col_name]['variable_subtype']
+    if subtype in ('Time', 'Duration'):
+        from utils.temporal_ui import render_noncalendar_temporal
+        st.markdown(f'**{col_name}**')
+        render_noncalendar_temporal(df[col_name], subtype, 'quality_temporal_'+str(col_name))
+        return
     series      = pd.to_datetime(df[col_name], errors="coerce")
     clean       = series.dropna()
     total       = len(series)
@@ -411,8 +417,8 @@ with tab2:
     else:
         render_panels(col_types["categorical"], render_categorical_panel)
 with tab3:
-    if not col_types["datetime"]:
-        st.info("No date/time columns found.")
+    if not col_types["temporal"]:
+        st.info("No temporal columns found.")
     else:
         st.caption(
             "ℹ️ Dates that cannot be parsed — such as text values, impossible dates "
@@ -420,7 +426,7 @@ with tab3:
             "and counted under **Missing Values**. The **Future Dates** field shows how many "
             "valid dates fall after today."
         )
-        render_panels(col_types["datetime"], render_datetime_panel)
+        render_panels(col_types["temporal"], render_datetime_panel)
 
 st.divider()
 
@@ -465,14 +471,11 @@ _show_feedback("Data Quality Summary", "dqs")
 
 st.divider()
 
-from utils.visual_analysis import render_visual_analysis
-render_visual_analysis(df, col_types)
-st.divider()
 
 # ── Exploratory Data Analysis ─────────────────────────────────────────────────
 st.subheader("Exploratory Data Analysis")
 
-profile_tab, group_tab, relationships_tab, comparison_tab = st.tabs(["Descriptive Statistics", "Group Statistics", "Relationship", "Comparison"])
+profile_tab, group_tab, visual_tab, relationships_tab, comparison_tab = st.tabs(["Descriptive Statistics", "Group Statistics", "Visual Analysis", "Relationship", "Comparison"])
 
 with profile_tab:
     # ── Single Column ─────────────────────────────────────────────────────────────
@@ -639,6 +642,9 @@ with profile_tab:
                         st.rerun()
 
         # ── Date / Time ───────────────────────────────────────────────────────────
+        elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration'):
+            from utils.temporal_ui import render_noncalendar_temporal
+            render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal')
         elif col_type == "Date / Time":
             series = pd.to_datetime(df[selected_col], errors="coerce")
 
@@ -682,6 +688,10 @@ with profile_tab:
 with group_tab:
     from utils.group_statistics_ui import render_group_statistics
     render_group_statistics(df, col_types)
+
+with visual_tab:
+    from utils.visual_analysis import render_visual_analysis
+    render_visual_analysis(df, col_types)
 
 with comparison_tab:
     from utils.comparison_ui import render_comparison

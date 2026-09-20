@@ -2,6 +2,7 @@
 from html import escape
 import pandas as pd
 from utils.loader import get_dataframe_info
+from utils.temporal import SUBTYPES, parse_temporal, temporal_value, infer_temporal_subtype
 
 
 def value_details(series, metadata):
@@ -12,9 +13,10 @@ def value_details(series, metadata):
     if subtype=='Continuous' or (subtype=='Discrete' and len(values)>10):
         numeric=pd.to_numeric(series.dropna(),errors='raise')
         return 'Range', [('Minimum',numeric.min()),('Maximum',numeric.max())]
-    if subtype=='Date / Time':
-        dates=pd.to_datetime(series,errors='coerce').dropna()
-        return 'Date/time range', [('Minimum',dates.min()),('Maximum',dates.max())] if len(dates) else []
+    if subtype in SUBTYPES or subtype == 'Date / Time':
+        subtype = infer_temporal_subtype(series) if subtype == 'Date / Time' else subtype
+        parsed = parse_temporal(series, subtype or 'DateTime').dropna()
+        return f'{subtype} range', [('Minimum',temporal_value(parsed.min(),subtype)),('Maximum',temporal_value(parsed.max(),subtype))] if len(parsed) else []
     if subtype=='Ordinal':
         return 'All values, lowest to highest', [('Value',v) for v in metadata['order'] if v in values]
     if subtype=='Nominal':

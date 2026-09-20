@@ -1,4 +1,5 @@
 import pandas as pd
+from utils.temporal import infer_temporal_subtype
 from typing import Dict, List
 
 
@@ -19,19 +20,9 @@ def detect_data_types(df: pd.DataFrame) -> Dict[str, List[str]]:
         elif pd.api.types.is_datetime64_any_dtype(df[col]):
             datetime_cols.append(col)
         else:
-            # Attempt to detect date-like object columns
-            try:
-                non_null = df[col].dropna()
-                if len(non_null) == 0:
-                    categorical.append(col)
-                    continue
-                converted = pd.to_datetime(non_null, errors="coerce")
-                valid_ratio = converted.notna().sum() / len(non_null)
-                if valid_ratio >= 0.8:
-                    datetime_cols.append(col)
-                else:
-                    categorical.append(col)
-            except Exception:
+            if infer_temporal_subtype(df[col]) is not None:
+                datetime_cols.append(col)
+            else:
                 categorical.append(col)
 
     return {

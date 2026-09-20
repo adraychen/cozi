@@ -2,8 +2,9 @@
 import numpy as np
 import pandas as pd
 from utils.detector import detect_data_types
+from utils.temporal import SUBTYPES, infer_temporal_subtype, parse_temporal
 
-ALLOWED = {'Numerical': ['Discrete', 'Continuous'], 'Categorical': ['Binary', 'Nominal', 'Ordinal'], 'Date / Time': ['Date / Time']}
+ALLOWED = {'Numerical': ['Discrete', 'Continuous'], 'Categorical': ['Binary', 'Nominal', 'Ordinal'], 'Date / Time': SUBTYPES}
 KINDS = {'Numerical':'numerical', 'Categorical':'categorical', 'Date / Time':'datetime'}
 ORDERS = [('low','medium','high'), ('small','medium','large'), ('poor','fair','good','excellent')]
 
@@ -24,7 +25,7 @@ def infer_variable_subtype(series, variable_type):
     if variable_type == 'Numerical':
         return 'Discrete' if pd.api.types.is_integer_dtype(series.dtype) else 'Continuous'
     if variable_type == 'Date / Time':
-        return 'Date / Time'
+        return infer_temporal_subtype(series) or 'DateTime'
     if series.nunique(dropna=True)==2:
         return 'Binary'
     return 'Ordinal' if category_order(series)[1] else 'Nominal'
@@ -39,7 +40,7 @@ def validate_type_subtype(series, variable_type, subtype, order=None):
     if subtype not in get_allowed_subtypes(variable_type):
         raise ValueError('Choose a subtype compatible with the selected Variable Type.')
     if variable_type=='Numerical':
-        if pd.api.types.is_datetime64_any_dtype(series):
+        if pd.api.types.is_datetime64_any_dtype(series) or pd.api.types.is_timedelta64_dtype(series):
             raise ValueError('Date/time values cannot be treated as numeric measurements.')
         try:
             numeric=pd.to_numeric(series.dropna(),errors='raise')
@@ -57,9 +58,15 @@ def validate_type_subtype(series, variable_type, subtype, order=None):
     if variable_type=='Date / Time':
         values=series.dropna()
         if pd.api.types.is_numeric_dtype(series) or not len(values):
-            raise ValueError('Use date-like values for Date / Time; numeric timestamps require explicit conversion first.')
-        if pd.to_datetime(values,errors='coerce').notna().mean()<.8:
-            raise ValueError('At least 80% of non-missing values must be valid dates.')
+            raise ValueError('Use temporal values with explicit formats or units; unitless numeric values require conversion first.')
+        parsed = parse_temporal(values, subtype)
+        if parsed.notna().mean() < .8:
+            raise ValueError(f'At least 80% of non-missing values must be valid {subtype} values.')
+        if subtype == 'Date':
+            calendar = parse_temporal(values, 'DateTime')
+            if (calendar.notna() & parsed.isna()).any():
+                raise ValueError('Date would discard time components. Use DateTime for timestamps.')
+
 
 def apply_user_override(metadata, column, series, variable_type, subtype, order=None):
     validate_type_subtype(series,variable_type,subtype,order)
@@ -78,19 +85,30 @@ def ensure_metadata(state, df, dataset_id):
     missing=[c for c in df if c not in metadata]
     inferred=infer_metadata(df[missing]) if missing else {}
     state['variable_metadata']={c:metadata.get(c,inferred.get(c)) for c in df}
+    for column, item in state['variable_metadata'].items():
+        if item['variable_type'] == 'Date / Time' and item['variable_subtype'] == 'Date / Time':
+            item['variable_subtype'] = infer_variable_subtype(df[column], 'Date / Time')
     return state['variable_metadata']
 
 def effective_data(df, metadata):
     data=df.copy()
     groups={k:[] for k in KINDS.values()}
+    groups.update(temporal=[], time=[], duration=[])
     for c,m in metadata.items():
-        t=m['variable_type'];groups[KINDS[t]].append(c)
+        t=m['variable_type']
+        if t == 'Date / Time':
+            groups['temporal'].append(c)
+            subtype = m['variable_subtype']
+            groups['time' if subtype == 'Time' else 'duration' if subtype == 'Duration' else 'datetime'].append(c)
+        else:
+            groups[KINDS[t]].append(c)
         if t=='Numerical':
             data[c]=pd.to_numeric(data[c],errors='raise')
             if pd.api.types.is_bool_dtype(data[c]):
                 data[c]=data[c].astype(float)
         elif t=='Date / Time':
-            data[c]=pd.to_datetime(data[c],errors='coerce')
+            subtype = m['variable_subtype']
+            data[c]=parse_temporal(data[c], infer_variable_subtype(data[c],t) if subtype=='Date / Time' else subtype)
         elif m['variable_subtype']=='Ordinal':
             data[c]=pd.Categorical(data[c],categories=m['order'],ordered=True)
         else:

@@ -5,7 +5,7 @@ import streamlit as st
 def select_descriptive_variable(col_types):
     groups = [('Numerical', col_types['numerical']),
               ('Categorical', col_types['categorical']),
-              ('Temporal', col_types['datetime'])]
+              ('Temporal', col_types.get('temporal', col_types['datetime']))]
     columns = [column for _, values in groups for column in values]
     selected_key = 'dist_profile_selected'
     if selected_key not in st.session_state:

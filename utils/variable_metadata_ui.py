@@ -18,6 +18,8 @@ def render_column_overview(raw, dataset_id):
         t=st.selectbox('Variable Type',list(ALLOWED),index=list(ALLOWED).index(m['variable_type']),key=prefix+'_type',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
         default=m['variable_subtype'] if t==m['variable_type'] else infer_variable_subtype(raw[col],t)
         subtype=st.selectbox('Variable Subtype',ALLOWED[t],index=ALLOWED[t].index(default),key=prefix+'_'+t+'_subtype',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
+        if t == 'Date / Time':
+            st.caption('Date: calendar date; Time: time of day; DateTime: date and time; Duration: elapsed time with explicit units. HH:MM[:SS] is inferred as Time; choose Duration explicitly for elapsed clock notation. Calendar analyses use Date and DateTime only. Zoned timestamps are normalized to UTC.')
         order=[]
         if subtype=='Ordinal':
             values,recognized=category_order(raw[col])
@@ -47,8 +49,8 @@ def render_column_overview(raw, dataset_id):
                 st.session_state['vm_revision']=st.session_state.get('vm_revision',0)+1
                 st.rerun()
     data, groups = effective_data(raw,metadata)
-    for c in groups['datetime']:
+    for c in groups['temporal']:
         invalid = int((raw[c].notna() & data[c].isna()).sum())
         if invalid:
-            st.warning(f'{c}: {invalid} non-missing values could not be parsed as dates and are missing in analyses. Original values are preserved.')
+            st.warning(f'{c}: {invalid} non-missing values could not be parsed as their Temporal subtype and are missing in analyses. Original values are preserved.')
     return data, groups

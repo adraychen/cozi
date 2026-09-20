@@ -11,8 +11,8 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values with expandable details and A/M classification badges; classification editor |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Temporal columns + AI interpretation |
-| **Exploratory Data Analysis** | Four tabs: Descriptive Statistics, Group Statistics, Relationship, and Comparison |
-| **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
+| **Exploratory Data Analysis** | Five tabs: Descriptive Statistics, Group Statistics, Visual Analysis, Relationship, and Comparison |
+| **Visual Analysis (within EDA)** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
 ---
@@ -64,7 +64,7 @@ One row per column showing:
 | Column Name | Original column name |
 | Data Type | Plain-language dtype: Whole Number, Decimal Number, Text, True/False, Date/Time |
 | Variable Type | Effective Numerical, Categorical, or Temporal classification |
-| Variable Subtype | Discrete / Continuous; Binary / Nominal / Ordinal; Temporal |
+| Variable Subtype | Discrete / Continuous; Binary / Nominal / Ordinal; Date / Time / DateTime / Duration |
 | Total Values | Total row count |
 | Missing Values | Count of missing entries |
 | Missing % | Percentage missing, formatted to 2 decimal places |
@@ -125,7 +125,7 @@ After all quality panels load, the app generates a 4–5 sentence plain-English 
 
 ## Exploratory Data Analysis
 
-Tab order: **Descriptive Statistics → Group Statistics → Relationship → Comparison**.
+Tab order: **Descriptive Statistics → Group Statistics → Visual Analysis → Relationship → Comparison**.
 
 ### Descriptive Statistics (single column)
 
@@ -171,7 +171,7 @@ Requires 20 finite observations and two distinct values. Above 3,000 observation
 
 ### Group Statistics
 
-Exploratory Data Analysis now has four tabs: **Descriptive Statistics → Group Statistics → Relationship → Comparison**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+Exploratory Data Analysis now has five tabs: **Descriptive Statistics → Group Statistics → Visual Analysis → Relationship → Comparison**. Use the type-grouped checkboxes to select a numerical measure (or leave all numerical variables unchecked for row counts), optional categorical dimensions, and a calendar variable when needed; then choose an analysis type.
 
 - **Group Summary:** sum, mean, median, min/max, sample standard deviation, non-missing numerical count, or row count.
 - **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
@@ -613,12 +613,12 @@ These tests cover selected calculations. They do not verify live Groq or Google 
 
 ## Visual Analysis
 
-A standalone section above Exploratory Data Analysis. Select columns in **Numeric**, **Categorical**, and **Date/time** groups; only compatible graph buttons appear. Click a button to select a graph; the active button is highlighted. Buttons are arranged four per row, and changing columns resets an incompatible selection to the first available graph. Additional controls assign axes, grouping, measures, and aggregation.
+A tab within Exploratory Data Analysis, between Group Statistics and Relationship. Select variable checkboxes in **Numerical**, **Categorical**, and **Temporal (Date / DateTime)** groups; only compatible graph buttons appear. Click a button to select a graph; the active button is highlighted. Buttons are arranged four per row, and changing columns resets an incompatible selection to the first available graph. Additional controls assign axes, grouping, measures, and aggregation.
 
 | Graph | Selected columns needed |
 |---|---|
 | Histogram, dot plot, density, box plot, normal Q–Q plot | At least one numeric; optional categorical grouping for box plots |
-| Bar, Pareto | At least one categorical; optional numerical measure (otherwise counts) |
+| Bar, pie, Pareto | At least one categorical; optional numerical measure (otherwise counts) |
 | Stacked-bar | At least two categorical; optional numerical measure |
 | Line, area | Date/time + numeric, or at least two numeric |
 | Scatter, correlation matrix, pair plot | At least two numeric |
@@ -632,7 +632,7 @@ Display limits are disclosed: dot plots sample 2,000 observations, density 10,00
 Implemented in `utils/visual_analysis.py`. Existing Descriptive Statistics, Group Statistics, Relationship, and Predictive Analytics remain available.
 
 
-For exactly **one numeric + one categorical column** (and no date/time column), Visual Analysis offers only **Box plot, Bar chart, and Pareto chart**. Box plots group the selected measure by the category; bar and Pareto charts use the selected numerical measure rather than defaulting to row counts. Single-variable histogram, dot, density, and Q–Q plots are not offered for this combination.
+For exactly **one numeric + one categorical column** (and no date/time column), Visual Analysis offers only **Box plot, Bar chart, Pie chart, and Pareto chart**. Box plots group the selected measure by the category; bar and Pareto charts use the selected numerical measure rather than defaulting to row counts. Single-variable histogram, dot, density, and Q–Q plots are not offered for this combination.
 
 
 Stacked-bar charts have an **Additive measure** selector: **Sum** or **Count**. Sum requires a selected numerical measure and adds its non-missing values. Count counts rows per category combination, including rows with missing numeric values. Missing grouping categories are excluded. With no numeric column selected, only Count is available and a hint explains how to enable Sum. Mean is not offered for stacked bars.
@@ -644,10 +644,10 @@ For these combinations without date/time columns, the following menus override t
 
 | Selected columns | Available graphs |
 |---|---|
-| One numeric + one categorical | Box plot, bar chart, Pareto chart |
+| One numeric + one categorical | Box plot, bar chart, pie chart, Pareto chart |
 | Two numeric + one categorical | Scatter plot, with category color required |
 | One numeric + two categorical | Grouped bar chart, stacked-bar chart, grouped box plot, heatmap |
-| Two numeric | Scatter plot, correlation matrix, pair plot, line chart, area chart |
+| Two numeric | Scatter plot, correlation matrix, pair plot, heatmap, line chart, area chart |
 | Two categorical | Grouped bar chart, stacked-bar chart, count heatmap |
 
 Grouped bars use both categories (axis and color), with the numeric measure required when selected. Grouped boxes show the selected measure by category and subgroup. Numeric/category heatmaps require the selected numeric measure and display its mean by the two categories. Two-numeric line/area plots require a meaningful ordered X variable, as noted in the UI. Stacked bars retain the requested Sum/Count selector: Sum uses the selected measure, whereas Count intentionally shows category frequencies, including rows with missing numeric values. Other combinations retain their existing chart options.
@@ -717,3 +717,24 @@ The five result tabs are **Test Configuration**, **Descriptive Statistics**, **D
 Descriptive Statistics uses checkboxes grouped by **Numerical**, **Categorical**, and **Temporal** according to the effective Column Overview classifications. Only one variable can be selected at a time; selecting another automatically clears the previous selection. Unchecking the active variable shows a selection prompt. Existing statistics, charts and distribution analysis are preserved.
 
 Temporal is the visible analytical variable-type label throughout the app; the internal `Date / Time` metadata key is retained for compatibility with saved classifications.
+
+### Temporal subtypes
+
+Temporal now offers **Date**, **Time**, **DateTime**, and **Duration** in Column Overview, with automatic inference and manual overrides. Legacy generic Temporal subtype metadata is upgraded on load while retaining its classification source.
+
+- Date: calendar dates; explicit timestamps (even textual midnight timestamps) are DateTime. Native midnight-only datetime columns default to Date.
+- Time: clock times such as `08:30`, `17:45:15`, or `8:30 PM`, stored for analysis as elapsed time since midnight without inventing a calendar date.
+- DateTime: date and time, including timestamps with zones; timezone-aware inputs are normalized to UTC for analysis. Original input values remain intact.
+- Duration: timedeltas or explicitly unit-bearing values such as `2 hours`, `1 day`, or `PT2H`. Clock notation defaults to Time; a manual Duration override interprets `08:30` as eight hours and thirty minutes. Unitless numbers are not silently treated as nanoseconds. Calendar months/years are not fixed-length durations.
+
+Overrides require at least 80% valid nonmissing values for the selected subtype; invalid values become missing in the analysis copy and are reported. Date overrides reject timestamps with nonzero time components instead of truncating them. Column Overview value details display subtype-specific ranges. Descriptive Statistics and Temporal quality panels show clock-time/duration summaries and distributions. Calendar-based relationship/trend and period-comparison controls offer only Date/DateTime columns; Time and Duration are not silently treated as calendar timestamps.
+
+Parsing and inference are in `utils/temporal.py`; clock/duration descriptive displays are in `utils/temporal_ui.py`. Temporal metadata includes all four subtypes; the `datetime` analysis group remains restricted to calendar-compatible columns for backward compatibility.
+
+### EDA variable checkbox controls
+
+Group Statistics uses type-grouped checkbox grids: at most one Numerical measure, any Categorical grouping variables, and at most one Temporal (Date/DateTime) column. Checking a different single-role variable clears its predecessor. No numerical selection means row counts; time analyses prompt for a selected calendar variable. Categorical selections provide Select all/Clear all. Comparison's existing shared calculation paths are unchanged.
+
+Visual Analysis uses grouped variable checkboxes with Select all/Clear all. Chart roles (axes, grouping, color, size and measures) use single-selection checkboxes; line-series measures and pair-plot variables use multiple-selection checkboxes. Aggregation and other chart settings retain their existing controls. The compatible chart buttons remain selection-driven.
+
+All requested chart families are available: **pie, bar, stacked-bar, scatter, bubble, heatmap and pair plot**. Pie charts use one categorical variable with row counts by default or sums of an optional numerical variable. Category totals must be nonnegative and sum to a positive value. Missing categories or selected measures are excluded; no absolute-value conversion is performed. Bubble sizes require nonnegative values, and pair plots support two to six numerical variables. Existing exact-combination chart restrictions still apply as documented above.

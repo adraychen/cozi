@@ -2,6 +2,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils.variable_selection import variable_checkboxes
 from utils.group_statistics import STATISTICS, FREQUENCIES, summary, compare, contribution, temporal
 
 ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Comparison",
@@ -14,11 +15,18 @@ GROUP_ANALYSES = ["Group Summary", "Running & Cumulative Statistics", "Rolling A
 def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_heading=True):
     if show_heading:
         st.markdown("#### Group Statistics")
-    measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
-                           format_func=lambda value: "None (categorical data / row counts)" if value is None else value,
-                           key=key_prefix + "_measure_optional")
-    dimensions = st.multiselect("Categorical columns", col_types["categorical"], key=key_prefix + "_dimensions",
-                                help="Select one or more dimensions. Leave empty for the whole dataset.")
+    if key_prefix == 'gs':
+        st.caption('Select at most one numerical measure and one Date/DateTime variable; select any categorical grouping variables. Without a numerical measure, statistics use row counts.')
+        measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True)
+        measure = measures[0] if measures else None
+        dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions')
+        dates = variable_checkboxes('Temporal (Date / DateTime)', col_types['datetime'], 'gs_temporal', single=True)
+    else:
+        measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
+                               format_func=lambda value: "None (categorical data / row counts)" if value is None else value,
+                               key=key_prefix + "_measure_optional")
+        dimensions = st.multiselect("Categorical columns", col_types["categorical"], key=key_prefix + "_dimensions",
+                                    help="Select one or more dimensions. Leave empty for the whole dataset.")
     if analysis is None:
         if st.session_state.get(key_prefix + "_analysis") not in GROUP_ANALYSES:
             st.session_state.pop(key_prefix + "_analysis", None)
@@ -32,7 +40,13 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
             if not col_types["datetime"]:
                 st.info("Select a Temporal override in Column Overview to enable time-based analysis.")
                 return
-            date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
+            if key_prefix == 'gs':
+                if not dates:
+                    st.info('Select one Date or DateTime variable above for time-based analysis.')
+                    return
+                date = dates[0]
+            else:
+                date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
             frequency = st.selectbox("Period frequency", list(FREQUENCIES), index=2, key=key_prefix + "_frequency")
             zero = st.checkbox("Treat missing period values as zero", key=key_prefix + "_zero",
                                help="Off by default. Enable only when missing values mean no activity.")

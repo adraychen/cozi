@@ -6,11 +6,12 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats
 import streamlit as st
+from utils.variable_selection import variable_checkboxes
 
 
 def available_charts(numeric, categorical, dates):
     if len(numeric) == 1 and len(categorical) == 1 and not dates:
-        return ['Box plot', 'Bar chart', 'Pareto chart']
+        return ['Box plot', 'Bar chart', 'Pie chart', 'Pareto chart']
     if not dates:
         combination = (len(numeric), len(categorical))
         if combination == (2, 1):
@@ -18,14 +19,14 @@ def available_charts(numeric, categorical, dates):
         if combination == (1, 2):
             return ['Grouped bar chart', 'Stacked-bar chart', 'Grouped box plot', 'Heatmap']
         if combination == (2, 0):
-            return ['Scatter plot', 'Correlation matrix', 'Pair plot', 'Line chart', 'Area chart']
+            return ['Scatter plot', 'Correlation matrix', 'Pair plot', 'Heatmap', 'Line chart', 'Area chart']
         if combination == (0, 2):
             return ['Grouped bar chart', 'Stacked-bar chart', 'Heatmap']
     charts = []
     if numeric:
         charts += ['Histogram', 'Dot plot', 'Density plot', 'Box plot', 'Q–Q plot']
     if categorical:
-        charts += ['Bar chart', 'Pareto chart']
+        charts += ['Bar chart', 'Pie chart', 'Pareto chart']
     if len(categorical) >= 2:
         charts += ['Stacked-bar chart']
     if (dates and numeric) or len(numeric) >= 2:
@@ -40,15 +41,28 @@ def available_charts(numeric, categorical, dates):
 
 
 def choose(label, options, key):
+    roles = {'univariate','box_group','box_subgroup','bar_category','stack','stack_measure',
+             'bar_measure','line_x','scatter_x','scatter_y','bubble_size','scatter_color',
+             'heat_row','heat_col','heat_measure'}
+    if key in roles:
+        required = None not in options
+        columns = [c for c in options if c is not None]
+        selected = variable_checkboxes(label, columns, 'va_'+key, single=True,
+                                       default=columns[:1] if required else [])
+        if not selected and required:
+            raise ValueError('Select a variable for ' + label + '.')
+        return selected[0] if selected else None
+    if st.session_state.get('va_' + key) not in options:
+        st.session_state.pop('va_' + key, None)
     return st.selectbox(label, options, key='va_' + key)
 
 
 def render_visual_analysis(df, col_types):
-    st.subheader('Visual Analysis')
+    st.markdown('#### Visual Analysis')
     st.caption('Select columns, then choose a compatible graph. Chart-specific controls assign roles to your selected columns.')
     selected = {}
-    for label, kind in [('Numeric', 'numerical'), ('Categorical', 'categorical'), ('Date/time', 'datetime')]:
-        selected[kind] = st.multiselect(label + ' columns', col_types[kind], key='va_select_' + kind)
+    for label, kind in [('Numerical', 'numerical'), ('Categorical', 'categorical'), ('Temporal (Date / DateTime)', 'datetime')]:
+        selected[kind] = variable_checkboxes(label, col_types[kind], 'va_select_' + kind)
     nums, cats, dates = selected['numerical'], selected['categorical'], selected['datetime']
     choices = available_charts(nums, cats, dates)
     if not choices:
@@ -122,7 +136,7 @@ def render_visual_analysis(df, col_types):
                 fig.add_scatter(x=theory,y=slope*np.asarray(theory)+intercept,mode='lines',name='Reference line')
                 fig.update_layout(xaxis_title='Theoretical normal quantiles',yaxis_title=str(col))
                 st.caption('Normal Q–Q plot. Departure from the line suggests departure from normality; this is not a significance test.')
-        elif chart in ['Bar chart','Grouped bar chart','Stacked-bar chart','Pareto chart']:
+        elif chart in ['Bar chart','Grouped bar chart','Stacked-bar chart','Pie chart','Pareto chart']:
             category=choose('Category',cats,'bar_category')
             stack=choose('Stack by',[c for c in cats if c!=category],'stack') if chart in ['Stacked-bar chart','Grouped bar chart'] else None
             if chart=='Stacked-bar chart':
@@ -136,8 +150,8 @@ def render_visual_analysis(df, col_types):
                 if not nums:
                     st.caption('Select a numeric column to enable Sum.')
             else:
-                measure=choose('Measure',nums if len(nums)==1 and not dates else [None]+nums,'bar_measure')
-                agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart!='Pareto chart' else 'Sum'
+                measure=choose('Measure',[None]+nums if chart=='Pie chart' else nums if len(nums)==1 and not dates else [None]+nums,'bar_measure')
+                agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart not in ['Pareto chart','Pie chart'] else 'Sum'
             if chart=='Pareto chart':
                 st.caption('Pareto uses row counts or sums, ordered from largest to smallest. The cumulative line uses the full total.')
             keys=[key[category]]+([key[stack]] if stack else [])
@@ -147,7 +161,12 @@ def render_visual_analysis(df, col_types):
             table=values.rename('Value').reset_index()
             if table.empty:
                 raise ValueError('No complete values for this chart.')
-            if chart=='Pareto chart':
+            if chart=='Pie chart':
+                if (table.Value<0).any() or table.Value.sum()<=0:
+                    raise ValueError('Pie charts require nonnegative category totals and a positive grand total.')
+                fig=px.pie(table,names=key[category],values='Value',labels=labels)
+                st.caption('Slices show row counts when no measure is selected, otherwise sums. Missing categories and missing selected measures are excluded. Negative totals cannot be shown as shares.')
+            elif chart=='Pareto chart':
                 if (table.Value<0).any() or table.Value.sum()<=0:
                     raise ValueError('Pareto requires nonnegative category totals and a positive grand total.')
                 table=table.sort_values('Value',ascending=False)
@@ -163,7 +182,7 @@ def render_visual_analysis(df, col_types):
             axis=choose('X axis',dates+nums,'line_x')
             if not dates:
                 st.caption('Use line/area charts only when the X variable has a meaningful order; otherwise use a scatter plot.')
-            ys=st.multiselect('Measures',[c for c in nums if c!=axis],default=[c for c in nums if c!=axis][:1],key='va_line_y')
+            ys=variable_checkboxes('Measures',[c for c in nums if c!=axis],'va_line_y',default=[c for c in nums if c!=axis][:1])
             if not ys:
                 raise ValueError('Select at least one measure.')
             agg=choose('Aggregate repeated X values',['Mean','Sum'],'line_agg')
@@ -186,7 +205,7 @@ def render_visual_analysis(df, col_types):
                 st.caption('Scatter/bubble plot uses a reproducible sample of 5,000 complete rows.')
             fig=px.scatter(clean,x=key[x],y=key[y],size=key[size] if size else None,color=key[color] if color else None,labels=labels)
         elif chart=='Pair plot':
-            axes=st.multiselect('Pair plot variables',nums,default=nums[:4],key='va_pair_axes')
+            axes=variable_checkboxes('Pair plot variables',nums,'va_pair_axes',default=nums[:4])
             if not 2<=len(axes)<=6:
                 raise ValueError('Choose two to six numerical variables for the pair plot.')
             clean=data[[key[c] for c in axes]].dropna()
@@ -234,7 +253,7 @@ def render_visual_analysis(df, col_types):
                         for axis in fig.select_yaxes():
                             if axis.title.text in (str(col),key[col]):
                                 axis.update(categoryorder='array',categoryarray=order)
-            st.plotly_chart(fig,use_container_width=True)
+            st.plotly_chart(fig,use_container_width=True,key='va_result_chart')
         st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
     except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
         st.info(str(exc))
