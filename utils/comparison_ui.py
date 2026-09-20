@@ -10,7 +10,7 @@ ANALYSES = ['Group Comparison (ANOVA)', 'Segment Comparison', 'Period-over-Perio
 
 def render_comparison(df, col_types):
     st.markdown('#### Comparison')
-    st.caption('Compare means with t-tests or ANOVA, segments against a reference, or changes across calendar periods.')
+    st.caption('Compare groups or periods to identify differences in your data.')
     selected = {}
     def set_group(columns, value):
         for column in columns:

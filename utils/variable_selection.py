@@ -2,7 +2,7 @@
 import streamlit as st
 
 
-def variable_checkboxes(label, options, prefix, single=False, default=None):
+def variable_checkboxes(label, options, prefix, single=False, default=None, hide_empty=False):
     options = list(options)
     state_key = prefix + '_selected'
     if state_key not in st.session_state:
@@ -21,6 +21,8 @@ def variable_checkboxes(label, options, prefix, single=False, default=None):
     def set_all(value):
         st.session_state[state_key] = options[:] if value else []
 
+    if hide_empty and not options:
+        return []
     st.markdown(f'**{label}**')
     if not options:
         st.caption('No eligible variables.')

@@ -16,11 +16,11 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
     if show_heading:
         st.markdown("#### Group Statistics")
     if key_prefix == 'gs':
-        st.caption('Select at most one numerical measure and one Date/DateTime variable; select any categorical grouping variables. Without a numerical measure, statistics use row counts.')
-        measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True)
+        st.caption('View summary statistics for your data by group.')
+        measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True, hide_empty=True)
         measure = measures[0] if measures else None
-        dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions')
-        dates = variable_checkboxes('Temporal (Date / DateTime)', col_types['datetime'], 'gs_temporal', single=True)
+        dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions', hide_empty=True)
+        dates = variable_checkboxes('Temporal (Date / DateTime)', col_types['datetime'], 'gs_temporal', single=True, hide_empty=True)
     else:
         measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
                                format_func=lambda value: "None (categorical data / row counts)" if value is None else value,

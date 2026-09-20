@@ -742,3 +742,7 @@ All requested chart families are available: **pie, bar, stacked-bar, scatter, bu
 Temporal grouping is backward-compatible with older classification dictionaries that contain `datetime` but no `temporal` key. The app and Column Overview derive the aggregate from available `datetime`, `time`, and `duration` groups (or an empty list). Deploy the app and utility modules together when updating classification features.
 
 The **Edit variable classification** panel is collapsed by default. A message above it explains how to expand the editor, change a variable type or subtype, and apply the classification.
+
+The regression Model validation panel omits the introductory article attribution and general diagnostic disclaimer. Its summary warning names tests with review flags (p < 0.05) and describes possible departures from the tested assumptions, rather than claiming that assumptions are proved or disproved. Diagnostic calculations are unchanged.
+
+Group Statistics and Visual Analysis hide variable-type headings and controls when there are no eligible variables in that group, matching Descriptive Statistics. Empty groups also clear their saved selections.

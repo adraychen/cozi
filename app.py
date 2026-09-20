@@ -130,8 +130,8 @@ except Exception:
 
 st.title("📊 AutoData Analytics")
 st.caption(
-    "Upload or input your data and automatically explore data quality, distributions, anomalies, "
-    "group differences, relationships, and visualizations. Designed for people who need to understand data quickly."
+    "Upload or input your data and analyze it through a broad range of guided analytical workflows and visualizations. "
+    "Designed to make data analysis more accessible, structured, and efficient."
 )
 
 @st.dialog("Data and Privacy")
@@ -704,7 +704,7 @@ with comparison_tab:
 with relationships_tab:
     # ── Multi-Column Analysis ─────────────────────────────────────────────────────
     st.markdown("#### Relationship")
-    st.caption("Select a numerical or binary response and numerical/categorical predictors below, then choose Regression. Numerical responses use linear regression; Categorical → Binary responses use logistic regression. Other analyses and charts depend on your selection.")
+    st.caption("Explore relationships between variables in your data.")
 
     # ── Grouped checkboxes by variable type ────────────────────────────────────────
     selected_cols = []

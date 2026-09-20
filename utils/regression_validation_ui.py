@@ -7,7 +7,6 @@ from scipy import stats
 from utils.regression_reporting import format_table
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
-ARTICLE = 'https://medium.com/@chenchungwai/a-comprehensive-guide-to-regression-model-validation-with-visual-tools-and-statistical-tests-in-f86d4ff6efbb'
 
 
 def render_validation(result):
@@ -15,11 +14,10 @@ def render_validation(result):
         st.warning(note)
     diagnostic = result['diagnostics']
     if not diagnostic.empty and diagnostic['Interpretation'].eq('Review warning').any():
-        st.warning('Review model validation: at least one diagnostic suggests an assumption may be violated.')
+        flagged = diagnostic.loc[diagnostic['Interpretation'].eq('Review warning'), 'Diagnostic'].astype(str).tolist()
+        st.warning('Diagnostic checks to review (p < 0.05): ' + ', '.join(flagged) + '. These results suggest possible departures from the tested assumptions; review the corresponding plots and study design.')
     st.caption('Numeric identifiers are not meaningful measures. For ordered ratings, regression treats adjacent score differences as equally spaced.')
     with st.expander('Model validation', expanded=False):
-        st.markdown(f'Visual checks and residual tests follow [Ray Chen’s regression validation article]({ARTICLE}). The variance test and influence checks extend its approach.')
-        st.write('These are exploratory diagnostics at α = 0.05, without adjustment for multiple testing. A large p-value does not prove an assumption. Inspect the plots and consider how the data were collected.')
         if result['perfect_fit']:
             st.info('Residual diagnostics are unavailable for a perfect or near-perfect fit. Check for duplicated variables or an outcome calculated directly from its predictors.')
             return
