@@ -10,8 +10,8 @@ A multi-section data analytics tool built with Streamlit. Upload a CSV or Excel 
 |---|---|
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values with expandable details and A/M classification badges; classification editor |
-| **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Date/Time columns + AI interpretation |
-| **Exploratory Data Analysis** | Four tabs: Data Profile, Group Statistics, Relationship, and Comparison |
+| **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Temporal columns + AI interpretation |
+| **Exploratory Data Analysis** | Four tabs: Descriptive Statistics, Group Statistics, Relationship, and Comparison |
 | **Visual Analysis** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |
 | **Predictive Analytics** | Automated model comparison and selection for regression and classification problems + AI interpretation |
 
@@ -63,15 +63,15 @@ One row per column showing:
 |---|---|
 | Column Name | Original column name |
 | Data Type | Plain-language dtype: Whole Number, Decimal Number, Text, True/False, Date/Time |
-| Variable Type | Effective Numerical, Categorical, or Date/Time classification |
-| Variable Subtype | Discrete / Continuous; Binary / Nominal / Ordinal; Date / Time |
+| Variable Type | Effective Numerical, Categorical, or Temporal classification |
+| Variable Subtype | Discrete / Continuous; Binary / Nominal / Ordinal; Temporal |
 | Total Values | Total row count |
 | Missing Values | Count of missing entries |
 | Missing % | Percentage missing, formatted to 2 decimal places |
 
 **Colour coding:** Red = 20%+ missing. Yellow = 5–19% missing.
 
-**Classification editor:** Select a column below the overview table, choose Variable Type and its dependent Variable Subtype, then Apply classification. Binary requires exactly two non-missing values. Numeric classifications require safe numeric conversion; Discrete requires integer-valued finite numbers. Date/Time retains the existing 80% parsing threshold for date-like values; numeric timestamps require prior explicit conversion. The original dataset is preserved.
+**Classification editor:** Select a column below the overview table, choose Variable Type and its dependent Variable Subtype, then Apply classification. Binary requires exactly two non-missing values. Numeric classifications require safe numeric conversion; Discrete requires integer-valued finite numbers. Temporal retains the existing 80% parsing threshold for date-like values; numeric timestamps require prior explicit conversion. The original dataset is preserved.
 
 Integers default to Discrete, floats to Continuous. Categorical pairs default to Binary; other categories default to Nominal unless an explicit ordered dtype or recognized complete semantic sequence identifies Ordinal. Numeric 0/1 values remain numerical until overridden. Ordinal order is editable using category numbers from lowest to highest, preserving the original labels. Automatic and user-overridden classifications are shown as A/M badges beside both Variable Type and Variable Subtype. Hover text reads Automatic classification or Manual Override. Overrides persist in session metadata and reset when the dataset is replaced. Upload identity includes a content hash, preventing equal-name/equal-size replacements from retaining stale metadata.
 
@@ -85,7 +85,7 @@ The overview shows Unique Values with an info control: Continuous and Discrete w
 |---|---|
 | **Numerical** | Pandas `int` or `float` dtype, excluding `bool` |
 | **Categorical** | `object` dtype, `bool` dtype, or columns that cannot be reliably parsed as dates |
-| **Date / Time** | `datetime64` dtype, or `object` columns where 80% or more of non-missing values parse as dates |
+| **Temporal** | `datetime64` dtype, or `object` columns where 80% or more of non-missing values parse as dates |
 
 > **Boolean columns** are classified as Categorical — True/False values represent discrete categories, not quantities.
 
@@ -112,7 +112,7 @@ Three tabbed panels, each rendered as bordered cards (two per row):
 - Right: Missing Values, Missing %, Unique Values, Unique %, Case Inconsistency, Special Characters
 - **(Cardinality)** appears directly beneath the Unique Values count; the count excludes missing values.
 
-### Date/Time Columns
+### Temporal Columns
 - Left: histogram stacked above a boxplot
 - Right: Missing Values, Missing %, Unique Values, Unique %, Earliest Date, Latest Date, Date Range, Future Dates
 
@@ -125,9 +125,9 @@ After all quality panels load, the app generates a 4–5 sentence plain-English 
 
 ## Exploratory Data Analysis
 
-Tab order: **Data Profile → Group Statistics → Relationship → Comparison**.
+Tab order: **Descriptive Statistics → Group Statistics → Relationship → Comparison**.
 
-### Data Profile (single column)
+### Descriptive Statistics (single column)
 
 Select any column from a dropdown for a detailed deep-dive.
 
@@ -142,7 +142,7 @@ Select any column from a dropdown for a detailed deep-dive.
 - **Mode** directly below the frequency table, showing all tied modes and their frequency. Missing values are excluded; columns without non-missing values show an explanatory message.
 - AI interpretation (cached per column, expandable)
 
-**Date/Time columns:**
+**Temporal columns:**
 - Histogram stacked above a boxplot (left) and violin plot (right) — showing the distribution of date values
 - Summary statistics as a **Statistic / Value table**: Count, Missing Values, Earliest Date, Latest Date, Date Range, Most Common Year/Month
 - AI interpretation (cached per column, expandable)
@@ -171,14 +171,14 @@ Requires 20 finite observations and two distinct values. Above 3,000 observation
 
 ### Group Statistics
 
-Exploratory Data Analysis now has four tabs: **Data Profile → Group Statistics → Relationship → Comparison**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
+Exploratory Data Analysis now has four tabs: **Descriptive Statistics → Group Statistics → Relationship → Comparison**. Select a numerical measure (or **None** for categorical data / row counts), optional categorical dimensions, then an analysis type.
 
 - **Group Summary:** sum, mean, median, min/max, sample standard deviation, non-missing numerical count, or row count.
 - **Running & Cumulative Statistics:** cumulative sum, expanding mean, and observed-period count of the selected period statistic.
 - **Rolling Averages:** moving mean over a complete window of calendar periods.
 - **Contribution to Total:** share of sum or count, using the dataset total or parent group as denominator.
 
-Time analysis requires a detected Date/Time column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
+Time analysis requires a detected Temporal column (or Column Overview override). Weeks run Monday–Sunday. Missing calendar periods are retained as gaps, with optional zero filling. Invalid dates are excluded and reported. Zero denominators produce N/A. Current-period and boundary coverage cautions are displayed. Expanding means weight periods equally, not original rows. Missing categories are retained; negative contributions are flagged. Chart segment selection does not change table results or contribution denominators. Results support CSV download.
 
 Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `utils/group_statistics_ui.py`. Run calculation checks with `python -m unittest discover -s tests -p "test_group_statistics.py"`.
 
@@ -351,7 +351,7 @@ All charts use a consistent visual style: blue primary colour (`#4C72B0`), white
 |---|---|---|
 | `make_histogram_boxplot` | `(series, height=300)` | Histogram (top) stacked above boxplot (bottom) on a shared x-axis. Used for continuous numerical and date/time columns. |
 | `make_bar_chart` | `(series, max_bars=10, height=300)` | Vertical bar chart of value counts, sorted descending, capped at `max_bars`. Returns `(figure, was_truncated, total_unique)`. |
-| `make_violin` | `(series, height=300)` | Violin plot with embedded boxplot and mean line. Used in Data Profile alongside the distribution chart. |
+| `make_violin` | `(series, height=300)` | Violin plot with embedded boxplot and mean line. Used in Descriptive Statistics alongside the distribution chart. |
 | `make_time_series` | `(series, freq="M", height=360)` | Line chart of record counts aggregated by time period. `freq`: `"D"` day, `"W"` week, `"M"` month, `"Y"` year. |
 
 ### Relationship Charts
@@ -552,7 +552,7 @@ Uses **OpenAI GPT-OSS 120B** (`openai/gpt-oss-120b`) via Groq through LangChain 
 | Function | When it runs | Output |
 |---|---|---|
 | `interpret_dataset_overview` | After data quality summary loads | 4–5 sentences on dataset type, missing values, and variable types |
-| `interpret_single_column` | On Data Profile deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
+| `interpret_single_column` | On Descriptive Statistics deep-dive | 3–4 sentences on quality, anomalies, and recommended action |
 | `interpret_predictive_results` | After model training completes | 4–5 sentences on winning model, key features, SHAP impact, overfitting, and recommendation |
 
 All interpretations are cached in `st.session_state`. Dataset-level and predictive analytics interpretations regenerate only when the data or model selection changes. Column-level interpretations have a **🔄 Refresh** button.
@@ -565,7 +565,7 @@ All interpretations are cached in `st.session_state`. Dataset-level and predicti
 |---|---|
 | File upload, dataset overview, column overview | ✅ Complete |
 | Data quality summary (numerical, categorical, date/time) with AI | ✅ Complete |
-| Data Profile — single column deep-dive with AI | ✅ Complete |
+| Descriptive Statistics — single column deep-dive with AI | ✅ Complete |
 | Relationship — multi-column charts with AI | ✅ Complete |
 | Predictive Analytics — Regression (Lasso vs RF) with AI | ✅ Complete |
 | Predictive Analytics — Binary Classification (LR vs RF) with AI | ✅ Complete |
@@ -629,7 +629,7 @@ Histogram bin count and density bandwidth are adjustable. Dot plots stack repeat
 
 Display limits are disclosed: dot plots sample 2,000 observations, density 10,000, scatter/bubble 5,000 and pair plots 2,000 when needed, all with a fixed seed. Numerical heatmaps show the first 500 rows. Categorical heatmaps reject more than 10,000 cells. Missing/nonfinite values are omitted as appropriate; invalid sizes, constant density inputs, and insufficient Q–Q data receive explanatory messages.
 
-Implemented in `utils/visual_analysis.py`. Existing Data Profile, Group Statistics, Relationship, and Predictive Analytics remain available.
+Implemented in `utils/visual_analysis.py`. Existing Descriptive Statistics, Group Statistics, Relationship, and Predictive Analytics remain available.
 
 
 For exactly **one numeric + one categorical column** (and no date/time column), Visual Analysis offers only **Box plot, Bar chart, and Pareto chart**. Box plots group the selected measure by the category; bar and Pareto charts use the selected numerical measure rather than defaulting to row counts. Single-variable histogram, dot, density, and Q–Q plots are not offered for this combination.
@@ -704,7 +704,7 @@ Logistic diagnostics cover separation, convergence, outcome information, sparse 
 
 ### Comparison selection and ANOVA results
 
-Comparison uses grouped Numerical, Categorical and Date / Time checkboxes with Select all/Clear all, matching Relationship. Only selected variables are offered in the analysis controls. ANOVA requires numerical and categorical selections; Segment Comparison requires a categorical selection; Period-over-Period Comparison requires a date/time selection and supports row counts without a numerical measure. Unavailable analysis selections reset automatically.
+Comparison uses grouped Numerical, Categorical and Temporal checkboxes with Select all/Clear all, matching Relationship. Only selected variables are offered in the analysis controls. ANOVA requires numerical and categorical selections; Segment Comparison requires a categorical selection; Period-over-Period Comparison requires a date/time selection and supports row counts without a numerical measure. Unavailable analysis selections reset automatically.
 
 ANOVA has five result tabs: Model Overview (summary table and overall test), Group Analysis (descriptive statistics), Diagnostics (normality, variance and warnings), Visual Analysis (group box plots), and ANOVA Findings (interpretation). Method selection and independence confirmation remain above the tabs; descriptive results remain available before confirmation. Existing statistical validation is unchanged.
 
@@ -713,3 +713,7 @@ ANOVA has five result tabs: Model Overview (summary table and overall test), Gro
 Select at least one quantitative Numerical variable to enable **t-Test**. The selected variables constrain the response, group and sample controls. Classification overrides are respected, including Categorical → Binary columns stored as integers. Automatically classified identifier-like names are excluded unless deliberately overridden to Numerical.
 
 The five result tabs are **Test Configuration**, **Descriptive Statistics**, **Diagnostics**, **t-Test Results**, and **Interpretation**. All three modes support two-sided/greater/less hypotheses, a configurable confidence level (95% default), and matching confidence bounds for the signed difference. Significance alpha is 1 minus confidence. Diagnostics use the existing histogram/box plot and IQR outlier helpers, Q–Q plots and skewness; no Shapiro–Wilk or other formal normality test is run, and outliers are retained. Paired calculations and diagnostics use complete-pair differences. Statistical implementation, assumptions, effect-size definitions and verification are documented in [TTEST.md](TTEST.md).
+
+Descriptive Statistics uses checkboxes grouped by **Numerical**, **Categorical**, and **Temporal** according to the effective Column Overview classifications. Only one variable can be selected at a time; selecting another automatically clears the previous selection. Unchecking the active variable shows a selection prompt. Existing statistics, charts and distribution analysis are preserved.
+
+Temporal is the visible analytical variable-type label throughout the app; the internal `Date / Time` metadata key is retained for compatibility with saved classifications.

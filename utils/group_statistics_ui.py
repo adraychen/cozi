@@ -30,7 +30,7 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
     try:
         if time_based:
             if not col_types["datetime"]:
-                st.info("Select a Date/Time override in Column Overview to enable time-based analysis.")
+                st.info("Select a Temporal override in Column Overview to enable time-based analysis.")
                 return
             date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
             frequency = st.selectbox("Period frequency", list(FREQUENCIES), index=2, key=key_prefix + "_frequency")

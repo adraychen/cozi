@@ -26,6 +26,7 @@ def overview_html(raw, metadata):
     def text(value):
         return escape(str(value),quote=True)
     def classified(value, source):
+        value = 'Temporal' if value == 'Date / Time' else value
         manual=source=='User override'
         description='Manual Override' if manual else 'Automatic classification'
         badge='M' if manual else 'A'

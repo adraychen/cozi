@@ -393,7 +393,7 @@ def render_panels(col_list: list, render_fn) -> None:
                 render_fn(col_name)
 
 
-tab1, tab2, tab3 = st.tabs(["Numerical Columns", "Categorical Columns", "Date / Time Columns"])
+tab1, tab2, tab3 = st.tabs(["Numerical Columns", "Categorical Columns", "Temporal Columns"])
 with tab1:
     if not col_types["numerical"]:
         st.info("No numerical columns found.")
@@ -466,18 +466,21 @@ st.divider()
 # ── Exploratory Data Analysis ─────────────────────────────────────────────────
 st.subheader("Exploratory Data Analysis")
 
-profile_tab, group_tab, relationships_tab, comparison_tab = st.tabs(["Data Profile", "Group Statistics", "Relationship", "Comparison"])
+profile_tab, group_tab, relationships_tab, comparison_tab = st.tabs(["Descriptive Statistics", "Group Statistics", "Relationship", "Comparison"])
 
 with profile_tab:
     # ── Single Column ─────────────────────────────────────────────────────────────
-    st.markdown("#### Data Profile")
-    st.caption("Select a column for a detailed deep-dive: full statistics, charts, and anomaly detection.")
+    st.markdown("#### Descriptive Statistics")
+    st.caption("Select one variable to view its statistics, charts, and anomaly detection. Selecting another variable clears the previous selection.")
 
-    selected_col = st.selectbox("Select a column", options=df.columns.tolist(), index=0)
+    from utils.descriptive_controls import select_descriptive_variable
+    selected_col = select_descriptive_variable(col_types)
+    if selected_col is None:
+        st.info("Select one variable above to display its descriptive statistics.")
 
-    if selected_col:
+    if selected_col is not None:
         col_type = col_to_type.get(selected_col, "Unknown")
-        st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {col_type}")
+        st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {'Temporal' if col_type == 'Date / Time' else col_type}")
         st.divider()
 
         # ── Numerical ─────────────────────────────────────────────────────────────
@@ -688,7 +691,7 @@ with relationships_tab:
     checkbox_groups = [
         ("Numerical",   col_types["numerical"]),
         ("Categorical", col_types["categorical"]),
-        ("Date / Time", col_types["datetime"]),
+        ("Temporal", col_types["datetime"]),
     ]
     def set_relationship_group(columns, selected):
         for column in columns:
@@ -862,7 +865,7 @@ if _sa2.button("☐ Deselect All", key="pa_deselect_all"):
     st.rerun()
 
 pa_predictors = []
-for grp_label, grp_cols in [("Numerical", pa_pred_num), ("Categorical", pa_pred_cat), ("Date / Time", pa_pred_dt)]:
+for grp_label, grp_cols in [("Numerical", pa_pred_num), ("Categorical", pa_pred_cat), ("Temporal", pa_pred_dt)]:
     if not grp_cols:
         continue
     st.markdown(f"**{grp_label}**")

@@ -56,7 +56,7 @@ def build_type_summary(col_types: Dict[str, List[str]]) -> pd.DataFrame:
          "Columns": ", ".join(col_types["numerical"]) or "—"},
         {"Variable Type": "Categorical", "Count": len(col_types["categorical"]),
          "Columns": ", ".join(col_types["categorical"]) or "—"},
-        {"Variable Type": "Date / Time", "Count": len(col_types["datetime"]),
+        {"Variable Type": "Temporal", "Count": len(col_types["datetime"]),
          "Columns": ", ".join(col_types["datetime"]) or "—"},
     ]
     return pd.DataFrame(rows)

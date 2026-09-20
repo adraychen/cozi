@@ -7,7 +7,7 @@ from utils.variable_metadata import ALLOWED, ensure_metadata, infer_variable_sub
 
 def render_column_overview(raw, dataset_id):
     metadata=ensure_metadata(st.session_state,raw,dataset_id)
-    st.caption('Variable Type defines whether a variable is treated analytically as numerical or categorical. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
+    st.caption('Variable Type defines whether a variable is treated analytically as numerical, categorical, or temporal. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
     st.html(overview_html(raw,metadata))
     st.caption('Missing values: red ≥20%; yellow 5–19%. Data Type describes storage; Variable Type controls analysis. A = Automatic classification; M = Manual Override. Hover over a badge for its meaning; click ⓘ beside Unique Values for details.')
     with st.expander('Edit variable classification',expanded=True):
@@ -15,9 +15,9 @@ def render_column_overview(raw, dataset_id):
         m=metadata[col]
         # Keys distinguish saved metadata from drafts; apply is atomic after validation.
         prefix='vm_'+str(list(raw).index(col))+'_'+str(st.session_state.get('vm_revision',0))
-        t=st.selectbox('Variable Type',list(ALLOWED),index=list(ALLOWED).index(m['variable_type']),key=prefix+'_type')
+        t=st.selectbox('Variable Type',list(ALLOWED),index=list(ALLOWED).index(m['variable_type']),key=prefix+'_type',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
         default=m['variable_subtype'] if t==m['variable_type'] else infer_variable_subtype(raw[col],t)
-        subtype=st.selectbox('Variable Subtype',ALLOWED[t],index=ALLOWED[t].index(default),key=prefix+'_'+t+'_subtype')
+        subtype=st.selectbox('Variable Subtype',ALLOWED[t],index=ALLOWED[t].index(default),key=prefix+'_'+t+'_subtype',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
         order=[]
         if subtype=='Ordinal':
             values,recognized=category_order(raw[col])

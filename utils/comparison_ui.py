@@ -16,7 +16,7 @@ def render_comparison(df, col_types):
         for column in columns:
             st.session_state[f'gs_cmp_variable_{column}'] = value
 
-    for kind, label in [('numerical', 'Numerical'), ('categorical', 'Categorical'), ('datetime', 'Date / Time')]:
+    for kind, label in [('numerical', 'Numerical'), ('categorical', 'Categorical'), ('datetime', 'Temporal')]:
         columns = col_types[kind]
         selected[kind] = []
         if not columns:
@@ -40,7 +40,7 @@ def render_comparison(df, col_types):
     if numerical_candidates(df, selected['numerical'], st.session_state.get('variable_metadata', {})):
         methods.append(ANALYSES[3])
     if not methods:
-        st.info('Select numerical and categorical variables for ANOVA, a quantitative numerical variable for t-Test, categorical variables for segment comparison, or a Date / Time variable for period comparison. Comparisons can use row counts without a numerical measure.')
+        st.info('Select numerical and categorical variables for ANOVA, a quantitative numerical variable for t-Test, categorical variables for segment comparison, or a Temporal variable for period comparison. Comparisons can use row counts without a numerical measure.')
         return
     if st.session_state.get('gs_cmp_analysis') not in methods:
         st.session_state.pop('gs_cmp_analysis', None)
