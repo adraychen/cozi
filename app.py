@@ -71,6 +71,12 @@ _SAMPLE_DATASETS = [
         "desc": "linear regression analysis",
         "separator": "-",
     },
+    {
+        "name": "AirPassengers.csv",
+        "id":   "1mHxCpRF7iWmSCKuIqyea4lo8XgxsNkYc",
+        "desc": "time series analysis",
+        "separator": "-",
+    },
 ]
 
 
