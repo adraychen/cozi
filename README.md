@@ -738,3 +738,7 @@ Group Statistics uses type-grouped checkbox grids: at most one Numerical measure
 Visual Analysis uses grouped variable checkboxes with Select all/Clear all. Chart roles (axes, grouping, color, size and measures) use single-selection checkboxes; line-series measures and pair-plot variables use multiple-selection checkboxes. Aggregation and other chart settings retain their existing controls. The compatible chart buttons remain selection-driven.
 
 All requested chart families are available: **pie, bar, stacked-bar, scatter, bubble, heatmap and pair plot**. Pie charts use one categorical variable with row counts by default or sums of an optional numerical variable. Category totals must be nonnegative and sum to a positive value. Missing categories or selected measures are excluded; no absolute-value conversion is performed. Bubble sizes require nonnegative values, and pair plots support two to six numerical variables. Existing exact-combination chart restrictions still apply as documented above.
+
+Temporal grouping is backward-compatible with older classification dictionaries that contain `datetime` but no `temporal` key. The app and Column Overview derive the aggregate from available `datetime`, `time`, and `duration` groups (or an empty list). Deploy the app and utility modules together when updating classification features.
+
+The **Edit variable classification** panel is collapsed by default. A message above it explains how to expand the editor, change a variable type or subtype, and apply the classification.

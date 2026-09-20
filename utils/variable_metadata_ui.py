@@ -10,7 +10,8 @@ def render_column_overview(raw, dataset_id):
     st.caption('Variable Type defines whether a variable is treated analytically as numerical, categorical, or temporal. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
     st.html(overview_html(raw,metadata))
     st.caption('Missing values: red ≥20%; yellow 5–19%. Data Type describes storage; Variable Type controls analysis. A = Automatic classification; M = Manual Override. Hover over a badge for its meaning; click ⓘ beside Unique Values for details.')
-    with st.expander('Edit variable classification',expanded=True):
+    st.info('You can edit variable classifications. Expand Edit variable classification below to change a variable type or subtype, then select Apply classification.')
+    with st.expander('Edit variable classification',expanded=False):
         col=st.selectbox('Column to edit',list(raw),key='vm_column')
         m=metadata[col]
         # Keys distinguish saved metadata from drafts; apply is atomic after validation.
@@ -49,6 +50,9 @@ def render_column_overview(raw, dataset_id):
                 st.session_state['vm_revision']=st.session_state.get('vm_revision',0)+1
                 st.rerun()
     data, groups = effective_data(raw,metadata)
+    groups.setdefault('temporal', list(dict.fromkeys(
+        groups.get('datetime', []) + groups.get('time', []) + groups.get('duration', [])
+    )))
     for c in groups['temporal']:
         invalid = int((raw[c].notna() & data[c].isna()).sum())
         if invalid:

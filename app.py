@@ -261,6 +261,10 @@ st.subheader("Column Overview")
 from utils.variable_metadata_ui import render_column_overview
 
 df, col_types = render_column_overview(df, st.session_state.get("file_id"))
+# Older classification providers expose datetime without the aggregate temporal key.
+col_types.setdefault("temporal", list(dict.fromkeys(
+    col_types.get("datetime", []) + col_types.get("time", []) + col_types.get("duration", [])
+)))
 variable_metadata = st.session_state["variable_metadata"]
 st.session_state["col_types"] = col_types  # Compatibility for existing analysis modules.
 col_to_type = {c: m["variable_type"] for c, m in variable_metadata.items()}
