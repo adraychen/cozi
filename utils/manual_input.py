@@ -73,7 +73,7 @@ def parse_grid(grid, header_mode='Auto detect'):
     return validate_frame(frame.reset_index(drop=True)), bool(has_header)
 
 
-def render_manual_input():
+def render_manual_input(on_add=None):
     if st.button('Input Data', key='manual_open'):
         st.session_state['manual_visible'] = not st.session_state.get('manual_visible', False)
     if not st.session_state.get('manual_visible', False):
@@ -97,13 +97,17 @@ def render_manual_input():
         else:
             text = st.text_area('CSV-formatted data', height=240, key='manual_csv',
                                 placeholder='Region,Sales\nEast,120\nWest,95')
-        if st.button('Input Data', key='manual_submit'):
+        name = st.text_input('Dataset name', value='Manual data', key='manual_dataset_name')
+        if st.button('Add dataset' if on_add else 'Input Data', key='manual_submit'):
             try:
                 if mode == 'CSV text':
                     frame = parse_csv(text)
                 else:
                     frame, _ = parse_grid(edited, header_mode)
-                activate_dataset(frame, 'Manual table' if mode == 'Editable table' else 'Manual CSV')
+                if on_add:
+                    on_add(frame, name.strip() or 'Manual data')
+                else:
+                    activate_dataset(frame, name.strip() or 'Manual data')
                 st.session_state['manual_visible'] = False
                 st.rerun()
             except ValueError as exc:

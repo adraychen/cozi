@@ -14,7 +14,12 @@ def select_descriptive_variable(col_types):
         st.session_state[selected_key] = None
 
     def select(column):
-        st.session_state[selected_key] = column if st.session_state[f'dist_profile_column_{column}'] else None
+        widget_key = f'dist_profile_column_{column}'
+        # A queued callback can outlive widget state cleared during a reset.
+        # Ignore it instead of discarding the current selection.
+        if widget_key not in st.session_state:
+            return
+        st.session_state[selected_key] = column if st.session_state[widget_key] else None
 
     # Synchronize all checkbox states before creating this run's widgets.
     # The callback runs first, so switching across groups stays exclusive.

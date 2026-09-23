@@ -1,0 +1,176 @@
+import unittest
+import io
+from unittest.mock import patch, Mock
+from pathlib import Path
+import pandas as pd
+from streamlit.testing.v1 import AppTest
+from utils.dataset_workspace import add_dataset, activate, save_active
+
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURE = f'''
+from unittest.mock import patch
+import runpy
+with patch('utils.database.record_visit'), patch('utils.database.get_stats', return_value={{'visits': 0, 'likes': 0, 'dislikes': 0}}), patch('utils.ai_interpreter.interpret_dataset_overview', return_value='Test summary'), patch('utils.ai_interpreter.interpret_single_column', return_value='Test column summary'):
+    runpy.run_path({str(ROOT / 'app.py')!r}, run_name='__main__')
+'''
+
+
+class WorkspaceTests(unittest.TestCase):
+    def test_registry_and_isolated_state(self):
+        state = {}
+        frame = pd.DataFrame({'x': [1, 2]})
+        a = add_dataset(state, frame, 'Data', 'test')
+        b = add_dataset(state, frame, 'Data', 'test')
+        self.assertEqual(state['ws_datasets'][b]['name'], 'Data (2)')
+        activate(state, a)
+        state['variable_metadata'] = {'x': {'source': 'Manual'}}
+        state['pa_results'] = {'score': 1}
+        state['vm_apply'] = True
+        state['va_graph_button_Pie chart'] = True
+        state['dist_profile_selected'] = 'x'
+        activate(state, b)
+        self.assertNotIn('variable_metadata', state)
+        self.assertNotIn('pa_results', state)
+        state['dist_profile_selected'] = None
+        activate(state, a)
+        self.assertEqual(state['pa_results']['score'], 1)
+        self.assertEqual(state['dist_profile_selected'], 'x')
+        self.assertNotIn('vm_apply', state)
+        self.assertNotIn('va_graph_button_Pie chart', state)
+        frame.loc[0, 'x'] = 999
+        self.assertEqual(state['df'].x.iloc[0], 1)
+
+    def app(self):
+        return AppTest.from_string(FIXTURE).run(timeout=60)
+
+    def add_manual(self, app, name, csv):
+        app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
+        app.run(timeout=60)
+        app.button(key='manual_open').click().run(timeout=60)
+        app.radio(key='manual_mode').set_value('CSV text').run(timeout=60)
+        app.text_area(key='manual_csv').set_value(csv)
+        app.text_input(key='manual_dataset_name').set_value(name)
+        app.button(key='manual_submit').click().run(timeout=60)
+        self.assertFalse(app.exception)
+
+    def test_manual_add_switch_inspect_and_transform_creation(self):
+        app = self.app()
+        self.assertFalse(app.exception)
+        self.assertTrue(any(t.label == '＋ Add datasets' for t in app.tabs))
+        self.add_manual(app, 'Sales', 'id,amount\n1,20\n2,30')
+        self.assertEqual(len(app.session_state['ws_datasets']), 1)
+        self.assertEqual([e.label for e in app.expander][:3], ['Dataset Preview', 'Column Overview', 'Edit variable classification'])
+        app.selectbox(key='vm_column').select('id').run(timeout=60)
+        app.selectbox(key='vm_0_0_type').select('Categorical').run(timeout=60)
+        app.button(key='vm_apply').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.add_manual(app, 'Customers', 'id,region\n1,East\n3,West')
+        app.session_state['ws_dataset_tabs'] = 'Sales'
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['variable_metadata']['id']['variable_type'], 'Categorical')
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.session_state['tf_result']['frame']), 2)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.session_state['ws_datasets']), 3)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        created = app.session_state['ws_datasets'][app.session_state['ws_active']]
+        self.assertEqual(created['source'], 'Join')
+        self.assertTrue(pd.isna(created['frame'].region.iloc[1]))
+
+    def test_analyze_and_preview_invalidation(self):
+        app = self.app()
+        self.add_manual(app, 'Data', 'group,value\nA,1\nA,2\nB,3\nB,4')
+        app.session_state['ws_workflow'] = 'Analyze'
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Aggregate').run(timeout=60)
+        app.multiselect(key='tf_groups').set_value(['group'])
+        app.multiselect(key='tf_measures').set_value(['value']).run(timeout=60)
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['tf_result']['frame']['value_sum'].tolist(), [3, 7])
+        app.multiselect(key='tf_functions').set_value(['Mean']).run(timeout=60)
+        self.assertNotIn('tf_result', app.session_state)
+        self.assertFalse(any(b.key == 'tf_create' for b in app.button))
+
+    def test_multi_upload_excel_sheets_and_same_name(self):
+        app = self.app()
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            pd.DataFrame({'x': [1]}).to_excel(writer, sheet_name='First', index=False)
+            pd.DataFrame({'x': [2]}).to_excel(writer, sheet_name='Second', index=False)
+        app.file_uploader[0].set_value([
+            ('data.csv', b'x\n3', 'text/csv'),
+            ('data.csv', b'x\n4', 'text/csv'),
+            ('book.xlsx', buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        ]).run(timeout=60)
+        app.multiselect[0].set_value(['First', 'Second']).run(timeout=60)
+        app.button(key='ws_import').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        entries = list(app.session_state['ws_datasets'].values())
+        self.assertEqual([d['name'] for d in entries], ['data.csv', 'data.csv (2)', 'book.xlsx · First', 'book.xlsx · Second'])
+        self.assertEqual([d['frame'].x.iloc[0] for d in entries], [3, 4, 1, 2])
+        app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
+        app.run(timeout=60)
+        self.assertFalse(app.file_uploader[0].value)
+
+    def test_failed_import_and_sample_add_preserve_existing(self):
+        app = self.app()
+        self.add_manual(app, 'Existing', 'x\n1\n2')
+        app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
+        app.run(timeout=60)
+        app.file_uploader[0].set_value([('valid.csv', b'x\n4', 'text/csv'), ('empty.csv', b'', 'text/csv')]).run(timeout=60)
+        app.button(key='ws_import').click().run(timeout=60)
+        self.assertEqual(len(app.session_state['ws_datasets']), 1)
+        self.assertTrue(app.error)
+        response = Mock(text='x,y\n2,3\n4,5')
+        with patch('requests.get', return_value=response):
+            app.button(key='ws_sample_iris.csv').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.session_state['ws_datasets']), 2)
+        self.assertEqual(app.session_state['ws_dataset_tabs'], 'iris.csv')
+
+    def test_append_pivot_unpivot_forms_and_empty_result(self):
+        app = self.app()
+        self.add_manual(app, 'Monthly', 'id,Jan,Feb\n1,20,30\n2,40,50')
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Unpivot').run(timeout=60)
+        app.multiselect(key='tf_unpivot_ids').set_value(['id'])
+        app.multiselect(key='tf_unpivot_values').set_value(['Jan', 'Feb'])
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertEqual(len(app.session_state['df']), 4)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Pivot').run(timeout=60)
+        app.multiselect(key='tf_pivot_rows').set_value(['id'])
+        app.selectbox(key='tf_pivot_column').select('variable')
+        app.selectbox(key='tf_pivot_value').select('value')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['tf_result']['frame'].Jan.tolist(), [20, 40])
+        app.button(key='tf_create').click().run(timeout=60)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Append').run(timeout=60)
+        original = next(iter(app.session_state['ws_datasets']))
+        app.multiselect(key='tf_append_inputs').set_value([original])
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.session_state['tf_result']['frame']), 4)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertEqual(len(app.session_state['ws_datasets']), 4)
+
+
+if __name__ == '__main__':
+    unittest.main()
