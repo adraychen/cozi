@@ -1,6 +1,8 @@
 """Non-mutating column edits and exact duplicate cleanup on stored data."""
 import math
 import operator
+import numbers
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_bool_dtype
 from utils.table_transforms import validate_table, check_size
@@ -105,3 +107,74 @@ def remove_duplicate_columns(frame):
 def remove_duplicate_rows(frame):
     """Keep the first occurrence in source order; ignore the dataframe index."""
     return validate_table(frame.drop_duplicates(keep='first').reset_index(drop=True).copy())
+
+
+def _replacement_scalar(value, kind):
+    if kind == 'Missing value':
+        return pd.NA
+    if kind == 'Text':
+        return str(value) if value is not None else ''
+    if kind == 'Number':
+        text = str(value).strip()
+        try:
+            number = int(text) if text.lstrip('+-').isdigit() else float(text)
+        except (ValueError, TypeError, OverflowError) as exc:
+            raise ValueError('Enter a valid number.') from exc
+        if not math.isfinite(number):
+            raise ValueError('Enter a finite number.')
+        return number
+    if kind == 'True/False' and value in ('True', 'False', True, False):
+        return value is True or value == 'True'
+    raise ValueError('Choose a supported value type.')
+
+
+def replace_values(frame, column, find, replacement=None, find_type='Text', replacement_type='Missing value'):
+    """Replace whole scalar values; never match missing cells or substrings."""
+    if column not in frame:
+        raise ValueError('Choose an existing column.')
+    if find_type == 'Missing value':
+        raise ValueError('Existing missing values are preserved.')
+    needle = _replacement_scalar(find, find_type)
+    value = _replacement_scalar(replacement, replacement_type)
+    def matches(item):
+        if pd.isna(item):
+            return False
+        if find_type == 'Text':
+            return isinstance(item, str) and item == needle
+        if find_type == 'True/False':
+            return isinstance(item, (bool, np.bool_)) and item == needle
+        return isinstance(item, numbers.Number) and not isinstance(item, (bool, np.bool_)) and item == needle
+    series = frame[column]
+    mask = series.map(matches).fillna(False).astype(bool)
+    count = int(mask.sum())
+    result = frame.copy()
+    if count:
+        target = series.copy()
+        if replacement_type == 'Missing value' and pd.api.types.is_integer_dtype(target.dtype):
+            target = target.astype('UInt64' if pd.api.types.is_unsigned_integer_dtype(target.dtype) else 'Int64')
+        elif isinstance(target.dtype, pd.CategoricalDtype) and replacement_type != 'Missing value' and value not in target.cat.categories:
+            target = target.cat.add_categories([value])
+        # Explicit type changes use object storage without stringifying other cells.
+        if (replacement_type == 'True/False' and not is_bool_dtype(target)) or (is_bool_dtype(target) and replacement_type not in ('True/False', 'Missing value')):
+            target = target.astype(object)
+        try:
+            result[column] = target.mask(mask, value)
+        except (TypeError, ValueError):
+            result[column] = target.astype(object).mask(mask, value)
+    return validate_table(result), count
+
+
+def remove_characters(frame, column, characters):
+    """Remove literal Unicode characters from text cells; keep other cells intact."""
+    if column not in frame:
+        raise ValueError('Choose an existing column.')
+    if not isinstance(characters, str) or not characters:
+        raise ValueError('Enter at least one character to remove.')
+    translation = str.maketrans('', '', characters)
+    series = frame[column]
+    changed = series.map(lambda v: isinstance(v, str) and v.translate(translation) != v).fillna(False).astype(bool)
+    count = int(changed.sum())
+    result = frame.copy()
+    if count:
+        result[column] = series.map(lambda v: v.translate(translation) if isinstance(v, str) else v)
+    return validate_table(result), count

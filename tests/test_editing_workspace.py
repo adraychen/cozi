@@ -78,6 +78,34 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual(list(app.session_state['df']), ['total'])
         self.assertEqual(list(app.session_state['ws_datasets'][source_id]['frame']), ['a', 'b'])
 
+    def test_value_cleaning_preview_and_create(self):
+        frame = pd.DataFrame({'Sales': ['$3,000', '$1,500', '$-', None]})
+        app, source_id = self.app(frame)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        app.text_input(key='tf_replace_find_Text').set_value('$-')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertTrue(pd.isna(app.session_state['tf_result']['frame'].Sales.iloc[2]))
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        app.text_input(key='tf_remove_characters').set_value('$')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertEqual(app.session_state['tf_result']['frame'].Sales.iloc[0], '3,000')
+        app.text_input(key='tf_remove_characters').set_value('$,').run(timeout=60)
+        self.assertNotIn('tf_result', app.session_state)
+        app.button(key='tf_preview').click().run(timeout=60)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['df'].Sales.iloc[:2].tolist(), ['3000', '1500'])
+        self.assertTrue(app.session_state['df'].Sales.iloc[2:].isna().all())
+        pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source_id]['frame'], frame)
+        self.assertEqual(len(app.session_state['ws_datasets']), 3)
+
     def test_duplicate_checks_use_raw_values_before_temporal_conversion(self):
         frame = pd.DataFrame({'date': ['2024-01-01'] * 8 + ['invalid-one', 'invalid-two'],
                               'other_date': ['2024-01-01'] * 8 + ['invalid-three', 'invalid-four']})

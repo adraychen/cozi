@@ -6,7 +6,7 @@ from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
-from utils.table_editing import rename_column, remove_columns, add_column
+from utils.table_editing import rename_column, remove_columns, add_column, replace_values, remove_characters
 
 
 def render_validation(report, operation):
@@ -41,7 +41,8 @@ def render_transform(dataset_id, registry):
     frame = entry['frame']
     columns = list(frame)
     operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
-                                      'Rename column', 'Remove column', 'Add column'],
+                                      'Rename column', 'Remove column', 'Add column',
+                                      'Replace Values', 'Remove Characters'],
                          horizontal=True, key='tf_operation')
     st.caption('Transformations use stored data values. Preview the result, then save it as a new dataset; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
@@ -143,6 +144,32 @@ def render_transform(dataset_id, registry):
         def calculate():
             result = remove_columns(frame, removed)
             return result, {'Removed columns': ', '.join(removed), 'Remaining columns': len(result.columns), 'Rows': len(result)}, []
+    elif operation == 'Replace Values':
+        column = st.selectbox('Column', columns, key='tf_replace_column')
+        find_type = st.selectbox('Value to find type', ['Text', 'Number', 'True/False'], key='tf_replace_find_type')
+        find = (st.selectbox('Value to find', ['True', 'False'], key='tf_replace_find_boolean')
+                if find_type == 'True/False' else st.text_input('Value to find', key='tf_replace_find_' + find_type))
+        replacement_type = st.selectbox('Replace with', ['Missing value', 'Text', 'Number', 'True/False'], key='tf_replace_type')
+        replacement = None
+        if replacement_type == 'True/False':
+            replacement = st.selectbox('Replacement value', ['True', 'False'], key='tf_replace_boolean')
+        elif replacement_type != 'Missing value':
+            replacement = st.text_input('Replacement value', key='tf_replace_value_' + replacement_type)
+        st.caption('Matches the entire value exactly. Text matching is case-sensitive and preserves spaces. Existing missing values stay missing. Choose Missing value to replace $- with a true missing cell; typing None as Text creates the word None.')
+        config.update(column=column, find=find, find_type=find_type, replacement=replacement, replacement_type=replacement_type)
+        def calculate():
+            result, matched = replace_values(frame, column, find, replacement, find_type, replacement_type)
+            warnings = ['No exact matches were found. The result is unchanged.'] if not matched else []
+            return result, {'Column': column, 'Matched cells': matched, 'Rows': len(result), 'Replacement type': replacement_type}, warnings
+    elif operation == 'Remove Characters':
+        column = st.selectbox('Column', columns, key='tf_remove_char_column')
+        characters = st.text_input('Characters to remove', placeholder='$ or , or $,', key='tf_remove_characters')
+        st.caption('Enter characters directly, without quotes or separators. For `$3,000`: enter `$` to get `3,000`, enter `,` to get `$3000`, or enter `$,` to get `3000`. Each character is removed wherever it occurs. Spaces and symbols are literal characters. Text stays text; missing and non-text values are preserved.')
+        config.update(column=column, characters=characters)
+        def calculate():
+            result, changed = remove_characters(frame, column, characters)
+            warnings = ['No text cells contained the selected characters. The result is unchanged.'] if not changed else []
+            return result, {'Column': column, 'Changed cells': changed, 'Rows': len(result)}, warnings
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
         method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')
