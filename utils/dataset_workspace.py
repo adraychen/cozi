@@ -11,7 +11,8 @@ _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summa
               'datetime_overrides', 'override_warnings', 'regression_cached_fit'}
 _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'pa_', 'mc_',
              'col_ai_', 'heatmap_ai_', 'tf_', 'view_')
-_TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'tf_preview', 'tf_create'}
+_TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'tf_preview', 'tf_create',
+             'view_remove_duplicate_columns', 'view_remove_duplicate_rows'}
 
 
 def dataset_state_key(key):

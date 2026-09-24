@@ -36,6 +36,7 @@ def dataset_csv(frame):
 
 
 def render_inspect(df, _show_feedback, dataset_name='Dataset'):
+    raw = df
     with st.expander("Dataset Preview", expanded=True):
         # ── Dataset Preview ───────────────────────────────────────────────────────────
         st.caption("Showing the first 100 rows of your data.")
@@ -68,8 +69,15 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         st.session_state["col_types"] = col_types  # Compatibility for existing analysis modules.
         col_to_type = {c: m["variable_type"] for c, m in variable_metadata.items()}
 
+        from utils.duplicate_overview import render_duplicate_columns
+        render_duplicate_columns(raw, dataset_name)
+
         st.divider()
 
+
+    with st.expander("Row Overview", expanded=True):
+        from utils.duplicate_overview import render_row_overview
+        render_row_overview(raw, dataset_name)
 
     with st.expander("Data Quality Summary", expanded=True):
         if df.empty:
@@ -107,11 +115,11 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with left:
                     if is_discrete:
                         fig, truncated, total_unique = make_bar_chart(series)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key='view_quality_numerical_' + str(col_name))
                         if truncated:
                             st.caption(f"Showing top 10 of {total_unique} unique values.")
                     else:
-                        st.plotly_chart(make_histogram_boxplot(series), use_container_width=True)
+                        st.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_numerical_' + str(col_name))
                 with right:
                     for label, val in [
                         ("Missing Values", missing),
@@ -146,7 +154,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 left, right = st.columns([3, 2])
                 with left:
                     fig, truncated, total_unique = make_bar_chart(series)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key='view_quality_categorical_' + str(col_name))
                     if truncated:
                         st.caption(f"Showing top 10 of {total_unique} unique values.")
                 with right:
@@ -188,7 +196,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 st.markdown(f"**{col_name}**")
                 left, right = st.columns([3, 2])
                 with left:
-                    st.plotly_chart(make_histogram_boxplot(series), use_container_width=True)
+                    st.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_temporal_' + str(col_name))
                 with right:
                     for label, val in [
                         ("Missing Values",         missing),

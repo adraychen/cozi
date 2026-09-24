@@ -5,8 +5,8 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 ## Dataset workspace
 
 - **Dataset tabs** select the active dataset; **＋ Add datasets** contains multi-file upload, Excel sheet selection, the existing editable-table/CSV input, and sample datasets. Imports add tabs without replacing existing tables. Duplicate names receive a numeric suffix.
-- **Inspect** preserves Dataset Preview, Column Overview (including classification editing), and Data Quality Summary as expanded, collapsible sections. **Download dataset (CSV)** exports every stored row and column, including joined and other created tables; the table preview itself shows only the first 100 rows.
-- **Transform** offers Join, Append, Aggregate, Pivot, and Unpivot. Configure an operation, select **Preview result**, review validation and the first 100 output rows, then name and **Create dataset**. Changing any transformation setting invalidates its preview. Outputs open in a new tab with Inspect selected.
+- **Inspect** contains Dataset Preview, Column Overview (including classification editing and duplicated-column removal), Row Overview, and Data Quality Summary as expanded, collapsible sections. **Download dataset (CSV)** exports every stored row and column, including joined and other created tables; the table preview itself shows only the first 100 rows.
+- **Transform** offers Join, Append, Aggregate, Pivot, Unpivot, Rename column, Remove column, and Add column. Configure an operation, select **Preview result**, review validation and the first 100 output rows, then name and **Create dataset**. Changing any transformation setting invalidates its preview. Outputs open in a new tab with Inspect selected.
 - **Analyze** contains the existing EDA and predictive analytics workflows. Dataset-specific classifications, keyed controls, AI summaries, and model results remain separate when switching datasets. The selected workflow is retained when switching existing dataset tabs.
 - Only the active dataset/workflow executes. **Create dataset** retains a result in session memory; this is not persistent project storage. Download the CSV to keep a local copy. Join validation uses row-count metrics and a left/right comparison table, with Yes/No for many-to-many matches.
 - Sources are preserved. Created tables record their source dataset IDs and transformation settings, and infer their own variable classifications. Operations use stored data values, not analytical classification conversions. Created tables are snapshots; later source classification changes do not recompute them.
@@ -18,6 +18,11 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 | Aggregate | Optional grouping columns, multiple measures/calculations, named outputs, and a missing-group policy. Row count differs from nonmissing count; all-missing sums stay missing. |
 | Pivot | Row identifiers, a column-label variable, a value variable, and optional aggregation. Repeated combinations require an aggregation choice; missing cells remain missing unless zero fill is selected. |
 | Unpivot | Identifier columns, columns to turn into rows, variable/value output names, and optional removal of missing values. |
+| Rename column | Select a column and enter a unique, non-empty new name. Values and column order are preserved. |
+| Remove column | Select one or more columns to remove; at least one column must remain. |
+| Add column | Blank values, a constant (text, number, or True/False), a copy of an existing column, row numbers starting at 1, or arithmetic between numerical columns. Division by zero is rejected. |
+
+**Duplicate cleanup belongs to Inspect.** Column Overview lists duplicated columns alongside the first equivalent column that will be kept. Columns must match every stored value, data type, and missing-value position; column names may differ. Empty datasets are not treated as evidence of duplicated columns. Row Overview appears immediately below Column Overview and shows the total row count and the number of extra duplicate copies after the first occurrence. For example, three identical rows count as two duplicates. Row comparisons use all stored columns, treat matching missing values as equal, and ignore the row index. Both removal actions create a named dataset, retain the first occurrence in source order, preserve the source, and open the result in Inspect. Duplicate checks use original stored values before analytical type conversions.
 
 Imports and transformation results are bounded to 1,000,000 rows and 10,000,000 cells per table. Join, pivot, and unpivot size checks run before allocating the expanded output. Use Streamlit 1.64 or newer for stateful lazy tabs; install the updated requirements, including `openpyxl` and `xlrd` for Excel support.
 
@@ -33,6 +38,7 @@ Descriptive Statistics displays clickable ⓘ controls alongside all 15 numerica
 |---|---|
 | **Dataset Overview** | Row/column counts, scrollable data preview, boolean columns shown as True/False |
 | **Column Overview** | Per-column table: data type, variable type/subtype, totals, missing values, unique values with expandable details and A/M classification badges; classification editor |
+| **Row Overview** | Total rows, extra duplicated rows, preview of duplicates, and removal into a new dataset |
 | **Data Quality Summary** | Tabbed quality panels with charts and stats for Numerical, Categorical, and Temporal columns + AI interpretation |
 | **Exploratory Data Analysis** | Five tabs: Descriptive Statistics, Group Statistics, Visual Analysis, Relationship, and Comparison |
 | **Visual Analysis (within EDA)** | Column-driven selection of distribution, comparison, relationship, time-series and matrix charts |

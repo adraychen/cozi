@@ -6,6 +6,7 @@ from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
+from utils.table_editing import rename_column, remove_columns, add_column
 
 
 def render_validation(report, operation):
@@ -39,7 +40,8 @@ def render_transform(dataset_id, registry):
     entry = registry[dataset_id]
     frame = entry['frame']
     columns = list(frame)
-    operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot'],
+    operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
+                                      'Rename column', 'Remove column', 'Add column'],
                          horizontal=True, key='tf_operation')
     st.caption('Transformations use stored data values. Preview the result, then save it as a new dataset; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
@@ -117,7 +119,7 @@ def render_transform(dataset_id, registry):
                 raise ValueError('Choose at least one row identifier.')
             result = pivot_table(frame, rows, column, value, function, fill_zero)
             return result, {'Output rows': len(result), 'Output columns': len(result.columns)}, []
-    else:
+    elif operation == 'Unpivot':
         identifiers = st.multiselect('Keep as identifiers', columns, key='tf_unpivot_ids')
         values = st.multiselect('Columns to turn into rows', columns, key='tf_unpivot_values')
         variable_name = st.text_input('Variable column name', 'variable', key='tf_variable_name')
@@ -127,6 +129,51 @@ def render_transform(dataset_id, registry):
         def calculate():
             result = unpivot_table(frame, identifiers, values, variable_name, value_name, drop_missing)
             return result, {'Input rows': len(frame), 'Output rows': len(result)}, []
+    elif operation == 'Rename column':
+        column = st.selectbox('Column to rename', columns, key='tf_rename_column')
+        new_name = st.text_input('New column name', key='tf_rename_name').strip()
+        config.update(column=column, name=new_name)
+        def calculate():
+            result = rename_column(frame, column, new_name)
+            return result, {'Original name': column, 'New name': new_name, 'Rows': len(result)}, []
+    elif operation == 'Remove column':
+        removed = st.multiselect('Columns to remove', columns, key='tf_remove_columns')
+        st.caption('Choose one or more columns. At least one column must remain.')
+        config.update(columns=removed)
+        def calculate():
+            result = remove_columns(frame, removed)
+            return result, {'Removed columns': ', '.join(removed), 'Remaining columns': len(result.columns), 'Rows': len(result)}, []
+    else:  # Add column
+        new_name = st.text_input('New column name', key='tf_add_name').strip()
+        method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')
+        options = {'method': method}
+        if method == 'Constant value':
+            value_type = st.selectbox('Value type', ['Text', 'Number', 'True/False'], key='tf_add_value_type')
+            if value_type == 'True/False':
+                value = st.selectbox('Value', ['True', 'False'], key='tf_add_boolean')
+            else:
+                value = st.text_input('Value', key='tf_add_value_' + value_type)
+            options.update(value=value, value_type=value_type)
+        elif method == 'Copy existing column':
+            options['source'] = st.selectbox('Source column', columns, key='tf_add_source')
+        elif method == 'Calculation':
+            numerical = [c for c in columns if pd.api.types.is_numeric_dtype(frame[c]) and not pd.api.types.is_bool_dtype(frame[c])]
+            if not numerical:
+                st.info('A calculation requires numerical columns.')
+                st.session_state.pop('tf_result', None)
+                return
+            options['left'] = st.selectbox('Left operand', numerical, key='tf_add_left')
+            options['calculation'] = st.selectbox('Calculation', ['Add', 'Subtract', 'Multiply', 'Divide'], key='tf_add_calculation')
+            options['right'] = st.selectbox('Right operand', numerical, key='tf_add_right')
+            st.caption('Calculations use the stored numerical values and preserve missing values. Division by zero is not allowed.')
+        elif method == 'Row number':
+            st.caption('Numbers rows from 1 in their current order.')
+        else:
+            st.caption('Adds a column of missing values.')
+        config.update(name=new_name, **options)
+        def calculate():
+            result = add_column(frame, new_name, **options)
+            return result, {'New column': new_name, 'Column values': method, 'Columns': len(result.columns), 'Rows': len(result)}, []
     signature = json.dumps(config, sort_keys=True)
     saved = st.session_state.get('tf_result')
     if saved and saved['signature'] != signature:
