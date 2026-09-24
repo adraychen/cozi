@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 import streamlit as st
 
 
@@ -29,7 +30,12 @@ from utils.quality import (
 
 
 
-def render_inspect(df, _show_feedback):
+def dataset_csv(frame):
+    """Export all stored rows and columns, before analytical type conversions."""
+    return frame.to_csv(index=False).encode('utf-8-sig')
+
+
+def render_inspect(df, _show_feedback, dataset_name='Dataset'):
     with st.expander("Dataset Preview", expanded=True):
         # ── Dataset Preview ───────────────────────────────────────────────────────────
         st.caption("Showing the first 100 rows of your data.")
@@ -39,6 +45,12 @@ def render_inspect(df, _show_feedback):
         if bool_cols:
             preview_df[bool_cols] = preview_df[bool_cols].astype(str)
         st.dataframe(preview_df, use_container_width=True, height=300)
+        filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', dataset_name).strip(' .') or 'Dataset'
+        filename = re.sub(r'\.(csv|xlsx|xls)$', '', filename, flags=re.IGNORECASE) + '.csv'
+        st.download_button('Download dataset (CSV)', data=dataset_csv(df),
+                           file_name=filename, mime='text/csv', key='view_dataset_download',
+                           on_click='ignore', help='Download all rows and columns, not only the preview.')
+        st.caption('Datasets are kept for this session only. Download a CSV to save a local copy.')
 
         st.divider()
 
@@ -324,11 +336,9 @@ def render_analyze(raw, _show_feedback):
                     all_stats = dict(stats)
                     all_stats["Outliers Found (IQR)"] = outlier_summary["count"]
                     all_stats["Outlier %"]            = outlier_summary["pct"]
-                    stats_df = pd.DataFrame({
-                        "Statistic": list(all_stats.keys()),
-                        "Value":     list(all_stats.values()),
-                    })
-                    st.dataframe(stats_df, use_container_width=True, hide_index=True)
+                    from utils.descriptive_statistics_display import statistics_html
+                    st.caption('Click ⓘ beside a statistic to see how to interpret it. Click again to close the explanation.')
+                    st.html(statistics_html(all_stats))
                     st.caption(
                         "Standard error = sample standard deviation / √n. The 95% confidence interval estimates "
                         "the population mean using Student's t distribution; it assumes independent observations "
@@ -341,7 +351,7 @@ def render_analyze(raw, _show_feedback):
                         "and unstable when the mean is close to zero."
                     )
 
-                ai_key = f"col_ai_{selected_col}"
+                ai_key = f"col_ai_descriptive_v2_{selected_col}"
                 with st.expander("🤖 AI Interpretation"):
                     if ai_key not in st.session_state:
                         with st.spinner("Generating interpretation…"):

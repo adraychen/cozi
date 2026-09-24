@@ -17,6 +17,28 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_join_validation_readable_counts(self):
+        app = AppTest.from_string('''
+from utils.transform_ui import render_validation
+render_validation({'Output rows': 1418, 'Matched left rows': 1418,
+    'Unmatched left rows': 0, 'Unmatched right rows': 2,
+    'Left rows with duplicate keys': 0, 'Right rows with duplicate keys': 3,
+    'Left rows with missing keys': 0, 'Right rows with missing keys': 1,
+    'Many-to-many matches': False}, 'Join')
+''').run()
+        self.assertFalse(app.exception)
+        self.assertEqual([m.value for m in app.metric], ['1,418', '1,418'])
+        self.assertEqual(app.dataframe[0].value['Right dataset'].tolist(), ['2', '3', '1'])
+        self.assertTrue(any('**Many-to-many matches:** No' == m.value for m in app.markdown))
+        self.assertFalse(app.get('json'))
+
+    def test_csv_download_contains_full_raw_dataset(self):
+        from utils.dataset_views import dataset_csv
+        frame = pd.DataFrame({'id': range(150), 'label': ['Montréal, "East"'] * 150,
+                              'raw_date': ['not converted'] * 150})
+        result = pd.read_csv(io.BytesIO(dataset_csv(frame)))
+        pd.testing.assert_frame_equal(result, frame)
+
     def test_registry_and_isolated_state(self):
         state = {}
         frame = pd.DataFrame({'x': [1, 2]})
@@ -82,6 +104,7 @@ class WorkspaceTests(unittest.TestCase):
         created = app.session_state['ws_datasets'][app.session_state['ws_active']]
         self.assertEqual(created['source'], 'Join')
         self.assertTrue(pd.isna(created['frame'].region.iloc[1]))
+        self.assertTrue(any(b.proto.label == 'Download dataset (CSV)' for b in app.get('download_button')))
 
     def test_analyze_and_preview_invalidation(self):
         app = self.app()

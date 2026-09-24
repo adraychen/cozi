@@ -8,6 +8,33 @@ from utils.table_transforms import (
 )
 
 
+def render_validation(report, operation):
+    """Present validation using the same metrics and tables as inspection."""
+    if operation == 'Join':
+        output, matched = st.columns(2)
+        output.metric('Output rows', f"{report['Output rows']:,}")
+        matched.metric('Matched left rows', f"{report['Matched left rows']:,}")
+        rows = []
+        for label, left_key, right_key in [
+            ('Unmatched rows', 'Unmatched left rows', 'Unmatched right rows'),
+            ('Rows with duplicate keys', 'Left rows with duplicate keys', 'Right rows with duplicate keys'),
+            ('Rows with missing keys', 'Left rows with missing keys', 'Right rows with missing keys'),
+        ]:
+            rows.append({'Check': label, 'Left dataset': f'{report[left_key]:,}',
+                         'Right dataset': f'{report[right_key]:,}'})
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+        st.markdown('**Many-to-many matches:** ' + ('Yes' if report['Many-to-many matches'] else 'No'))
+        st.caption('Duplicate-key counts include every row sharing a repeated key. Many-to-many matches can multiply output rows.')
+    else:
+        rows = []
+        for label, value in report.items():
+            if isinstance(value, dict):
+                rows.extend({'Check': f'{label} — {name}', 'Result': str(detail)} for name, detail in value.items())
+            else:
+                rows.append({'Check': label, 'Result': f'{value:,}' if isinstance(value, int) else str(value)})
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+
+
 def render_transform(dataset_id, registry):
     entry = registry[dataset_id]
     frame = entry['frame']
@@ -120,12 +147,13 @@ def render_transform(dataset_id, registry):
         st.caption(f"{len(saved['frame']):,} rows · {len(saved['frame'].columns):,} columns · Showing the first 100 rows")
         st.dataframe(saved['frame'].head(100), use_container_width=True)
         with st.expander('Validation details', expanded=True):
-            st.json(saved['report'])
+            render_validation(saved['report'], operation)
         for warning in saved['warnings']:
             st.warning(warning)
         if saved['frame'].empty:
             st.info('The result has no rows. You can save it, or adjust the configuration.')
         name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
+        st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
         if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
             add_dataset(st.session_state, saved['frame'], name, operation, parents=parents, operation=config)
             st.rerun()

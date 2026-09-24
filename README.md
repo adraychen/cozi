@@ -5,10 +5,10 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 ## Dataset workspace
 
 - **Dataset tabs** select the active dataset; **＋ Add datasets** contains multi-file upload, Excel sheet selection, the existing editable-table/CSV input, and sample datasets. Imports add tabs without replacing existing tables. Duplicate names receive a numeric suffix.
-- **Inspect** preserves Dataset Preview, Column Overview (including classification editing), and Data Quality Summary as expanded, collapsible sections.
+- **Inspect** preserves Dataset Preview, Column Overview (including classification editing), and Data Quality Summary as expanded, collapsible sections. **Download dataset (CSV)** exports every stored row and column, including joined and other created tables; the table preview itself shows only the first 100 rows.
 - **Transform** offers Join, Append, Aggregate, Pivot, and Unpivot. Configure an operation, select **Preview result**, review validation and the first 100 output rows, then name and **Create dataset**. Changing any transformation setting invalidates its preview. Outputs open in a new tab with Inspect selected.
 - **Analyze** contains the existing EDA and predictive analytics workflows. Dataset-specific classifications, keyed controls, AI summaries, and model results remain separate when switching datasets. The selected workflow is retained when switching existing dataset tabs.
-- Only the active dataset/workflow executes. Data and results remain in session memory; this is not persistent project storage.
+- Only the active dataset/workflow executes. **Create dataset** retains a result in session memory; this is not persistent project storage. Download the CSV to keep a local copy. Join validation uses row-count metrics and a left/right comparison table, with Yes/No for many-to-many matches.
 - Sources are preserved. Created tables record their source dataset IDs and transformation settings, and infer their own variable classifications. Operations use stored data values, not analytical classification conversions. Created tables are snapshots; later source classification changes do not recompute them.
 
 | Operation | Configuration and validation |
@@ -22,6 +22,8 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 Imports and transformation results are bounded to 1,000,000 rows and 10,000,000 cells per table. Join, pivot, and unpivot size checks run before allocating the expanded output. Use Streamlit 1.64 or newer for stateful lazy tabs; install the updated requirements, including `openpyxl` and `xlrd` for Excel support.
 
 Workspace and transformation tests: `python -m unittest discover -s tests -p "test_dataset_workspace.py"` and `python -m unittest discover -s tests -p "test_table_transforms.py"`.
+
+Descriptive Statistics displays clickable ⓘ controls alongside all 15 numerical summary measures, including quartiles and IQR outlier counts. Each control expands an interpretation in place and supports keyboard use. Kurtosis is pandas' excess kurtosis (normal reference 0); the help text and numerical AI interpretation use that convention. Numerical calculations are unchanged.
 
 ---
 

@@ -133,6 +133,52 @@ def render_add_datasets(samples):
 
 
 def render_workspace(samples, show_feedback):
+    # Scope the larger navigation treatment to the workflow row, leaving dataset
+    # tabs and nested analytical tabs at their existing sizes.
+    st.html('''<style>
+        .st-key-ws_workflow > div > [role="tablist"] {
+            gap: 0.6rem;
+            padding: 0.35rem 0 0.65rem;
+        }
+        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] {
+            min-height: 3rem;
+            height: auto;
+            min-width: 8rem;
+            justify-content: center;
+            padding: 0.7rem 1.35rem;
+            border: 1px solid #4c72b04d;
+            border-radius: 0.6rem;
+            background: #4c72b014;
+        }
+        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] p {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"]:hover {
+            background: #4c72b026;
+            border-color: #4c72b0;
+        }
+        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+            background: #4c72b0;
+            border-color: #4c72b0;
+            color: #ffffff;
+        }
+        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"]:focus-visible {
+            outline: 2px solid #4c72b0;
+            outline-offset: 2px;
+        }
+        @media (max-width: 540px) {
+            .st-key-ws_workflow > div > [role="tablist"] { gap: 0.35rem; }
+            .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] {
+                min-width: 0;
+                flex: 1 0 auto;
+                padding: 0.65rem 0.6rem;
+            }
+            .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] p {
+                font-size: 1rem;
+            }
+        }
+    </style>''')
     initialize(st.session_state)
     # Detach persistent controls from widget cleanup while another workflow is shown.
     for key in list(st.session_state):
@@ -168,7 +214,7 @@ def render_workspace(samples, show_feedback):
                 if inspect.open:
                     from utils.dataset_views import render_inspect
                     with inspect:
-                        render_inspect(entry['frame'], show_feedback)
+                        render_inspect(entry['frame'], show_feedback, dataset_name=entry['name'])
                 elif transform.open:
                     from utils.transform_ui import render_transform
                     with transform:

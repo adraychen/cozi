@@ -113,6 +113,7 @@ Rules:
 - Short sentences. One idea per sentence
 - Refer to the column by name
 - Do not repeat raw numbers — explain what they mean
+- When Kurtosis is present, it is pandas excess kurtosis (Fisher definition): the normal-distribution reference is 0, not 3. Positive values indicate heavier tails; negative values indicate lighter tails. A value near 0 does not by itself establish normality.
 - Plain language only. No jargon
 """
     )
