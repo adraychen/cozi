@@ -85,7 +85,7 @@ def _show_feedback(section: str, key: str) -> None:
         _feedback_dialog(section, "dislike")
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(page_title="AutoData Analytics", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Cozy — Community Edition", page_icon="📊", layout="wide")
 
 # ── App stats banner (above title) ───────────────────────────────────────────
 _b1, _b2, _b3 = st.columns(3)
@@ -99,7 +99,21 @@ except Exception:
     _b2.metric("👍 Likes",        "—")
     _b3.metric("👎 Dislikes",     "—")
 
-st.title("📊 AutoData Analytics")
+st.html("""
+<style>
+    .cozy-brand { margin: 0.5rem 0 1rem; }
+    .cozy-brand-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+    .cozy-brand-heading h1 { margin: 0; padding: 0; font-size: 2.75rem; font-weight: 750; line-height: 1.2; }
+    .cozy-edition { display: inline-block; padding: 0.3rem 0.75rem; border-radius: 999px;
+                    background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc;
+                    font-size: 0.8rem; font-weight: 650; letter-spacing: 0.025em; }
+    .cozy-subtitle { margin: 0.4rem 0 0; font-size: 1.1rem; font-style: italic; }
+</style>
+<header class="cozy-brand">
+    <div class="cozy-brand-heading"><h1>Cozy</h1><span class="cozy-edition">Community Edition</span></div>
+    <p class="cozy-subtitle">Automated Data Analytics</p>
+</header>
+""")
 st.caption(
     "Upload or input your data and analyze it through a broad range of guided analytical workflows and visualizations. "
     "Designed to make data analysis more accessible, structured, and efficient."

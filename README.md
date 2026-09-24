@@ -1,4 +1,6 @@
-# 📊 AutoData Analytics
+# Cozy · Community Edition
+
+*Automated Data Analytics*
 
 A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files, input data, or load sample datasets, then use **Inspect → Transform → Analyze** within full-width dataset tabs.
 
