@@ -127,11 +127,19 @@ def _show_data_privacy():
         "transmitted to Groq. The original uploaded file is not intentionally sent to the AI model."
     )
 
-_privacy_label, _privacy_info, _privacy_space = st.columns([3, 1, 20])
-with _privacy_label:
-    st.markdown("Data and Privacy")
-with _privacy_info:
-    if st.button("ℹ️", key="data_privacy_info", help="Read Data and Privacy information"):
+st.html("""
+<style>
+    .st-key-data_privacy_info button {
+        min-height: 1.5rem;
+        height: 1.5rem;
+        min-width: 1.5rem;
+        padding: 0;
+    }
+</style>
+""")
+with st.container(horizontal=True, vertical_alignment="center", gap="xxsmall"):
+    st.markdown("Data and Privacy", width="content")
+    if st.button("ⓘ", key="data_privacy_info", type="tertiary", help="Read Data and Privacy information"):
         _show_data_privacy()
 
 # ── Visit tracking ────────────────────────────────────────────────────────────

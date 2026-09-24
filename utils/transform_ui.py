@@ -38,13 +38,30 @@ def render_validation(report, operation):
 
 def render_transform(dataset_id, registry):
     entry = registry[dataset_id]
-    frame = entry['frame']
+    draft = st.session_state.get('tf_draft')
+    frame = draft['frame'] if draft else entry['frame']
+    if draft:
+        st.subheader('Pending changes')
+        for index, step in enumerate(draft['steps'], 1):
+            st.write(f"{index}. {step['operation']}" + (f" — {step['column']}" if 'column' in step else ''))
+        st.caption('These changes are retained while you configure the next operation. Create a dataset when you are finished.')
+        with st.expander('Preview accumulated changes'):
+            st.dataframe(frame.head(100), width='stretch')
+        draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
+        if st.button('Create dataset from accumulated changes', key='tf_draft_create', disabled=not draft_name.strip()):
+            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
+            st.rerun()
+        if st.button('Discard accumulated changes', key='tf_draft_discard'):
+            for key in list(st.session_state):
+                if key.startswith('tf_'):
+                    del st.session_state[key]
+            st.rerun()
     columns = list(frame)
     operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
                                       'Rename column', 'Remove column', 'Add column',
                                       'Replace Values', 'Remove Characters'],
                          horizontal=True, key='tf_operation')
-    st.caption('Transformations use stored data values. Preview the result, then save it as a new dataset; source tables are preserved.')
+    st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
     parents = [dataset_id]
     others = [key for key in registry if key != dataset_id]
@@ -85,7 +102,7 @@ def render_transform(dataset_id, registry):
         config.update(inputs=extra, columns=policy, source_column=source_name)
         st.caption('Columns align by name. Rows retain their input order; duplicates are retained.')
         def calculate():
-            result, warnings = append_tables([registry[k]['frame'] for k in parents], [registry[k]['name'] for k in parents], policy, source_name)
+            result, warnings = append_tables([frame] + [registry[k]['frame'] for k in extra], [registry[k]['name'] for k in parents], policy, source_name)
             alignment = {registry[k]['name']: ', '.join(c for c in result if c not in registry[k]['frame'] and c != source_name) or 'None' for k in parents}
             return result, {'Rows': len(result), 'Columns filled with missing values': alignment}, warnings
     elif operation == 'Aggregate':
@@ -226,8 +243,20 @@ def render_transform(dataset_id, registry):
             st.warning(warning)
         if saved['frame'].empty:
             st.info('The result has no rows. You can save it, or adjust the configuration.')
+        combined_parents = list(dict.fromkeys((draft['parents'] if draft else []) + parents))
+        steps = (draft['steps'] if draft else []) + [config]
+        if st.button('Apply and continue', key='tf_apply'):
+            pending = {'frame': saved['frame'], 'parents': combined_parents, 'steps': steps}
+            # Clear controls whose column choices may have changed after this step.
+            for key in list(st.session_state):
+                if key.startswith('tf_'):
+                    del st.session_state[key]
+            st.session_state['tf_draft'] = pending
+            st.session_state['tf_operation'] = operation
+            st.rerun()
         name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
         st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
         if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
-            add_dataset(st.session_state, saved['frame'], name, operation, parents=parents, operation=config)
+            add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
+                        operation={'steps': steps} if draft else config)
             st.rerun()

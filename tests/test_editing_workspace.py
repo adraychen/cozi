@@ -78,6 +78,44 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual(list(app.session_state['df']), ['total'])
         self.assertEqual(list(app.session_state['ws_datasets'][source_id]['frame']), ['a', 'b'])
 
+    def test_accumulate_changes_across_columns(self):
+        frame = pd.DataFrame({'Sales': ['$3,000', '$250'], 'Cost': ['$1,000', '$-']})
+        app, source_id = self.app(frame)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        app.text_input(key='tf_remove_characters').set_value('$,')
+        app.button(key='tf_preview').click().run(timeout=60)
+        app.button(key='tf_apply').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.session_state['ws_datasets']), 1)
+        self.assertEqual(app.session_state['tf_draft']['frame'].Sales.tolist(), ['3000', '250'])
+        app.session_state['ws_workflow'] = 'Inspect'
+        app.run(timeout=60)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['tf_draft']['frame'].Sales.tolist(), ['3000', '250'])
+        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        app.selectbox(key='tf_replace_column').select('Cost')
+        app.text_input(key='tf_replace_find_Text').set_value('$-')
+        app.button(key='tf_preview').click().run(timeout=60)
+        app.button(key='tf_apply').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        app.button(key='tf_draft_create').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['df'].Sales.tolist(), ['3000', '250'])
+        self.assertTrue(pd.isna(app.session_state['df'].Cost.iloc[1]))
+        pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source_id]['frame'], frame)
+        self.assertEqual(len(app.session_state['ws_datasets']), 2)
+        app.session_state['ws_dataset_tabs'] = 'Source'
+        app.run(timeout=60)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.button(key='tf_draft_discard').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertNotIn('tf_draft', app.session_state)
+        pd.testing.assert_frame_equal(app.session_state['df'], frame)
+
     def test_value_cleaning_preview_and_create(self):
         frame = pd.DataFrame({'Sales': ['$3,000', '$1,500', '$-', None]})
         app, source_id = self.app(frame)
