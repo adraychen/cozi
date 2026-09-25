@@ -2,6 +2,7 @@
 import json
 import pandas as pd
 import streamlit as st
+from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError
 from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
@@ -48,7 +49,7 @@ def render_transform(dataset_id, registry):
         with st.expander('Preview accumulated changes'):
             st.dataframe(frame.head(100), width='stretch')
         draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
-        if st.button('Create dataset from accumulated changes', key='tf_draft_create', disabled=not draft_name.strip()):
+        if st.button('Create dataset', key='tf_draft_create', type='primary', disabled=not draft_name.strip()):
             add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
             st.rerun()
         if st.button('Discard accumulated changes', key='tf_draft_discard'):
@@ -59,7 +60,7 @@ def render_transform(dataset_id, registry):
     columns = list(frame)
     operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
                                       'Rename column', 'Remove column', 'Add column',
-                                      'Replace Values', 'Remove Characters', 'Trim Spaces'],
+                                      'Replace Values', 'Remove Characters', 'Trim Spaces', 'Convert Currency to Numeric'],
                          horizontal=True, key='tf_operation')
     st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
@@ -208,6 +209,19 @@ def render_transform(dataset_id, registry):
                 result, counts[target] = trim_spaces(result, target, mode)
             changed = sum(counts.values())
             return result, {'Changed cells': changed, 'Changes by column': counts, 'Rows': len(result)}, ([] if changed else ['No cells needed trimming. The result is unchanged.'])
+    elif operation == 'Convert Currency to Numeric':
+        text_columns = [c for c in columns if any(isinstance(v, str) for v in frame[c].dropna()) or pd.api.types.is_string_dtype(frame[c].dtype)]
+        if not text_columns:
+            st.info('Choose a dataset with a text column to convert currency values.')
+            st.session_state.pop('tf_result', None)
+            return
+        column = st.selectbox('Column', text_columns, key='tf_currency_column')
+        st.caption('Converts $, £, ¥ and € amounts using commas for thousands and a decimal point. Currency dashes such as $- become zero; blank and missing cells stay missing. Negative amounts are supported. Every value must be valid before you can apply the conversion. No exchange-rate conversion is performed.')
+        config.update(column=column)
+        def calculate():
+            result = convert_currency_to_numeric(frame, column)
+            dtype = 'Whole Number' if pd.api.types.is_integer_dtype(result[column].dtype) else 'Decimal Number'
+            return result, {'Column': column, 'Data type': dtype, 'Numeric values': int(result[column].notna().sum()), 'Missing values': int(result[column].isna().sum()), 'Rows': len(result)}, []
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
         method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')
@@ -250,6 +264,12 @@ def render_transform(dataset_id, registry):
                 result, report, warnings = calculate()
             saved = {'signature': signature, 'frame': result, 'report': report, 'warnings': warnings}
             st.session_state['tf_result'] = saved
+        except CurrencyConversionError as exc:
+            st.session_state.pop('tf_result', None)
+            saved = None
+            st.error(str(exc))
+            st.dataframe(exc.invalid, hide_index=True, width='stretch')
+            st.caption('Use Replace Values to resolve these values, then Apply and continue and try the conversion again. No conversion has been applied.')
         except (ValueError, TypeError, KeyError, OverflowError) as exc:
             st.session_state.pop('tf_result', None)
             saved = None
@@ -268,11 +288,13 @@ def render_transform(dataset_id, registry):
         steps = (draft['steps'] if draft else []) + [config]
         if st.button('Apply and continue', key='tf_apply'):
             pending = {'frame': saved['frame'], 'parents': combined_parents, 'steps': steps}
+            output_name = st.session_state.get('tf_output_name_' + operation, st.session_state.get('tf_draft_name', entry['name'] + ' · Transformed'))
             # Clear controls whose column choices may have changed after this step.
             for key in list(st.session_state):
                 if key.startswith('tf_'):
                     del st.session_state[key]
             st.session_state['tf_draft'] = pending
+            st.session_state['tf_draft_name'] = output_name
             st.session_state['tf_operation'] = operation
             st.rerun()
         name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
@@ -280,4 +302,11 @@ def render_transform(dataset_id, registry):
         if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
             add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
                         operation={'steps': steps} if draft else config)
+            st.rerun()
+    elif draft:
+        st.divider()
+        st.success(f"{len(draft['steps'])} applied change(s) ready to save.")
+        st.caption(f'Create dataset saves the applied changes as “{draft_name}”. Preview the current settings first if you want to include another change.')
+        if st.button('Create dataset', key='tf_draft_finish', type='primary', disabled=not draft_name.strip()):
+            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
             st.rerun()

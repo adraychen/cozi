@@ -1,0 +1,64 @@
+"""Explicit, atomic conversion of currency text to nullable numeric values."""
+from collections import Counter
+from decimal import Decimal, InvalidOperation
+import math
+import numbers
+import re
+
+import pandas as pd
+from utils.table_transforms import validate_table
+
+
+class CurrencyConversionError(ValueError):
+    def __init__(self, invalid):
+        self.invalid = pd.DataFrame([{'Value': value, 'Count': count} for value, count in invalid.items()])
+        super().__init__(f'Conversion incomplete — {sum(invalid.values())} values cannot be converted to numeric ({len(invalid)} distinct values).')
+
+
+def _parse_currency(value):
+    if pd.isna(value):
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if re.fullmatch(r'[$£¥€]\s*-', text):
+            return Decimal(0)
+        # One optional currency symbol, with a sign before or after it.
+        match = re.fullmatch(r'([+-]?)\s*([$£¥€]?)\s*([+-]?)\s*((?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+|[0-9]{1,2}(?:,[0-9]{2})+,[0-9]{3})(?:\.[0-9]+)?|\.[0-9]+)', text)
+        if not match or (match[1] and match[3]):
+            raise ValueError('Invalid currency value')
+        return Decimal((match[1] or match[3]) + match[4].replace(',', ''))
+    if isinstance(value, (numbers.Real, Decimal)) and not isinstance(value, bool):
+        parsed = Decimal(str(value))
+        if parsed.is_finite():
+            return parsed
+    raise ValueError('Not numeric text or a finite number')
+
+
+def convert_currency_to_numeric(frame, column):
+    if column not in frame:
+        raise ValueError('Choose an existing column.')
+    values, invalid = [], Counter()
+    for value in frame[column]:
+        try:
+            parsed = _parse_currency(value)
+            if parsed is not None and (not math.isfinite(float(parsed)) or (parsed != 0 and float(parsed) == 0)):
+                raise ValueError('Value outside supported numeric range')
+            values.append(parsed)
+        except (ValueError, TypeError, InvalidOperation, OverflowError):
+            invalid[repr(value)] += 1
+            values.append(None)
+    if invalid:
+        raise CurrencyConversionError(invalid)
+    whole = all(value is None or value == value.to_integral_value() for value in values)
+    if whole:
+        for original, value in zip(frame[column], values):
+            if value is not None and not -(2**63) <= value < 2**63:
+                invalid[repr(original)] += 1
+        if invalid:
+            raise CurrencyConversionError(invalid)
+    converted = pd.array([pd.NA if value is None else int(value) if whole else float(value) for value in values], dtype='Int64' if whole else 'Float64')
+    result = frame.copy()
+    result[column] = converted
+    return validate_table(result)

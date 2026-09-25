@@ -3,6 +3,14 @@ from pandas.io.formats.style import Styler
 from typing import List
 
 
+def leading_trailing_whitespace_pct(series: pd.Series) -> float:
+    """Percentage of actual, nonmissing text cells with boundary whitespace."""
+    text_values = [value for value in series.dropna() if isinstance(value, str)]
+    if not text_values:
+        return 0.0
+    return sum(value != value.strip() for value in text_values) / len(text_values) * 100
+
+
 def check_numerical_quality(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
     """Quality report for numerical columns."""
     if not columns:

@@ -23,6 +23,7 @@ from utils.ai_interpreter import (
     interpret_predictive_results,
 )
 from utils.quality import (
+    leading_trailing_whitespace_pct,
     check_numerical_quality,
     check_categorical_quality,
     check_datetime_quality,
@@ -165,6 +166,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                         ("Unique %",           f"{round(unique / total * 100, 2):.2f}%"),
                         ("Case Inconsistency", case_issue),
                         ("Special Characters", special_chars),
+                        ("Leading/Trailing Whitespace", f"{leading_trailing_whitespace_pct(raw[col_name]):.2f}%"),
                     ]:
                         _stats_row(label, val)
                         if label == "Unique Values":
