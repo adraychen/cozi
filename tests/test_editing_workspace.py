@@ -78,6 +78,53 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual(list(app.session_state['df']), ['total'])
         self.assertEqual(list(app.session_state['ws_datasets'][source_id]['frame']), ['a', 'b'])
 
+    def test_trim_spaces_preview_and_create(self):
+        frame = pd.DataFrame({'Place': ['  New  York  ', ' June '], 'Value': [1, 2]})
+        app, source_id = self.app(frame)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Trim Spaces').run(timeout=60)
+        app.selectbox(key='tf_trim_column').select(0)
+        app.selectbox(key='tf_trim_mode').select('Leading only')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertEqual(app.session_state['tf_result']['frame'].Place.iloc[0], 'New  York  ')
+        app.selectbox(key='tf_trim_mode').select('Leading and trailing').run(timeout=60)
+        self.assertNotIn('tf_result', app.session_state)
+        app.button(key='tf_preview').click().run(timeout=60)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['df'].Place.tolist(), ['New  York', 'June'])
+        pd.testing.assert_series_equal(app.session_state['df'].Value, frame.Value)
+        pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source_id]['frame'], frame)
+
+    def test_clean_all_columns(self):
+        frame = pd.DataFrame({'Sales': ['$3,000', '$-'], 'All columns': ['$-', '$250'], 'Number': [1, 2]})
+        app, source_id = self.app(frame)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        app.selectbox(key='tf_replace_column').select(0)
+        app.text_input(key='tf_replace_find_Text').set_value('$-')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['tf_result']['report']['Matched cells'], 2)
+        app.button(key='tf_apply').click().run(timeout=60)
+        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        app.selectbox(key='tf_remove_char_column').select(0)
+        app.text_input(key='tf_remove_characters').set_value('$,')
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['tf_result']['report']['Changed cells'], 2)
+        app.button(key='tf_create').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        result = app.session_state['df']
+        self.assertEqual(result.Sales.iloc[0], '3000')
+        self.assertEqual(result['All columns'].iloc[1], '250')
+        self.assertTrue(pd.isna(result.Sales.iloc[1]))
+        self.assertTrue(pd.isna(result['All columns'].iloc[0]))
+        pd.testing.assert_series_equal(result.Number, frame.Number)
+        pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source_id]['frame'], frame)
+
     def test_accumulate_changes_across_columns(self):
         frame = pd.DataFrame({'Sales': ['$3,000', '$250'], 'Cost': ['$1,000', '$-']})
         app, source_id = self.app(frame)

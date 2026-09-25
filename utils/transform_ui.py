@@ -6,7 +6,7 @@ from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
-from utils.table_editing import rename_column, remove_columns, add_column, replace_values, remove_characters
+from utils.table_editing import rename_column, remove_columns, add_column, replace_values, remove_characters, trim_spaces
 
 
 def render_validation(report, operation):
@@ -43,7 +43,7 @@ def render_transform(dataset_id, registry):
     if draft:
         st.subheader('Pending changes')
         for index, step in enumerate(draft['steps'], 1):
-            st.write(f"{index}. {step['operation']}" + (f" — {step['column']}" if 'column' in step else ''))
+            st.write(f"{index}. {step['operation']}" + (f" — {step['column'] if step['column'] != 0 else 'All columns'}" if 'column' in step else ''))
         st.caption('These changes are retained while you configure the next operation. Create a dataset when you are finished.')
         with st.expander('Preview accumulated changes'):
             st.dataframe(frame.head(100), width='stretch')
@@ -59,7 +59,7 @@ def render_transform(dataset_id, registry):
     columns = list(frame)
     operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
                                       'Rename column', 'Remove column', 'Add column',
-                                      'Replace Values', 'Remove Characters'],
+                                      'Replace Values', 'Remove Characters', 'Trim Spaces'],
                          horizontal=True, key='tf_operation')
     st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
@@ -162,7 +162,8 @@ def render_transform(dataset_id, registry):
             result = remove_columns(frame, removed)
             return result, {'Removed columns': ', '.join(removed), 'Remaining columns': len(result.columns), 'Rows': len(result)}, []
     elif operation == 'Replace Values':
-        column = st.selectbox('Column', columns, key='tf_replace_column')
+        column = st.selectbox('Column', columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_replace_column')
+        selected_columns = columns if column == 0 else [column]
         find_type = st.selectbox('Value to find type', ['Text', 'Number', 'True/False'], key='tf_replace_find_type')
         find = (st.selectbox('Value to find', ['True', 'False'], key='tf_replace_find_boolean')
                 if find_type == 'True/False' else st.text_input('Value to find', key='tf_replace_find_' + find_type))
@@ -172,21 +173,41 @@ def render_transform(dataset_id, registry):
             replacement = st.selectbox('Replacement value', ['True', 'False'], key='tf_replace_boolean')
         elif replacement_type != 'Missing value':
             replacement = st.text_input('Replacement value', key='tf_replace_value_' + replacement_type)
-        st.caption('Matches the entire value exactly. Text matching is case-sensitive and preserves spaces. Existing missing values stay missing. Choose Missing value to replace $- with a true missing cell; typing None as Text creates the word None.')
-        config.update(column=column, find=find, find_type=find_type, replacement=replacement, replacement_type=replacement_type)
+        ignore_spaces = st.checkbox('Ignore surrounding spaces when matching', value=True, key='tf_replace_ignore_spaces') if find_type == 'Text' else False
+        st.caption('Matches the whole value and is case-sensitive. Ignore surrounding spaces matches values such as " June " when you enter "June". Replacement text is used exactly as entered; unmatched cells stay unchanged. Existing missing values stay missing. Choose Missing value for a true missing cell; Text None creates the word None.')
+        config.update(column=column, columns=selected_columns, find=find, find_type=find_type, replacement=replacement, replacement_type=replacement_type, ignore_surrounding_spaces=ignore_spaces)
         def calculate():
-            result, matched = replace_values(frame, column, find, replacement, find_type, replacement_type)
+            result, counts = frame, {}
+            for target in selected_columns:
+                result, counts[target] = replace_values(result, target, find, replacement, find_type, replacement_type, ignore_surrounding_spaces=ignore_spaces)
+            matched = sum(counts.values())
             warnings = ['No exact matches were found. The result is unchanged.'] if not matched else []
-            return result, {'Column': column, 'Matched cells': matched, 'Rows': len(result), 'Replacement type': replacement_type}, warnings
+            return result, {'Column': 'All columns' if column == 0 else column, 'Matched cells': matched, 'Matches by column': counts, 'Rows': len(result), 'Replacement type': replacement_type}, warnings
     elif operation == 'Remove Characters':
-        column = st.selectbox('Column', columns, key='tf_remove_char_column')
+        column = st.selectbox('Column', columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_remove_char_column')
+        selected_columns = columns if column == 0 else [column]
         characters = st.text_input('Characters to remove', placeholder='$ or , or $,', key='tf_remove_characters')
         st.caption('Enter characters directly, without quotes or separators. For `$3,000`: enter `$` to get `3,000`, enter `,` to get `$3000`, or enter `$,` to get `3000`. Each character is removed wherever it occurs. Spaces and symbols are literal characters. Text stays text; missing and non-text values are preserved.')
-        config.update(column=column, characters=characters)
+        config.update(column=column, columns=selected_columns, characters=characters)
         def calculate():
-            result, changed = remove_characters(frame, column, characters)
+            result, counts = frame, {}
+            for target in selected_columns:
+                result, counts[target] = remove_characters(result, target, characters)
+            changed = sum(counts.values())
             warnings = ['No text cells contained the selected characters. The result is unchanged.'] if not changed else []
-            return result, {'Column': column, 'Changed cells': changed, 'Rows': len(result)}, warnings
+            return result, {'Column': 'All columns' if column == 0 else column, 'Changed cells': changed, 'Changes by column': counts, 'Rows': len(result)}, warnings
+    elif operation == 'Trim Spaces':
+        column = st.selectbox('Column', columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_trim_column')
+        selected_columns = columns if column == 0 else [column]
+        mode = st.selectbox('Spaces to remove', ['Leading and trailing', 'Leading only', 'Trailing only'], key='tf_trim_mode')
+        st.caption('Removes whitespace only at the selected edges, including tabs and line breaks. Spaces between words remain exactly as they are. Missing and non-text values are preserved.')
+        config.update(column=column, columns=selected_columns, mode=mode)
+        def calculate():
+            result, counts = frame, {}
+            for target in selected_columns:
+                result, counts[target] = trim_spaces(result, target, mode)
+            changed = sum(counts.values())
+            return result, {'Changed cells': changed, 'Changes by column': counts, 'Rows': len(result)}, ([] if changed else ['No cells needed trimming. The result is unchanged.'])
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
         method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')

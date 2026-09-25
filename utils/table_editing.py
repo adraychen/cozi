@@ -128,7 +128,7 @@ def _replacement_scalar(value, kind):
     raise ValueError('Choose a supported value type.')
 
 
-def replace_values(frame, column, find, replacement=None, find_type='Text', replacement_type='Missing value'):
+def replace_values(frame, column, find, replacement=None, find_type='Text', replacement_type='Missing value', ignore_surrounding_spaces=False):
     """Replace whole scalar values; never match missing cells or substrings."""
     if column not in frame:
         raise ValueError('Choose an existing column.')
@@ -140,7 +140,7 @@ def replace_values(frame, column, find, replacement=None, find_type='Text', repl
         if pd.isna(item):
             return False
         if find_type == 'Text':
-            return isinstance(item, str) and item == needle
+            return isinstance(item, str) and (item.strip() == needle.strip() if ignore_surrounding_spaces else item == needle)
         if find_type == 'True/False':
             return isinstance(item, (bool, np.bool_)) and item == needle
         return isinstance(item, numbers.Number) and not isinstance(item, (bool, np.bool_)) and item == needle
@@ -161,6 +161,23 @@ def replace_values(frame, column, find, replacement=None, find_type='Text', repl
             result[column] = target.mask(mask, value)
         except (TypeError, ValueError):
             result[column] = target.astype(object).mask(mask, value)
+    return validate_table(result), count
+
+
+def trim_spaces(frame, column, mode='Leading and trailing'):
+    """Trim edge whitespace only; preserve internal whitespace and nontext cells."""
+    if column not in frame:
+        raise ValueError('Choose an existing column.')
+    methods = {'Leading and trailing': str.strip, 'Leading only': str.lstrip, 'Trailing only': str.rstrip}
+    if mode not in methods:
+        raise ValueError('Choose a supported trimming option.')
+    trim = methods[mode]
+    series = frame[column]
+    changed = series.map(lambda value: isinstance(value, str) and trim(value) != value).fillna(False).astype(bool)
+    count = int(changed.sum())
+    result = frame.copy()
+    if count:
+        result[column] = series.map(lambda value: trim(value) if isinstance(value, str) else value)
     return validate_table(result), count
 
 
