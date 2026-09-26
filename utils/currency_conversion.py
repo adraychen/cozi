@@ -46,6 +46,22 @@ def _parse_currency(value):
     raise ValueError('Not numeric text or a finite number')
 
 
+def detect_currency_columns(frame):
+    """Suggest columns with at least one valid, explicitly symbol-marked amount."""
+    detected = []
+    for column in frame:
+        for value in frame[column]:
+            if not isinstance(value, str) or not re.search(r'[$£¥€]', value):
+                continue
+            try:
+                _parse_currency(value)
+            except (ValueError, TypeError, InvalidOperation, OverflowError):
+                continue
+            detected.append(column)
+            break
+    return detected
+
+
 def convert_currency_to_numeric(frame, column):
     if column not in frame:
         raise ValueError('Choose an existing column.')

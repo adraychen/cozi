@@ -2,13 +2,21 @@ import copy
 import unittest
 import pandas as pd
 from streamlit.testing.v1 import AppTest
-from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError
+from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError, detect_currency_columns
 from utils.dataset_workspace import add_dataset
 from utils.variable_metadata import infer_metadata
 from test_dataset_workspace import FIXTURE
 
 
 class CurrencyConversionTests(unittest.TestCase):
+    def test_smart_detection_does_not_guess_plain_text_or_modify_data(self):
+        frame = pd.DataFrame({'Money': ['$3000', 'Unknown'], 'Negative': ['$(300)', None],
+                              'Name': ['Toronto', 'New York'], 'ID': ['001', '002'],
+                              'Number': [3, 4], 'Note': ['Budget $300 approved', 'None']})
+        original = frame.copy()
+        self.assertEqual(detect_currency_columns(frame), ['Money', 'Negative'])
+        pd.testing.assert_frame_equal(frame, original)
+
     def test_accounting_parentheses(self):
         frame = pd.DataFrame({'Amount': ['$(3000)', '($3,000.00)', '(3000)', ' £(1,250) ', None]})
         result = convert_currency_to_numeric(frame, 'Amount')
@@ -103,7 +111,7 @@ class CurrencyConversionTests(unittest.TestCase):
         pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source]['frame'], frame)
 
     def test_all_columns_conversion_and_atomic_failure(self):
-        frame = pd.DataFrame({'Amount': ['$(3000)', '$-'], 'All columns': ['£125.50', None], 'Count': [1, 2]})
+        frame = pd.DataFrame({'Amount': ['$(3000)', '$-'], 'All columns': ['£125.50', None], 'Count': [1, 2], 'Name': ['Toronto', 'New York']})
         app, source = self.make_app(frame)
         app.selectbox(key='tf_currency_column').select(0)
         app.button(key='tf_preview').click().run(timeout=60)
@@ -113,6 +121,7 @@ class CurrencyConversionTests(unittest.TestCase):
         self.assertEqual(str(result['All columns'].dtype), 'Float64')
         self.assertEqual(result.Amount.tolist(), [-3000, 0])
         pd.testing.assert_series_equal(result.Count, frame.Count)
+        pd.testing.assert_series_equal(result.Name, frame.Name)
         app.button(key='tf_create').click().run(timeout=60)
         self.assertFalse(app.exception)
         pd.testing.assert_frame_equal(app.session_state['df'], result)
@@ -124,9 +133,14 @@ class CurrencyConversionTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertNotIn('tf_result', app.session_state)
         details = [d.value for d in app.dataframe if list(d.value.columns) == ['Column', 'Value', 'Count']][0]
-        self.assertEqual(details.Column.tolist(), ['Name', 'Other'])
-        self.assertEqual(details.Count.tolist(), [2, 1])
+        self.assertEqual(details.Column.tolist(), ['Other'])
+        self.assertEqual(details.Count.tolist(), [1])
         pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source]['frame'], frame)
+        app.multiselect(key='tf_currency_targets').set_value(['Amount'])
+        app.button(key='tf_preview').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['tf_result']['frame'].Amount.tolist(), [3000, 0])
+        pd.testing.assert_series_equal(app.session_state['tf_result']['frame'].Other, frame.Other)
 
 
 if __name__ == '__main__':

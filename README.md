@@ -12,7 +12,7 @@ Initial column classification infers each subtype once and reuses parsing result
 
 Adding datasets opens Inspect without requesting an AI interpretation. Use **Generate interpretation** when needed, or **Refresh interpretation** to update an existing summary. AI input summaries are calculated only on request. Excel sheet discovery is cached by file contents to avoid reopening the workbook when upload controls rerun.
 
-Convert Currency to Numeric offers **All columns** to convert all text columns in one operation while preserving non-text columns. All selected columns must validate; otherwise the entire operation is blocked and invalid values are listed by column with counts. Ordinary text, such as names, also blocks conversion—choose a specific column when the dataset includes such fields.
+Convert Currency to Numeric offers smart **All columns** selection: columns containing at least one valid amount marked with $, £, ¥, or € are preselected. Review the **Columns to convert** multiselect to add or remove columns before previewing. Ordinary text, dates, existing numeric columns, and plain numeric text are left unchanged by default. Every value in each selected column must validate; invalid values block the whole operation and are listed by column with counts. Validation shows converted and unchanged columns. Detection only suggests a selection; conversion remains explicitly user-triggered.
 
 Currency conversion also recognizes accounting parentheses: `$(3000)`, `($3,000)`, and `(3000)` become `-3000`. Parenthesized decimals remain negative decimals. Unbalanced/nested parentheses or parentheses combined with explicit signs are rejected for manual correction.
 

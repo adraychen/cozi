@@ -2,7 +2,7 @@
 import json
 import pandas as pd
 import streamlit as st
-from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError
+from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError, detect_currency_columns
 from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
@@ -216,11 +216,19 @@ def render_transform(dataset_id, registry):
             st.session_state.pop('tf_result', None)
             return
         column = st.selectbox('Column', text_columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_currency_column')
-        selected_columns = text_columns if column == 0 else [column]
-        st.caption('All columns converts every text column. Existing non-text columns stay unchanged. Any invalid value in a selected column blocks the entire operation, including ordinary text such as names.')
+        if column == 0:
+            detected = detect_currency_columns(frame)
+            selected_columns = st.multiselect('Columns to convert', text_columns, default=detected, key='tf_currency_targets')
+            st.caption('Currency columns are selected automatically when at least one value is a valid amount with $, £, ¥, or €. Review the selection; add or remove columns as needed. Names, dates, existing numbers, and plain numeric text are skipped unless selected. Invalid values within selected columns still block the whole conversion.')
+            if not detected:
+                st.info('No symbol-marked currency amounts detected. Select the text columns you want to convert.')
+        else:
+            selected_columns = [column]
         st.caption('Converts $, £, ¥ and € amounts using commas for thousands and a decimal point. Currency dashes such as $- become zero; blank and missing cells stay missing. Negative amounts include -$300, $-300, $(3000), and ($3,000). Every value must be valid before you can apply the conversion. No exchange-rate conversion is performed.')
         config.update(column=column, columns=selected_columns)
         def calculate():
+            if not selected_columns:
+                raise ValueError('Select at least one currency column to convert.')
             result, failures, types = frame, [], {}
             for target in selected_columns:
                 try:
@@ -232,7 +240,7 @@ def render_transform(dataset_id, registry):
                     failures.append(details)
             if failures:
                 raise CurrencyConversionError(pd.concat(failures, ignore_index=True))
-            return result, {'Column': 'All columns' if column == 0 else column, 'Data type': types, 'Numeric values': int(result[selected_columns].notna().sum().sum()), 'Missing values': int(result[selected_columns].isna().sum().sum()), 'Rows': len(result)}, []
+            return result, {'Columns converted': ', '.join(selected_columns), 'Columns unchanged': ', '.join(c for c in columns if c not in selected_columns) or 'None', 'Data type': types, 'Numeric values': int(result[selected_columns].notna().sum().sum()), 'Missing values': int(result[selected_columns].isna().sum().sum()), 'Rows': len(result)}, []
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
         method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')
