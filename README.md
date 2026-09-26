@@ -6,6 +6,8 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 
 ## Dataset workspace
 
+The dataset workspace runs as a Streamlit fragment. Tab and control interactions rerun the workspace without rerunning the page header's database counters or visit tracking; explicit dataset-creation reruns still refresh the full page.
+
 Initial column classification infers each subtype once and reuses parsing results for repeated text within each temporal parsing operation. Inference still evaluates all rows with their original frequency and keeps the existing validity thresholds. Inspect displays a preparation indicator while building Column Overview.
 
 Adding datasets opens Inspect without requesting an AI interpretation. Use **Generate interpretation** when needed, or **Refresh interpretation** to update an existing summary. AI input summaries are calculated only on request. Excel sheet discovery is cached by file contents to avoid reopening the workbook when upload controls rerun.

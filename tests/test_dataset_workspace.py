@@ -17,6 +17,25 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_transform_switch_from_browser_widget_event(self):
+        from streamlit.proto.WidgetStates_pb2 import WidgetStates
+        app = AppTest.from_string(FIXTURE)
+        state = {}
+        add_dataset(state, pd.DataFrame({'Amount': ['$3000', '$-']}), 'Source', 'Test')
+        for key, value in state.items():
+            app.session_state[key] = value
+        app.run(timeout=60)
+        for selected in ['Transform', 'Inspect', 'Transform']:
+            event = WidgetStates()
+            widget = event.widgets.add()
+            widget.id = app._session_state._state._key_id_mapper.get_id_from_key('ws_workflow')
+            widget.string_value = selected
+            app._run(widget_state=event, timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['ws_workflow'], selected)
+            if selected == 'Transform':
+                self.assertTrue(app.radio(key='tf_operation'))
+
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
         script = "import streamlit as st\n" + FIXTURE.replace('utils.ai_interpreter.interpret_dataset_overview', 'utils.dataset_views.interpret_dataset_overview').replace(
             "return_value='Test summary'",

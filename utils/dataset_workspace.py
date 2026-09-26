@@ -140,6 +140,7 @@ def render_add_datasets(samples):
                     st.error(f'Could not load the sample: {exc}')
 
 
+@st.fragment
 def render_workspace(samples, show_feedback):
     # Scope the larger navigation treatment to the workflow row, leaving dataset
     # tabs and nested analytical tabs at their existing sizes.
