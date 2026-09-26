@@ -215,13 +215,24 @@ def render_transform(dataset_id, registry):
             st.info('Choose a dataset with a text column to convert currency values.')
             st.session_state.pop('tf_result', None)
             return
-        column = st.selectbox('Column', text_columns, key='tf_currency_column')
-        st.caption('Converts $, £, ¥ and € amounts using commas for thousands and a decimal point. Currency dashes such as $- become zero; blank and missing cells stay missing. Negative amounts are supported. Every value must be valid before you can apply the conversion. No exchange-rate conversion is performed.')
-        config.update(column=column)
+        column = st.selectbox('Column', text_columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_currency_column')
+        selected_columns = text_columns if column == 0 else [column]
+        st.caption('All columns converts every text column. Existing non-text columns stay unchanged. Any invalid value in a selected column blocks the entire operation, including ordinary text such as names.')
+        st.caption('Converts $, £, ¥ and € amounts using commas for thousands and a decimal point. Currency dashes such as $- become zero; blank and missing cells stay missing. Negative amounts include -$300, $-300, $(3000), and ($3,000). Every value must be valid before you can apply the conversion. No exchange-rate conversion is performed.')
+        config.update(column=column, columns=selected_columns)
         def calculate():
-            result = convert_currency_to_numeric(frame, column)
-            dtype = 'Whole Number' if pd.api.types.is_integer_dtype(result[column].dtype) else 'Decimal Number'
-            return result, {'Column': column, 'Data type': dtype, 'Numeric values': int(result[column].notna().sum()), 'Missing values': int(result[column].isna().sum()), 'Rows': len(result)}, []
+            result, failures, types = frame, [], {}
+            for target in selected_columns:
+                try:
+                    result = convert_currency_to_numeric(result, target)
+                    types[target] = 'Whole Number' if pd.api.types.is_integer_dtype(result[target].dtype) else 'Decimal Number'
+                except CurrencyConversionError as exc:
+                    details = exc.invalid.copy()
+                    details.insert(0, 'Column', target)
+                    failures.append(details)
+            if failures:
+                raise CurrencyConversionError(pd.concat(failures, ignore_index=True))
+            return result, {'Column': 'All columns' if column == 0 else column, 'Data type': types, 'Numeric values': int(result[selected_columns].notna().sum().sum()), 'Missing values': int(result[selected_columns].isna().sum().sum()), 'Rows': len(result)}, []
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
         method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')

@@ -11,8 +11,8 @@ from utils.table_transforms import validate_table
 
 class CurrencyConversionError(ValueError):
     def __init__(self, invalid):
-        self.invalid = pd.DataFrame([{'Value': value, 'Count': count} for value, count in invalid.items()])
-        super().__init__(f'Conversion incomplete — {sum(invalid.values())} values cannot be converted to numeric ({len(invalid)} distinct values).')
+        self.invalid = invalid.copy() if isinstance(invalid, pd.DataFrame) else pd.DataFrame([{'Value': value, 'Count': count} for value, count in invalid.items()])
+        super().__init__(f"Conversion incomplete — {self.invalid['Count'].sum()} values cannot be converted to numeric ({len(self.invalid)} distinct entries).")
 
 
 def _parse_currency(value):
@@ -22,12 +22,22 @@ def _parse_currency(value):
         text = value.strip()
         if not text:
             return None
+        accounting = re.fullmatch(r'([$£¥€]?)\s*\(([^()]*)\)', text)
+        if accounting:
+            # Accept $(3000), ($3000), and (3000), but reject conflicting signs.
+            text = accounting[1] + accounting[2].strip()
         if re.fullmatch(r'[$£¥€]\s*-', text):
+            if accounting:
+                raise ValueError('Invalid parenthesized currency value')
             return Decimal(0)
         # One optional currency symbol, with a sign before or after it.
         match = re.fullmatch(r'([+-]?)\s*([$£¥€]?)\s*([+-]?)\s*((?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+|[0-9]{1,2}(?:,[0-9]{2})+,[0-9]{3})(?:\.[0-9]+)?|\.[0-9]+)', text)
         if not match or (match[1] and match[3]):
             raise ValueError('Invalid currency value')
+        if accounting:
+            if match[1] or match[3]:
+                raise ValueError('Parentheses cannot be combined with a sign')
+            return Decimal('-' + match[4].replace(',', ''))
         return Decimal((match[1] or match[3]) + match[4].replace(',', ''))
     if isinstance(value, (numbers.Real, Decimal)) and not isinstance(value, bool):
         parsed = Decimal(str(value))

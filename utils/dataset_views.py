@@ -250,11 +250,6 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         # ── AI Interpretation ─────────────────────────────────────────────────────────
         st.subheader("AI Interpretation")
 
-        num_df = check_numerical_quality(df, col_types["numerical"])
-        cat_df = check_categorical_quality(df, col_types["categorical"])
-        dt_df  = check_datetime_quality(df, col_types["datetime"])
-
-
         def build_quality_text(quality_df: pd.DataFrame) -> str:
             if quality_df.empty:
                 return ""
@@ -264,9 +259,15 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
             )
 
 
-        if "ai_summary" not in st.session_state:
+        has_summary = bool(st.session_state.get('ai_summary'))
+        if not has_summary:
+            st.caption('Generate an AI interpretation when you are ready. Your dataset is available without waiting for it.')
+        if st.button('🔄 Refresh interpretation' if has_summary else 'Generate interpretation', key='view_generate_ai'):
             with st.spinner("Analysing your data…"):
                 try:
+                    num_df = check_numerical_quality(df, col_types["numerical"])
+                    cat_df = check_categorical_quality(df, col_types["categorical"])
+                    dt_df = check_datetime_quality(df, col_types["datetime"])
                     st.session_state["ai_summary"] = interpret_dataset_overview(
                         shape=df.shape,
                         col_types=col_types,
@@ -276,13 +277,11 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                     )
                 except Exception as e:
                     st.error(f"Could not generate AI interpretation: {e}")
-                    st.session_state["ai_summary"] = None
+                else:
+                    st.rerun()
 
         if st.session_state.get("ai_summary"):
             st.info(st.session_state["ai_summary"])
-            if st.button("🔄 Refresh interpretation"):
-                st.session_state.pop("ai_summary", None)
-                st.rerun()
 
         _show_feedback("Data Quality Summary", "dqs")
 

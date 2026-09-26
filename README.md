@@ -6,6 +6,12 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 
 ## Dataset workspace
 
+Adding datasets opens Inspect without requesting an AI interpretation. Use **Generate interpretation** when needed, or **Refresh interpretation** to update an existing summary. AI input summaries are calculated only on request. Excel sheet discovery is cached by file contents to avoid reopening the workbook when upload controls rerun.
+
+Convert Currency to Numeric offers **All columns** to convert all text columns in one operation while preserving non-text columns. All selected columns must validate; otherwise the entire operation is blocked and invalid values are listed by column with counts. Ordinary text, such as names, also blocks conversion—choose a specific column when the dataset includes such fields.
+
+Currency conversion also recognizes accounting parentheses: `$(3000)`, `($3,000)`, and `(3000)` become `-3000`. Parenthesized decimals remain negative decimals. Unbalanced/nested parentheses or parentheses combined with explicit signs are rejected for manual correction.
+
 **Convert Currency to Numeric** is an explicit Transform operation for a selected text column. It supports `$`, `£`, `¥`, `€`, comma thousands separators, decimal points, boundary whitespace, currency dashes as zero, and negative amounts such as `-$300` and `$-300`. Blank and genuinely missing cells stay missing; literal `None` is invalid. Any invalid value blocks the whole conversion and is listed with its occurrence count for manual cleanup. The standard preview, validation, Apply and continue, and Create dataset workflow is used. Successful outputs use nullable Int64 when all amounts are whole numbers, or Float64 for fractional amounts, and receive the normal numerical classification when the result dataset is created. It does not perform exchange-rate conversion; whole numbers outside Int64 range and nonfinite amounts are rejected.
 
 Categorical Inspect panels show **Leading/Trailing Whitespace** directly below Special Characters, formatted to two decimal places. It counts non-missing text cells that differ from `str.strip()`, divided by all non-missing text cells. Internal spaces and non-text values are excluded from detection; missing and non-text cells are excluded from the denominator. With no eligible text cells the metric displays 0.00%. This check uses original stored values and never modifies the dataset; use Transform → Trim Spaces to clean it manually.

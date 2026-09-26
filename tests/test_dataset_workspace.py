@@ -17,6 +17,47 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
+        script = "import streamlit as st\n" + FIXTURE.replace(
+            "return_value='Test summary'",
+            "side_effect=lambda **kwargs: (st.session_state.__setitem__('test_ai_calls', st.session_state.get('test_ai_calls', 0) + 1) or 'Test summary')")
+        app = AppTest.from_string(script)
+        state = {}
+        add_dataset(state, pd.DataFrame({'Amount': [1, 2, 3]}), 'First', 'Test')
+        for key, value in state.items():
+            app.session_state[key] = value
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertNotIn('test_ai_calls', app.session_state)
+        app.button(key='view_generate_ai').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['test_ai_calls'], 1)
+        self.assertEqual(app.session_state['ai_summary'], 'Test summary')
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['test_ai_calls'], 1)
+        app.button(key='view_generate_ai').click().run(timeout=60)
+        self.assertEqual(app.session_state['test_ai_calls'], 2)
+        next_state = {'ws_datasets': app.session_state['ws_datasets']}
+        add_dataset(next_state, pd.DataFrame({'Amount': [4, 5]}), 'Second', 'Test')
+        for key, value in next_state.items():
+            app.session_state[key] = value
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['test_ai_calls'], 2)
+        self.assertNotIn('ai_summary', app.session_state)
+
+    def test_excel_sheet_discovery_cached_by_content(self):
+        from utils.dataset_workspace import uploaded_sheet_names
+        uploaded_sheet_names.clear()
+        with patch('utils.dataset_workspace.pd.ExcelFile') as reader:
+            reader.return_value.__enter__.return_value.sheet_names = ['Sheet1']
+            self.assertEqual(uploaded_sheet_names(b'workbook-one'), ['Sheet1'])
+            self.assertEqual(uploaded_sheet_names(b'workbook-one'), ['Sheet1'])
+            self.assertEqual(reader.call_count, 1)
+            uploaded_sheet_names(b'workbook-two')
+            self.assertEqual(reader.call_count, 2)
+        uploaded_sheet_names.clear()
+
     def test_join_validation_readable_counts(self):
         app = AppTest.from_string('''
 from utils.transform_ui import render_validation

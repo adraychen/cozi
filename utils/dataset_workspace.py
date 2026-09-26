@@ -13,7 +13,7 @@ _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'pa_', 'mc_'
              'col_ai_', 'heatmap_ai_', 'tf_', 'view_')
 _TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'tf_preview', 'tf_create',
              'tf_apply', 'tf_draft_create', 'tf_draft_discard', 'tf_draft_finish',
-             'view_remove_duplicate_columns', 'view_remove_duplicate_rows'}
+             'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_generate_ai'}
 
 
 def dataset_state_key(key):
@@ -79,6 +79,12 @@ def initialize(state):
             save_active(state)
 
 
+@st.cache_data(show_spinner=False, max_entries=16)
+def uploaded_sheet_names(content):
+    with pd.ExcelFile(io.BytesIO(content)) as book:
+        return book.sheet_names
+
+
 def render_add_datasets(samples):
     st.subheader('Add datasets')
     st.caption('Upload, input, or choose sample data. Each addition opens its own dataset tab.')
@@ -92,8 +98,8 @@ def render_add_datasets(samples):
             if file.name.lower().endswith('.csv'):
                 candidates.append((file.name, file, None))
             else:
-                book = pd.ExcelFile(io.BytesIO(file.getvalue()))
-                sheets = st.multiselect(f'Sheets in {file.name}', book.sheet_names, default=book.sheet_names[:1],
+                sheet_names = uploaded_sheet_names(file.getvalue())
+                sheets = st.multiselect(f'Sheets in {file.name}', sheet_names, default=sheet_names[:1],
                                         key=f'ws_sheets_{index}_{identity}')
                 candidates.extend((f'{file.name} · {sheet}', file, sheet) for sheet in sheets)
         except Exception as exc:
