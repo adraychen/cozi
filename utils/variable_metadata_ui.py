@@ -9,8 +9,7 @@ def render_column_overview(raw, dataset_id):
     metadata=ensure_metadata(st.session_state,raw,dataset_id)
     st.caption('Variable Type defines whether a variable is treated analytically as numerical, categorical, or temporal. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
     st.html(overview_html(raw,metadata))
-    st.caption('Missing values: red ≥20%; yellow 5–19%. Data Type describes storage; Variable Type controls analysis. A = Automatic classification; M = Manual Override. Hover over a badge for its meaning; click ⓘ beside Unique Values for details.')
-    st.info('You can edit variable classifications. Expand Edit variable classification below to change a variable type or subtype, then select Apply classification.')
+    st.caption('A = Automatic classification  M = Manual Override')
     with st.expander('Edit variable classification',expanded=False):
         col=st.selectbox('Column to edit',list(raw),key='vm_column')
         m=metadata[col]
@@ -36,7 +35,9 @@ def render_column_overview(raw, dataset_id):
                 order=[]
         if pd.api.types.is_numeric_dtype(raw[col]) and raw[col].nunique()==2:
             st.info('Two unique numeric values detected. This may represent either a discrete numerical variable or a binary categorical variable.')
-        if st.button('Apply classification',key='vm_apply'):
+        has_changes = (t != m['variable_type'] or subtype != m['variable_subtype']
+                       or (subtype == 'Ordinal' and order != m.get('order', [])))
+        if st.button('Apply classification',key='vm_apply',disabled=not has_changes):
             try:
                 updated=apply_user_override(metadata,col,raw[col],t,subtype,order)
             except ValueError as exc:

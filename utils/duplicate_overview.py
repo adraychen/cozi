@@ -17,7 +17,10 @@ def render_duplicate_columns(frame, dataset_name):
     duplicates = duplicate_columns(frame)
     st.caption('Columns are duplicates when their stored values, data types, and missing-value positions match in every row. The first column in each group is kept.')
     if not duplicates:
-        st.info('No duplicated columns found.' if len(frame) else 'Duplicate columns cannot be assessed without rows.')
+        if len(frame):
+            st.write('No duplicated columns found.')
+        else:
+            st.info('Duplicate columns cannot be assessed without rows.')
         return
     st.dataframe(pd.DataFrame({'Column to remove': list(duplicates), 'Column to keep': list(duplicates.values())}),
                  hide_index=True, width='stretch')
@@ -36,7 +39,7 @@ def render_row_overview(frame, dataset_name):
     duplicated.metric('Duplicated rows', f'{count:,}')
     st.caption('Duplicated rows are extra copies after the first occurrence, matching all stored columns. Matching missing values count as equal. The row index is ignored.')
     if not count:
-        st.info('No duplicated rows found.')
+        st.write('No duplicated rows found.')
         return
     st.caption('Rows to remove — showing the first 100 duplicates. Original row indices are shown.')
     st.dataframe(frame.loc[duplicate_mask].head(100), width='stretch')
