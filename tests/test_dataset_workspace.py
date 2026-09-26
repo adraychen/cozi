@@ -17,6 +17,45 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_created_dataset_ignores_previous_workflow_browser_state(self):
+        from streamlit.proto.WidgetStates_pb2 import WidgetStates
+        app = AppTest.from_string(FIXTURE)
+        state = {}
+        source = add_dataset(state, pd.DataFrame({'a': [1, 2], 'b': [3, 4]}), 'Source', 'Test')
+        for key, value in state.items():
+            app.session_state[key] = value
+        app.run(timeout=60)
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        mapper = app._session_state._state._key_id_mapper
+        old_key = f'ws_workflow_{source}' if f'ws_workflow_{source}' in app.session_state else 'ws_workflow'
+        old_id = mapper.get_id_from_key(old_key)
+        new_state = {'ws_datasets': app.session_state['ws_datasets']}
+        add_dataset(new_state, pd.DataFrame({'a': [1, 2], 'b': [3, 4]}),
+                    'Transformed', 'Transform', parents=[source])
+        app.session_state['ws_pending'] = new_state['ws_pending']
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        # The browser still submits the source tab selection with the next input.
+        event = WidgetStates()
+        workflow = event.widgets.add()
+        workflow.id = old_id
+        workflow.string_value = 'Transform'
+        column = event.widgets.add()
+        column.id = mapper.get_id_from_key('vm_column')
+        column.string_value = 'b'
+        app._run(widget_state=event, timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        self.assertEqual(app.selectbox(key='vm_column').value, 'b')
+        app.session_state['ws_dataset_tabs'] = 'Source'
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['ws_workflow'], 'Transform')
+        app.session_state['ws_dataset_tabs'] = 'Transformed'
+        app.run(timeout=60)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        self.assertEqual(app.selectbox(key='vm_column').value, 'b')
+
     def test_transform_switch_from_browser_widget_event(self):
         from streamlit.proto.WidgetStates_pb2 import WidgetStates
         app = AppTest.from_string(FIXTURE)
@@ -28,7 +67,7 @@ class WorkspaceTests(unittest.TestCase):
         for selected in ['Transform', 'Inspect', 'Transform']:
             event = WidgetStates()
             widget = event.widgets.add()
-            widget.id = app._session_state._state._key_id_mapper.get_id_from_key('ws_workflow')
+            widget.id = app._session_state._state._key_id_mapper.get_id_from_key('ws_workflow_' + app.session_state['ws_active'])
             widget.string_value = selected
             app._run(widget_state=event, timeout=60)
             self.assertFalse(app.exception)

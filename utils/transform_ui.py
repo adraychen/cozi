@@ -224,7 +224,7 @@ def render_transform(dataset_id, registry):
                 st.info('No symbol-marked currency amounts detected. Select the text columns you want to convert.')
         else:
             selected_columns = [column]
-        st.caption('Converts $, £, ¥ and € amounts using commas for thousands and a decimal point. Currency dashes such as $- become zero; blank and missing cells stay missing. Negative amounts include -$300, $-300, $(3000), and ($3,000). Every value must be valid before you can apply the conversion. No exchange-rate conversion is performed.')
+        st.caption('Blank and missing cells stay missing. Every value must be valid before you can apply the conversion.')
         config.update(column=column, columns=selected_columns)
         def calculate():
             if not selected_columns:

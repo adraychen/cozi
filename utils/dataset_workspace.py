@@ -32,6 +32,7 @@ def save_active(state):
     registry = state.get('ws_datasets', {})
     if active in registry:
         registry[active]['state'] = {k: state[k] for k in state if dataset_state_key(k)}
+        registry[active]['workflow'] = state.get('ws_workflow', 'Inspect')
 
 
 def activate(state, dataset_id):
@@ -47,6 +48,13 @@ def activate(state, dataset_id):
     state['ws_active'] = dataset_id
     state['df'] = entry['frame']
     state['file_id'] = dataset_id
+    state['ws_workflow'] = entry.get('workflow', 'Inspect')
+
+
+def _workflow_changed(dataset_id, widget_key):
+    """Only the active dataset's tab widget may update its workflow."""
+    if st.session_state.get('ws_active') == dataset_id:
+        st.session_state['ws_workflow'] = st.session_state[widget_key]
 
 
 def add_dataset(state, frame, name, source, parents=None, operation=None):
@@ -145,11 +153,11 @@ def render_workspace(samples, show_feedback):
     # Scope the larger navigation treatment to the workflow row, leaving dataset
     # tabs and nested analytical tabs at their existing sizes.
     st.html('''<style>
-        .st-key-ws_workflow > div > [role="tablist"] {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] {
             gap: 0.6rem;
             padding: 0.35rem 0 0.65rem;
         }
-        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"] {
             min-height: 3rem;
             height: auto;
             min-width: 8rem;
@@ -159,31 +167,31 @@ def render_workspace(samples, show_feedback):
             border-radius: 0.6rem;
             background: #4c72b014;
         }
-        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] p {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"] p {
             font-size: 1.1rem;
             font-weight: 600;
         }
-        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"]:hover {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"]:hover {
             background: #4c72b026;
             border-color: #4c72b0;
         }
-        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
             background: #4c72b0;
             border-color: #4c72b0;
             color: #ffffff;
         }
-        .st-key-ws_workflow > div > [role="tablist"] > [role="tab"]:focus-visible {
+        [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"]:focus-visible {
             outline: 2px solid #4c72b0;
             outline-offset: 2px;
         }
         @media (max-width: 540px) {
-            .st-key-ws_workflow > div > [role="tablist"] { gap: 0.35rem; }
-            .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] {
+            [class*="st-key-ws_workflow_"] > div > [role="tablist"] { gap: 0.35rem; }
+            [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"] {
                 min-width: 0;
                 flex: 1 0 auto;
                 padding: 0.65rem 0.6rem;
             }
-            .st-key-ws_workflow > div > [role="tablist"] > [role="tab"] p {
+            [class*="st-key-ws_workflow_"] > div > [role="tablist"] > [role="tab"] p {
                 font-size: 1rem;
             }
         }
@@ -197,7 +205,6 @@ def render_workspace(samples, show_feedback):
     registry = st.session_state['ws_datasets']
     if pending in registry:
         st.session_state['ws_dataset_tabs'] = registry[pending]['name']
-        st.session_state['ws_workflow'] = 'Inspect'
     labels = [d['name'] for d in registry.values()] + [ADD_TAB]
     if st.session_state.get('ws_dataset_tabs') not in labels:
         st.session_state['ws_dataset_tabs'] = labels[0]
@@ -219,7 +226,14 @@ def render_workspace(samples, show_feedback):
                     st.caption('Sources: ' + ' + '.join(registry[p]['name'] for p in entry['parents']))
                     with st.expander('Transformation settings'):
                         st.json(entry['operation'])
-                inspect, transform, analyze = st.tabs(['Inspect', 'Transform', 'Analyze'], key='ws_workflow', on_change='rerun')
+                # A new dataset needs a new browser widget identity. Reusing the
+                # source widget lets its old Transform value overwrite Inspect
+                # when the next classification input triggers a rerun.
+                workflow_key = f'ws_workflow_{dataset_id}'
+                st.session_state[workflow_key] = st.session_state.get('ws_workflow', 'Inspect')
+                inspect, transform, analyze = st.tabs(
+                    ['Inspect', 'Transform', 'Analyze'], key=workflow_key,
+                    on_change=_workflow_changed, args=(dataset_id, workflow_key))
                 if inspect.open:
                     from utils.dataset_views import render_inspect
                     with inspect:
