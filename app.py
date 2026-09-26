@@ -33,7 +33,7 @@ _SAMPLE_DATASETS = [
     {
         "name": "PlantGrowth.csv",
         "id":   "19w_ELwkTJ_5fKWUi0Rh7YuLz8rNoFeB7",
-        "desc": "ANOVA analysis",
+        "desc": "One-way ANOVA",
         "separator": "-",
     },
     {

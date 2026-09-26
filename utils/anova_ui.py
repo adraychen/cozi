@@ -38,7 +38,7 @@ def render_anova(df, category, outcome):
             ('Original rows', str(len(df))), ('Used rows', str(prepared['n'])),
             ('Excluded missing/nonfinite rows', str(prepared['excluded'])),
             ('Number of groups', str(len(prepared['groups']))),
-            ('Analysis method', method + ' one-way ANOVA'),
+            ('Analysis method', method + ' One-way ANOVA'),
         ], columns=['Model detail', 'Value']))
         for error in prepared['errors']:
             st.error('Cannot run ANOVA: ' + error)
@@ -47,7 +47,7 @@ def render_anova(df, category, outcome):
         if not independent and not prepared['errors']:
             st.info('Confirm the study design above to display the ANOVA result. Descriptive summaries and diagnostics remain available.')
         if result is not None:
-            st.markdown(f'**{method} one-way ANOVA**')
+            st.markdown(f'**{method} One-way ANOVA**')
             st.dataframe(pd.DataFrame([result]), hide_index=True, use_container_width=True)
     with tabs[1]:
         st.markdown('**Group summaries**')
