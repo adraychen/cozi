@@ -1,7 +1,6 @@
 """Dataset-scoped analytical classifications, independent of Streamlit."""
 import numpy as np
 import pandas as pd
-from utils.detector import detect_data_types
 from utils.temporal import SUBTYPES, infer_temporal_subtype, parse_temporal
 
 ALLOWED = {'Numerical': ['Discrete', 'Continuous'], 'Categorical': ['Binary', 'Nominal', 'Ordinal'], 'Date / Time': SUBTYPES}
@@ -31,10 +30,21 @@ def infer_variable_subtype(series, variable_type):
     return 'Ordinal' if category_order(series)[1] else 'Nominal'
 
 def infer_metadata(df):
-    groups=detect_data_types(df)
-    labels={c:t for t,k in KINDS.items() for c in groups[k]}
-    return {c:dict(variable_type=labels[c], variable_subtype=infer_variable_subtype(df[c],labels[c]),
-                   order=category_order(df[c])[0] if infer_variable_subtype(df[c],labels[c])=='Ordinal' else [], source='Automatic') for c in df}
+    metadata = {}
+    for column in df:
+        series = df[column]
+        temporal = None
+        if pd.api.types.is_bool_dtype(series):
+            variable_type = 'Categorical'
+        elif pd.api.types.is_numeric_dtype(series):
+            variable_type = 'Numerical'
+        else:
+            temporal = infer_temporal_subtype(series)
+            variable_type = 'Date / Time' if temporal else 'Categorical'
+        subtype = temporal or infer_variable_subtype(series, variable_type)
+        metadata[column] = dict(variable_type=variable_type, variable_subtype=subtype,
+                                order=category_order(series)[0] if subtype == 'Ordinal' else [], source='Automatic')
+    return metadata
 
 def validate_type_subtype(series, variable_type, subtype, order=None):
     if subtype not in get_allowed_subtypes(variable_type):

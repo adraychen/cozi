@@ -6,6 +6,8 @@ A multi-dataset analytics workspace built with Streamlit. Add CSV or Excel files
 
 ## Dataset workspace
 
+Initial column classification infers each subtype once and reuses parsing results for repeated text within each temporal parsing operation. Inference still evaluates all rows with their original frequency and keeps the existing validity thresholds. Inspect displays a preparation indicator while building Column Overview.
+
 Adding datasets opens Inspect without requesting an AI interpretation. Use **Generate interpretation** when needed, or **Refresh interpretation** to update an existing summary. AI input summaries are calculated only on request. Excel sheet discovery is cached by file contents to avoid reopening the workbook when upload controls rerun.
 
 Convert Currency to Numeric offers **All columns** to convert all text columns in one operation while preserving non-text columns. All selected columns must validate; otherwise the entire operation is blocked and invalid values are listed by column with counts. Ordinary text, such as names, also blocks conversion—choose a specific column when the dataset includes such fields.

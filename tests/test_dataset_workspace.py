@@ -18,7 +18,7 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 class WorkspaceTests(unittest.TestCase):
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
-        script = "import streamlit as st\n" + FIXTURE.replace(
+        script = "import streamlit as st\n" + FIXTURE.replace('utils.ai_interpreter.interpret_dataset_overview', 'utils.dataset_views.interpret_dataset_overview').replace(
             "return_value='Test summary'",
             "side_effect=lambda **kwargs: (st.session_state.__setitem__('test_ai_calls', st.session_state.get('test_ai_calls', 0) + 1) or 'Test summary')")
         app = AppTest.from_string(script)
@@ -179,12 +179,33 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         app.multiselect[0].set_value(['First', 'Second']).run(timeout=60)
         app.button(key='ws_import').click().run(timeout=60)
         self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
+        self.assertTrue({'Dataset Preview', 'Column Overview', 'Row Overview', 'Data Quality Summary'}.issubset({e.label for e in app.expander}))
         entries = list(app.session_state['ws_datasets'].values())
         self.assertEqual([d['name'] for d in entries], ['data.csv', 'data.csv (2)', 'book.xlsx · First', 'book.xlsx · Second'])
         self.assertEqual([d['frame'].x.iloc[0] for d in entries], [3, 4, 1, 2])
         app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
         app.run(timeout=60)
         self.assertFalse(app.file_uploader[0].value)
+
+    def test_uploaded_text_and_dates_render_inspect_without_tab_roundtrip(self):
+        app = self.app()
+        frame = pd.DataFrame({'City': [' New York ', 'Toronto'] * 350,
+                              'Date': ['2024-01-01', '2024-02-01'] * 350,
+                              'Amount': ['$3000', '$-'] * 350})
+        app.file_uploader[0].set_value([('data.csv', frame.to_csv(index=False).encode(), 'text/csv')]).run(timeout=60)
+        app.button(key='ws_import').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertTrue({'Dataset Preview', 'Column Overview', 'Row Overview', 'Data Quality Summary'}.issubset({e.label for e in app.expander}))
+        self.assertEqual(app.session_state['variable_metadata']['Date']['variable_type'], 'Date / Time')
+        app.session_state['ws_workflow'] = 'Transform'
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertTrue(app.radio(key='tf_operation'))
+        app.session_state['ws_workflow'] = 'Inspect'
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertTrue(any(e.label == 'Row Overview' for e in app.expander))
 
     def test_failed_import_and_sample_add_preserve_existing(self):
         app = self.app()

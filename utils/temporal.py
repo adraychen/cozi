@@ -65,7 +65,20 @@ def parse_temporal(series, subtype):
     if subtype not in SUBTYPES:
         raise ValueError('Choose Date, Time, DateTime, or Duration for a Temporal variable.')
     parser = _clock if subtype == 'Time' else _duration if subtype == 'Duration' else _calendar
-    values = [pd.NaT if pd.isna(v) else parser(v) for v in series]
+    # Repeated labels/dates must not invoke the scalar date parser for every row.
+    # Keep this cache local to the call and retain full-row weighting for inference.
+    parsed_text = {}
+    values = []
+    for value in series:
+        if pd.isna(value):
+            parsed = pd.NaT
+        elif isinstance(value, str):
+            if value not in parsed_text:
+                parsed_text[value] = parser(value)
+            parsed = parsed_text[value]
+        else:
+            parsed = parser(value)
+        values.append(parsed)
     if subtype in ('Time', 'Duration'):
         return pd.Series(pd.to_timedelta(values), index=series.index, name=series.name)
     # Normalize timezone-aware inputs to UTC; never attach today's date to a clock.

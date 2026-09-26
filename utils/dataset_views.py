@@ -61,7 +61,8 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         # ── Column Overview ───────────────────────────────────────────────────────────
         from utils.variable_metadata_ui import render_column_overview
 
-        df, col_types = render_column_overview(df, st.session_state.get("file_id"))
+        with st.spinner('Preparing column types and overview…'):
+            df, col_types = render_column_overview(df, st.session_state.get("file_id"))
         # Older classification providers expose datetime without the aggregate temporal key.
         col_types.setdefault("temporal", list(dict.fromkeys(
             col_types.get("datetime", []) + col_types.get("time", []) + col_types.get("duration", [])
