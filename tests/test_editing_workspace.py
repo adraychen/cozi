@@ -1,3 +1,4 @@
+from test_dataset_workspace import select_operation
 import unittest
 import pandas as pd
 from streamlit.testing.v1 import AppTest
@@ -44,8 +45,8 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(pd.DataFrame({'a': [2., 4.], 'b': [1., 2.]}))
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        self.assertNotIn('Remove duplicated columns', app.radio(key='tf_operation').options)
-        app.radio(key='tf_operation').set_value('Rename column').run(timeout=60)
+        self.assertNotIn('Remove duplicated columns', app.selectbox(key='tf_operation').options)
+        select_operation(app, 'Rename column')
         app.text_input(key='tf_rename_name').set_value('b')
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertTrue(app.error)
@@ -57,7 +58,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual(list(app.session_state['df']), ['renamed', 'b'])
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Add column').run(timeout=60)
+        select_operation(app, 'Add column')
         app.text_input(key='tf_add_name').set_value('total')
         app.selectbox(key='tf_add_method').select('Calculation').run(timeout=60)
         app.selectbox(key='tf_add_left').select('renamed')
@@ -67,7 +68,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app.button(key='tf_create').click().run(timeout=60)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Remove column').run(timeout=60)
+        select_operation(app, 'Remove column')
         app.multiselect(key='tf_remove_columns').set_value(['renamed', 'b', 'total'])
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertTrue(app.error)
@@ -83,7 +84,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(frame)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Trim Spaces').run(timeout=60)
+        select_operation(app, 'Trim Spaces')
         app.selectbox(key='tf_trim_column').select(0)
         app.selectbox(key='tf_trim_mode').select('Leading only')
         app.button(key='tf_preview').click().run(timeout=60)
@@ -102,14 +103,14 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(frame)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        select_operation(app, 'Replace Values')
         app.selectbox(key='tf_replace_column').select(0)
         app.text_input(key='tf_replace_find_Text').set_value('$-')
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['tf_result']['report']['Matched cells'], 2)
         app.button(key='tf_apply').click().run(timeout=60)
-        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        select_operation(app, 'Remove Characters')
         app.selectbox(key='tf_remove_char_column').select(0)
         app.text_input(key='tf_remove_characters').set_value('$,')
         app.button(key='tf_preview').click().run(timeout=60)
@@ -132,7 +133,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(frame)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        select_operation(app, 'Remove Characters')
         app.text_input(key='tf_remove_characters').set_value('$,')
         app.button(key='tf_preview').click().run(timeout=60)
         app.button(key='tf_apply').click().run(timeout=60)
@@ -144,7 +145,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
         self.assertEqual(app.session_state['tf_draft']['frame'].Sales.tolist(), ['3000', '250'])
-        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        select_operation(app, 'Replace Values')
         app.selectbox(key='tf_replace_column').select('Cost')
         app.text_input(key='tf_replace_find_Text').set_value('$-')
         app.button(key='tf_preview').click().run(timeout=60)
@@ -174,7 +175,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(frame)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Replace Values').run(timeout=60)
+        select_operation(app, 'Replace Values')
         app.text_input(key='tf_replace_find_Text').set_value('$-')
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertFalse(app.exception)
@@ -183,7 +184,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Remove Characters').run(timeout=60)
+        select_operation(app, 'Remove Characters')
         app.text_input(key='tf_remove_characters').set_value('$')
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertEqual(app.session_state['tf_result']['frame'].Sales.iloc[0], '3,000')

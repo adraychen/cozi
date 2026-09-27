@@ -67,7 +67,7 @@ def validate_type_subtype(series, variable_type, subtype, order=None):
             raise ValueError('Ordinal order must include every observed category exactly once.')
     if variable_type=='Date / Time':
         values=series.dropna()
-        if pd.api.types.is_numeric_dtype(series) or not len(values):
+        if (pd.api.types.is_numeric_dtype(series) and subtype not in ('Year', 'Month')) or not len(values):
             raise ValueError('Use temporal values with explicit formats or units; unitless numeric values require conversion first.')
         parsed = parse_temporal(values, subtype)
         if parsed.notna().mean() < .8:
@@ -103,13 +103,13 @@ def ensure_metadata(state, df, dataset_id):
 def effective_data(df, metadata):
     data=df.copy()
     groups={k:[] for k in KINDS.values()}
-    groups.update(temporal=[], time=[], duration=[])
+    groups.update(temporal=[], time=[], duration=[], year=[], month=[])
     for c,m in metadata.items():
         t=m['variable_type']
         if t == 'Date / Time':
             groups['temporal'].append(c)
             subtype = m['variable_subtype']
-            groups['time' if subtype == 'Time' else 'duration' if subtype == 'Duration' else 'datetime'].append(c)
+            groups[subtype.lower() if subtype in ('Time', 'Duration', 'Year', 'Month') else 'datetime'].append(c)
         else:
             groups[KINDS[t]].append(c)
         if t=='Numerical':

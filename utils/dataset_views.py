@@ -176,7 +176,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
 
         def render_datetime_panel(col_name: str) -> None:
             subtype = variable_metadata[col_name]['variable_subtype']
-            if subtype in ('Time', 'Duration'):
+            if subtype in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
                 from utils.temporal_ui import render_noncalendar_temporal
                 st.markdown(f'**{col_name}**')
                 render_noncalendar_temporal(df[col_name], subtype, 'quality_temporal_'+str(col_name))
@@ -239,10 +239,9 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 st.info("No temporal columns found.")
             else:
                 st.caption(
-                    "ℹ️ Dates that cannot be parsed — such as text values, impossible dates "
-                    "(e.g. April 31), or unrecognised formats — are automatically converted to NaT "
-                    "and counted under **Missing Values**. The **Future Dates** field shows how many "
-                    "valid dates fall after today."
+                    "Temporal values that do not match their selected subtype are counted as missing in analyses; original values are preserved. "
+                    "For full dates and timestamps, Future Dates counts valid dates after today. "
+                    "Year, Month, and Year-Month are summarized at their stated precision."
                 )
                 render_panels(col_types["temporal"], render_datetime_panel)
 
@@ -465,7 +464,7 @@ def render_analyze(raw, _show_feedback):
                             st.rerun()
 
             # ── Date / Time ───────────────────────────────────────────────────────────
-            elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration'):
+            elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
                 from utils.temporal_ui import render_noncalendar_temporal
                 render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal')
             elif col_type == "Date / Time":

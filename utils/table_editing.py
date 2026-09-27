@@ -164,6 +164,65 @@ def replace_values(frame, column, find, replacement=None, find_type='Text', repl
     return validate_table(result), count
 
 
+def fill_value_types(series):
+    """Replacement types compatible with stored values, including nullable columns."""
+    values = series.cat.categories if isinstance(series.dtype, pd.CategoricalDtype) else series
+    if pd.api.types.is_datetime64_any_dtype(values.dtype):
+        return ['Date / Time']
+    if pd.api.types.is_timedelta64_dtype(values.dtype):
+        return ['Duration']
+    if is_bool_dtype(values.dtype):
+        return ['True/False']
+    if is_numeric_dtype(values.dtype):
+        return ['Number']
+    inferred = pd.api.types.infer_dtype(values, skipna=True)
+    if inferred in ('string', 'unicode') or isinstance(values.dtype, pd.StringDtype):
+        return ['Text']
+    if inferred == 'boolean':
+        return ['True/False']
+    if inferred in ('integer', 'floating', 'mixed-integer-float', 'decimal'):
+        return ['Number']
+    return ['Text', 'Number', 'True/False']
+
+
+def fill_missing_values(frame, column, replacement, replacement_type='Text'):
+    """Fill actual missing cells only, without changing nonmissing values or dtype."""
+    if column not in frame:
+        raise ValueError('Choose an existing column.')
+    series = frame[column]
+    if replacement_type not in fill_value_types(series):
+        raise ValueError('Choose a replacement compatible with the column data type.')
+    if replacement_type in ('Date / Time', 'Duration'):
+        from utils.temporal import parse_temporal
+        value = parse_temporal(pd.Series([replacement]), 'DateTime' if replacement_type == 'Date / Time' else 'Duration').iloc[0]
+        if pd.isna(value):
+            raise ValueError('Enter a valid date/time or a duration with explicit units.')
+        if replacement_type == 'Date / Time':
+            # Parse the original input to retain its timezone, instead of dropping it.
+            value = pd.Timestamp(replacement)
+            if (value.tzinfo is None) != (getattr(series.dtype, 'tz', None) is None):
+                raise ValueError('Match the column timezone: include an offset for timezone-aware columns and omit it for timezone-naive columns.')
+    else:
+        value = _replacement_scalar(replacement, replacement_type)
+    mask = series.isna()
+    count = int(mask.sum())
+    result = frame.copy()
+    target = series.copy()
+    if isinstance(target.dtype, pd.CategoricalDtype) and value not in target.cat.categories:
+        target = target.cat.add_categories([value])
+    try:
+        # Casting one scalar detects fractional integers and numeric overflow
+        # before assignment; equality also catches silent truncation/wrapping.
+        converted = pd.Series([value], dtype=target.dtype).iloc[0]
+        if pd.isna(converted) or converted != value:
+            raise ValueError('The replacement cannot be represented without changing its value.')
+        if count:
+            result[column] = target.mask(mask, converted)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('The replacement is incompatible with the column data type. Use a whole number for integer columns and a value within the supported range.') from exc
+    return validate_table(result), count
+
+
 def trim_spaces(frame, column, mode='Leading and trailing'):
     """Trim edge whitespace only; preserve internal whitespace and nontext cells."""
     if column not in frame:

@@ -7,7 +7,39 @@ from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
-from utils.table_editing import rename_column, remove_columns, add_column, replace_values, remove_characters, trim_spaces
+from utils.table_editing import rename_column, remove_columns, add_column, replace_values, remove_characters, trim_spaces, fill_missing_values, fill_value_types
+
+
+OPERATION_GROUPS = {
+    'Combine datasets': ['Join', 'Append'],
+    'Restructure data': ['Aggregate', 'Pivot', 'Unpivot'],
+    'Manage columns': ['Rename column', 'Remove column', 'Add column'],
+    'Clean values': ['Fill missing values', 'Replace Values', 'Trim Spaces', 'Remove Characters'],
+    'Convert values': ['Convert Currency to Numeric'],
+}
+OPERATION_LABELS = {
+    'Aggregate': 'Aggregate — Group rows and calculate summaries',
+    'Pivot': 'Pivot — Turn values into columns',
+    'Unpivot': 'Unpivot — Turn columns into rows',
+}
+
+
+def _change_operation_group():
+    st.session_state['tf_operation'] = OPERATION_GROUPS[st.session_state['tf_operation_group']][0]
+    st.session_state.pop('tf_result', None)
+
+
+def render_operation_selector():
+    # Derive the group from persisted operations, including older sessions and
+    # the operation restored after Apply and continue.
+    operation = st.session_state.get('tf_operation', 'Join')
+    group = next((g for g, ops in OPERATION_GROUPS.items() if operation in ops), 'Combine datasets')
+    st.session_state['tf_operation_group'] = group
+    st.selectbox('Operation group', list(OPERATION_GROUPS), key='tf_operation_group', on_change=_change_operation_group)
+    if operation not in OPERATION_GROUPS[group]:
+        st.session_state.pop('tf_operation', None)
+    return st.selectbox('Operation', OPERATION_GROUPS[group], key='tf_operation',
+                        format_func=lambda value: OPERATION_LABELS.get(value, value))
 
 
 def render_validation(report, operation):
@@ -58,10 +90,7 @@ def render_transform(dataset_id, registry):
                     del st.session_state[key]
             st.rerun()
     columns = list(frame)
-    operation = st.radio('Operation', ['Join', 'Append', 'Aggregate', 'Pivot', 'Unpivot',
-                                      'Rename column', 'Remove column', 'Add column',
-                                      'Replace Values', 'Remove Characters', 'Trim Spaces', 'Convert Currency to Numeric'],
-                         horizontal=True, key='tf_operation')
+    operation = render_operation_selector()
     st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
     parents = [dataset_id]
@@ -162,6 +191,20 @@ def render_transform(dataset_id, registry):
         def calculate():
             result = remove_columns(frame, removed)
             return result, {'Removed columns': ', '.join(removed), 'Remaining columns': len(result.columns), 'Rows': len(result)}, []
+    elif operation == 'Fill missing values':
+        column = st.selectbox('Column', columns, key='tf_fill_column')
+        kinds = fill_value_types(frame[column])
+        if st.session_state.get('tf_fill_type') not in kinds:
+            st.session_state.pop('tf_fill_type', None)
+        kind = st.selectbox('Replacement type', kinds, key='tf_fill_type')
+        value = (st.selectbox('Replacement value', ['True', 'False'], key='tf_fill_boolean') if kind == 'True/False'
+                 else st.text_input('Replacement value', key='tf_fill_value_' + kind))
+        st.caption('Fills actual missing cells only. Empty strings and whitespace are unchanged. The replacement must match the stored column data type.')
+        st.write(f'Missing cells in this column: {int(frame[column].isna().sum()):,}')
+        config.update(column=column, replacement=value, replacement_type=kind)
+        def calculate():
+            result, count = fill_missing_values(frame, column, value, kind)
+            return result, {'Column': column, 'Filled cells': count, 'Remaining missing cells': int(result[column].isna().sum()), 'Rows': len(result)}, []
     elif operation == 'Replace Values':
         column = st.selectbox('Column', columns + [0], format_func=lambda c: 'All columns' if c == 0 else (f'{c} (column)' if c == 'All columns' else c), key='tf_replace_column')
         selected_columns = columns if column == 0 else [column]

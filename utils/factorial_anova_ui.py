@@ -19,6 +19,44 @@ def _prune(key, options, multiple=False):
             del st.session_state[key]
 
 
+def render_effect_plots(prepared, result):
+    include_all = st.checkbox('Include non-significant selected terms', key='fac_plot_all')
+    st.caption(f"Showing {'all selected terms' if include_all else 'all significant terms'} using Type II ANOVA at α = {result['alpha']:.3g}. Each main effect and interaction has its own plot.")
+    st.caption('Observed means from model complete cases, pooled over other factors. These are descriptive, unadjusted means; imbalance can make them differ from model-adjusted effects. Missing cells are not imputed.')
+    shown = 0
+    for index, (term, (name, kind, members)) in enumerate(prepared['terms'].items()):
+        p = result['term_pvalues'][term]
+        if not include_all and p >= result['alpha']:
+            continue
+        shown += 1
+        st.markdown(f'**{kind}: {name}**')
+        st.caption(f"p = {p:.4g} · {'Significant' if p < result['alpha'] else 'Not significant'}")
+        if kind == 'Interaction effect':
+            summary = interaction_summary(prepared, members)
+            plot = summary.copy()
+            plot.columns = ['First factor', 'Second factor', 'Mean response', 'N']
+            plot['First factor'] = plot['First factor'].astype(str)
+            plot['Second factor'] = plot['Second factor'].astype(str)
+            fig = px.line(plot, x='First factor', y='Mean response', color='Second factor', markers=True,
+                          hover_data=['N'], labels={'First factor': str(members[0]), 'Second factor': str(members[1])})
+        else:
+            factor = members[0]
+            data = prepared['clean'][[factor, prepared['outcome']]].copy()
+            data.columns = ['Factor level', 'Response']
+            summary = data.groupby('Factor level', observed=True, sort=False)['Response'].agg(Mean='mean', N='size').reset_index()
+            plot = summary.copy()
+            plot['Factor level'] = plot['Factor level'].astype(str)
+            fig = px.scatter(plot, x='Factor level', y='Mean', hover_data=['N'],
+                             labels={'Factor level': str(factor), 'Mean': 'Mean response'})
+            if factor in result['significant_interaction_factors']:
+                st.warning('This factor participates in a significant interaction. Interpret this main-effect plot together with the corresponding interaction plots, not in isolation.')
+        st.plotly_chart(fig, use_container_width=True, key=f'fac_effect_plot_{index}')
+        with st.expander(f'Means and counts: {name}'):
+            st.dataframe(summary, hide_index=True)
+    if not shown:
+        st.info('No selected terms are statistically significant at the current significance level. Enable the option above to inspect all selected terms.')
+
+
 def render_factorial_anova(df, numerical, categorical):
     st.markdown('##### Factorial ANOVA')
     st.caption('One numerical response and two or more categorical factors, with optional two-way interactions. All selected main effects remain in the model.')
@@ -67,7 +105,7 @@ def render_factorial_anova(df, numerical, categorical):
     if result['significant_interaction_factors']:
         st.warning('A significant interaction means the effect of one factor depends on the level of another. Do not interpret these main effects in isolation: ' +
                    ', '.join(str(f) for f in factors if f in result['significant_interaction_factors']))
-    tabs = st.tabs(['ANOVA table', 'Diagnostics', 'Interaction plots', 'Post-hoc comparisons', 'Findings'])
+    tabs = st.tabs(['ANOVA table', 'Diagnostics', 'Effect plots', 'Post-hoc comparisons', 'Findings'])
     with tabs[0]:
         st.dataframe(table, hide_index=True, use_container_width=True)
         st.caption('Partial η² = effect SS / (effect SS + residual SS). Effect sizes are conditional on this model and do not sum to 1. Statistical significance does not establish practical importance or causation.')
@@ -97,23 +135,7 @@ def render_factorial_anova(df, numerical, categorical):
             else:
                 st.caption('A non-significant test does not prove equal variances.')
     with tabs[2]:
-        if not interactions:
-            st.info('Select an interaction above to inspect its plot.')
-        else:
-            _prune('fac_plot', interactions)
-            pair = st.selectbox('Interaction to inspect', interactions,
-                                format_func=lambda p: ' × '.join(map(str, p)), key='fac_plot')
-            summary = interaction_summary(prepared, pair)
-            # Fixed plotting aliases also support user columns named Mean or N.
-            plot = summary.copy()
-            plot.columns = ['First factor', 'Second factor', 'Mean response', 'N']
-            plot['First factor'] = plot['First factor'].astype(str)
-            plot['Second factor'] = plot['Second factor'].astype(str)
-            st.plotly_chart(px.line(plot, x='First factor', y='Mean response', color='Second factor', markers=True,
-                                   hover_data=['N'], labels={'First factor': str(pair[0]), 'Second factor': str(pair[1])}),
-                            use_container_width=True, key='fac_interaction_plot')
-            st.caption('Observed means from model complete cases, pooled over other factors. These are descriptive, unadjusted means; imbalance can make them differ from model-adjusted effects. Missing cells are not imputed.')
-            st.dataframe(summary, hide_index=True)
+        render_effect_plots(prepared, result)
     with tabs[3]:
         eligible = [f for f in factors if len(prepared['levels'][f]) > 2 and not any(f in p for p in interactions)]
         if interactions:

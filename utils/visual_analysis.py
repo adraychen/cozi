@@ -61,7 +61,7 @@ def render_visual_analysis(df, col_types):
     st.markdown('#### Visual Analysis')
     st.caption('Explore patterns and trends in your data through charts.')
     selected = {}
-    for label, kind in [('Numerical', 'numerical'), ('Categorical', 'categorical'), ('Temporal (Date / DateTime)', 'datetime')]:
+    for label, kind in [('Numerical', 'numerical'), ('Categorical', 'categorical'), ('Temporal (Date / DateTime / Year-Month)', 'datetime')]:
         selected[kind] = variable_checkboxes(label, col_types[kind], 'va_select_' + kind, hide_empty=True)
     nums, cats, dates = selected['numerical'], selected['categorical'], selected['datetime']
     choices = available_charts(nums, cats, dates)

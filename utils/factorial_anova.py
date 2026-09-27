@@ -112,6 +112,7 @@ def run_factorial(prepared, alpha=.05):
         if np.isfinite(test.pvalue):
             levene = (float(test.statistic), float(test.pvalue))
     return dict(model=model, table=pd.DataFrame(rows), alpha=alpha,
+                term_pvalues=raw['PR(>F)'].to_dict(),
                 significant_interaction_factors=significant_factors, levene=levene)
 
 

@@ -106,6 +106,50 @@ class FactorialTests(unittest.TestCase):
 
 
 class FactorialUITests(unittest.TestCase):
+    def test_all_significant_terms_have_plots(self):
+        from streamlit.testing.v1 import AppTest
+        app = AppTest.from_string('''
+import streamlit as st
+import pandas as pd
+import numpy as np
+from itertools import product, combinations
+from utils.factorial_anova import prepare_factorial, run_factorial
+from utils.factorial_anova_ui import render_effect_plots
+rng = np.random.default_rng(124)
+rows = [(a,b,c,5*a+6*b+4*c+10*a*b+8*b*c+rng.normal())
+        for a,b,c in product([0,1],repeat=3) for _ in range(25)]
+df = pd.DataFrame(rows, columns=['A','B','C','Y'])
+p = prepare_factorial(df,'Y',['A','B','C'],list(combinations(['A','B','C'],2)))
+r = run_factorial(p)
+st.session_state['expected_plots'] = int((r['table']['Significant'] == 'Yes').sum())
+st.session_state['expected_interactions'] = int(((r['table']['Significant'] == 'Yes') & (r['table']['Effect'] == 'Interaction effect')).sum())
+render_effect_plots(p,r)
+''').run(timeout=40)
+        self.assertFalse(app.exception)
+        self.assertGreaterEqual(app.session_state['expected_interactions'],2)
+        self.assertEqual(len(app.get('plotly_chart')),app.session_state['expected_plots'])
+        self.assertTrue(any('not in isolation' in w.value for w in app.warning))
+        self.assertFalse(any(s.key == 'fac_plot' for s in app.selectbox))
+        app.checkbox(key='fac_plot_all').check().run()
+        self.assertEqual(len(app.get('plotly_chart')),6)
+        self.assertFalse(app.exception)
+
+    def test_no_significant_terms_and_optional_exploration(self):
+        from streamlit.testing.v1 import AppTest
+        app = AppTest.from_string('''
+import pandas as pd
+from utils.factorial_anova import prepare_factorial,run_factorial
+from utils.factorial_anova_ui import render_effect_plots
+df = pd.DataFrame([(a,b,y) for a in ['a','b'] for b in ['c','d'] for y in [1.,2.,3.,4.]], columns=['A','B','Y'])
+p = prepare_factorial(df,'Y',['A','B'],[('A','B')])
+render_effect_plots(p,run_factorial(p))
+''').run(timeout=40)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.get('plotly_chart')),0)
+        self.assertTrue(any('No selected terms' in m.value for m in app.info))
+        app.checkbox(key='fac_plot_all').check().run()
+        self.assertEqual(len(app.get('plotly_chart')),3)
+
     def test_metadata_filter_and_numeric_categorical_codes(self):
         from streamlit.testing.v1 import AppTest
         app = AppTest.from_string('''

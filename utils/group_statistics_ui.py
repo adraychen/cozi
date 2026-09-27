@@ -20,7 +20,7 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
         measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True, hide_empty=True)
         measure = measures[0] if measures else None
         dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions', hide_empty=True)
-        dates = variable_checkboxes('Temporal (Date / DateTime)', col_types['datetime'], 'gs_temporal', single=True, hide_empty=True)
+        dates = variable_checkboxes('Temporal (Date / DateTime / Year-Month)', col_types['datetime'], 'gs_temporal', single=True, hide_empty=True)
     else:
         measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
                                format_func=lambda value: "None (categorical data / row counts)" if value is None else value,
@@ -47,7 +47,14 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                 date = dates[0]
             else:
                 date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
-            frequency = st.selectbox("Period frequency", list(FREQUENCIES), index=2, key=key_prefix + "_frequency")
+            frequencies = list(FREQUENCIES)
+            if st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype') == 'Year-Month':
+                frequencies = ['Monthly', 'Quarterly', 'Yearly']
+                st.caption('Year-Month values represent whole months; daily and weekly comparisons are unavailable.')
+            frequency_key = key_prefix + '_frequency'
+            if st.session_state.get(frequency_key) not in frequencies:
+                st.session_state.pop(frequency_key, None)
+            frequency = st.selectbox("Period frequency", frequencies, index=frequencies.index('Monthly'), key=frequency_key)
             zero = st.checkbox("Treat missing period values as zero", key=key_prefix + "_zero",
                                help="Off by default. Enable only when missing values mean no activity.")
             lag, window = 1, 3

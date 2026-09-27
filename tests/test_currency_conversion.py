@@ -1,3 +1,4 @@
+from test_dataset_workspace import select_operation
 import copy
 import unittest
 import pandas as pd
@@ -76,7 +77,7 @@ class CurrencyConversionTests(unittest.TestCase):
         app.run(timeout=60)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Convert Currency to Numeric').run(timeout=60)
+        select_operation(app, 'Convert Currency to Numeric')
         return app, source
 
     def test_ui_preview_create_and_metadata(self):

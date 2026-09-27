@@ -16,6 +16,14 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 '''
 
 
+def select_operation(app, operation):
+    from utils.transform_ui import OPERATION_GROUPS
+    group = next(g for g, options in OPERATION_GROUPS.items() if operation in options)
+    app.selectbox(key='tf_operation_group').select(group).run(timeout=60)
+    app.selectbox(key='tf_operation').select(operation).run(timeout=60)
+    return app
+
+
 class WorkspaceTests(unittest.TestCase):
     def test_created_dataset_ignores_previous_workflow_browser_state(self):
         from streamlit.proto.WidgetStates_pb2 import WidgetStates
@@ -73,7 +81,7 @@ class WorkspaceTests(unittest.TestCase):
             self.assertFalse(app.exception)
             self.assertEqual(app.session_state['ws_workflow'], selected)
             if selected == 'Transform':
-                self.assertTrue(app.radio(key='tf_operation'))
+                self.assertTrue(app.selectbox(key='tf_operation'))
 
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
         script = "import streamlit as st\n" + FIXTURE.replace('utils.ai_interpreter.interpret_dataset_overview', 'utils.dataset_views.interpret_dataset_overview').replace(
@@ -213,7 +221,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         self.assertFalse(app.exception)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Aggregate').run(timeout=60)
+        select_operation(app, 'Aggregate')
         app.multiselect(key='tf_groups').set_value(['group'])
         app.multiselect(key='tf_measures').set_value(['value']).run(timeout=60)
         app.button(key='tf_preview').click().run(timeout=60)
@@ -259,7 +267,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
         self.assertFalse(app.exception)
-        self.assertTrue(app.radio(key='tf_operation'))
+        self.assertTrue(app.selectbox(key='tf_operation'))
         app.session_state['ws_workflow'] = 'Inspect'
         app.run(timeout=60)
         self.assertFalse(app.exception)
@@ -286,7 +294,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         self.add_manual(app, 'Monthly', 'id,Jan,Feb\n1,20,30\n2,40,50')
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Unpivot').run(timeout=60)
+        select_operation(app, 'Unpivot')
         app.multiselect(key='tf_unpivot_ids').set_value(['id'])
         app.multiselect(key='tf_unpivot_values').set_value(['Jan', 'Feb'])
         app.button(key='tf_preview').click().run(timeout=60)
@@ -295,7 +303,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         self.assertEqual(len(app.session_state['df']), 4)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Pivot').run(timeout=60)
+        select_operation(app, 'Pivot')
         app.multiselect(key='tf_pivot_rows').set_value(['id'])
         app.selectbox(key='tf_pivot_column').select('variable')
         app.selectbox(key='tf_pivot_value').select('value')
@@ -305,7 +313,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         app.button(key='tf_create').click().run(timeout=60)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.radio(key='tf_operation').set_value('Append').run(timeout=60)
+        select_operation(app, 'Append')
         original = next(iter(app.session_state['ws_datasets']))
         app.multiselect(key='tf_append_inputs').set_value([original])
         app.button(key='tf_preview').click().run(timeout=60)

@@ -1,9 +1,13 @@
 """Temporal subtype inference and parsing without inventing dates for clock times."""
 import datetime as dt
+import calendar
 import re
 import pandas as pd
 
-SUBTYPES = ['Date', 'Time', 'DateTime', 'Duration']
+SUBTYPES = ['Date', 'Time', 'DateTime', 'Duration', 'Year', 'Month', 'Year-Month']
+MONTH_NAMES = {name.lower(): i for i in range(1, 13)
+               for name in (calendar.month_name[i], calendar.month_abbr[i])}
+MONTH_NAMES['sept'] = 9
 CLOCK = re.compile(r'^\s*(\d{1,2}):(\d{2})(?::(\d{2})(\.\d{1,9})?)?\s*([AP]M)?\s*$', re.I)
 DURATION = re.compile(r'(^[+-]?P(?=\d|T)|\b(?:days?|hours?|hrs?|minutes?|mins?|seconds?|secs?|milliseconds?|microseconds?|nanoseconds?)\b|\d\s*(?:d|h|m|s|ms|us|ns)\b)', re.I)
 
@@ -63,7 +67,24 @@ def _calendar(value):
 
 def parse_temporal(series, subtype):
     if subtype not in SUBTYPES:
-        raise ValueError('Choose Date, Time, DateTime, or Duration for a Temporal variable.')
+        raise ValueError('Choose ' + ', '.join(SUBTYPES) + ' for a Temporal variable.')
+    if subtype == 'Year':
+        # Explicit year components, not epoch offsets or fabricated full dates.
+        text = series.astype('string').str.strip()
+        numeric = pd.to_numeric(text, errors='coerce')
+        valid = text.str.fullmatch(r'\d{4}(?:\.0+)?', na=False) & numeric.between(1000, 9999)
+        return numeric.where(valid).astype('Int64').rename(series.name)
+    if subtype == 'Month':
+        text = series.astype('string').str.strip().str.lower()
+        numeric = pd.to_numeric(text, errors='coerce')
+        valid = text.str.fullmatch(r'\d{1,2}(?:\.0+)?', na=False) & numeric.between(1, 12)
+        return numeric.where(valid).fillna(text.map(MONTH_NAMES)).astype('Int64').rename(series.name)
+    if subtype == 'Year-Month':
+        # The first day is an internal period anchor; input may not contain a day.
+        text = series.astype('string').str.strip()
+        valid = text.str.fullmatch(r'\d{4}[-/](?:0[1-9]|1[0-2])', na=False)
+        return pd.to_datetime(text.where(valid).str.replace('/', '-', regex=False) + '-01',
+                              format='%Y-%m-%d', errors='coerce').rename(series.name)
     parser = _clock if subtype == 'Time' else _duration if subtype == 'Duration' else _calendar
     # Repeated labels/dates must not invoke the scalar date parser for every row.
     # Keep this cache local to the call and retain full-row weighting for inference.
@@ -123,6 +144,12 @@ def infer_temporal_subtype(series):
 def temporal_value(value, subtype):
     if pd.isna(value):
         return 'N/A'
+    if subtype == 'Year':
+        return str(int(value))
+    if subtype == 'Month':
+        return calendar.month_name[int(value)]
+    if subtype == 'Year-Month':
+        return pd.Timestamp(value).strftime('%Y-%m')
     if subtype == 'Date':
         return str(pd.Timestamp(value).date())
     if subtype == 'Time':

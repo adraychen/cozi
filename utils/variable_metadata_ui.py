@@ -19,7 +19,7 @@ def render_column_overview(raw, dataset_id):
         default=m['variable_subtype'] if t==m['variable_type'] else infer_variable_subtype(raw[col],t)
         subtype=st.selectbox('Variable Subtype',ALLOWED[t],index=ALLOWED[t].index(default),key=prefix+'_'+t+'_subtype',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
         if t == 'Date / Time':
-            st.caption('Date: calendar date; Time: time of day; DateTime: date and time; Duration: elapsed time with explicit units. HH:MM[:SS] is inferred as Time; choose Duration explicitly for elapsed clock notation. Calendar analyses use Date and DateTime only. Zoned timestamps are normalized to UTC.')
+            st.caption('Date: calendar date; Time: time of day; DateTime: date and time; Duration: elapsed time with explicit units. Year: four-digit year (1000–9999). Month: January/Jan or 1–12, without a year. Year-Month: YYYY-MM or YYYY/MM; internally anchored to the first day for period analysis. Numeric year/month columns require an explicit Temporal override. Full dates are not truncated by these overrides. HH:MM[:SS] is inferred as Time; choose Duration for elapsed clock notation. Zoned timestamps are normalized to UTC.')
         order=[]
         if subtype=='Ordinal':
             values,recognized=category_order(raw[col])
