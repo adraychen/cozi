@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from scipy import stats
 
 
@@ -35,16 +36,16 @@ def render_correlation(df, numerical):
         left, right = st.columns(2)
         left.metric(f'{method} correlation', f'{coefficient:.4f}')
         right.metric('p-value (two-sided)', f'{p:.4g}')
-        st.plotly_chart(px.scatter(pairs, x=a, y=b), use_container_width=True)
+        presentation.plotly_chart(px.scatter(pairs, x=a, y=b), use_container_width=True)
         st.caption('The p-value assumes independent observations. Pearson inference assumes an appropriate bivariate-normal model; Spearman uses an asymptotic approximation that can be unreliable in small samples. Inspect the scatter plot for outliers and nonlinear patterns.')
     else:
         fig = px.imshow(matrix, zmin=-1, zmax=1, color_continuous_scale='RdBu_r',
                         text_auto='.2f', title=f'{method} correlation matrix', aspect='auto')
         fig.update_traces(customdata=counts.to_numpy(), hovertemplate='%{y} / %{x}<br>Correlation: %{z:.3f}<br>Usable pairs: %{customdata}<extra></extra>')
-        st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(matrix, use_container_width=True)
+        presentation.plotly_chart(fig, use_container_width=True)
+        presentation.dataframe(matrix, use_container_width=True)
         if matrix.isna().any().any():
             st.warning('Some correlations are undefined because of insufficient pairs or constant values.')
         st.caption('Each matrix cell uses its own complete pairs, so sample sizes may differ. The matrix shows coefficients, not significance tests.')
         with st.expander('Usable observations per pair'):
-            st.dataframe(counts, use_container_width=True)
+            presentation.dataframe(counts, use_container_width=True)

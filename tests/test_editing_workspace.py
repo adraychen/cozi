@@ -45,7 +45,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         app, source_id = self.app(pd.DataFrame({'a': [2., 4.], 'b': [1., 2.]}))
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        self.assertNotIn('Remove duplicated columns', app.selectbox(key='tf_operation').options)
+        self.assertNotIn('Remove duplicated columns', app.selectbox(key='tf_menu_combine_datasets').options)
         select_operation(app, 'Rename column')
         app.text_input(key='tf_rename_name').set_value('b')
         app.button(key='tf_preview').click().run(timeout=60)

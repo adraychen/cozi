@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from scipy import stats
 from utils.regression_reporting import format_table
 from statsmodels.nonparametric.smoothers_lowess import lowess
@@ -28,19 +29,19 @@ def render_validation(result):
             smooth = lowess(residual, result['fitted'], frac=.6, return_sorted=True)
             fig.add_scatter(x=smooth[:, 0], y=smooth[:, 1], mode='lines', name='Smooth trend')
         fig.add_hline(y=0, line_dash='dash')
-        st.plotly_chart(fig, use_container_width=True)
+        presentation.plotly_chart(fig, use_container_width=True)
         st.write('Curvature suggests a missing nonlinear relationship. A funnel shape suggests changing error variance. In multiple regression, also consider relationships with individual predictors.')
-        st.dataframe(format_table(diagnostic), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(diagnostic), hide_index=True, use_container_width=True)
         st.caption('Breusch–Pagan uses the Koenker LM variant. Unequal variance can invalidate conventional standard errors: consider robust standard errors or a revised model before relying on the reported intervals and p-values. This test can be unreliable in small samples.')
         st.markdown('**Normality of residuals**')
         a, b = st.columns(2)
         with a:
-            st.plotly_chart(px.histogram(x=residual, labels={'x': 'Residual'}, title='Residual histogram'), use_container_width=True)
+            presentation.plotly_chart(px.histogram(x=residual, labels={'x': 'Residual'}, title='Residual histogram'), use_container_width=True)
         with b:
             (theoretical, observed), (slope, intercept, _) = stats.probplot(residual, dist='norm')
             qq = px.scatter(x=theoretical, y=observed, labels={'x': 'Theoretical normal quantile', 'y': 'Ordered residual'}, title='Normal Q–Q plot')
             qq.add_scatter(x=theoretical, y=intercept + slope * theoretical, mode='lines', name='Normal reference')
-            st.plotly_chart(qq, use_container_width=True)
+            presentation.plotly_chart(qq, use_container_width=True)
         st.write('Skewness, heavy tails, and departures from the reference line warrant review. Normality matters for exact small-sample inference; non-normality alone does not bias OLS coefficients when the conditional mean model is correct.')
         st.caption('Jarque–Bera uses a large-sample approximation. Omnibus requires at least 8 observations and is less reliable below 20. Neither test validates the model by itself.')
         st.markdown('**Independence and observation order**')
@@ -51,7 +52,7 @@ def render_validation(result):
             st.caption('Near 2 suggests little lag-one residual autocorrelation; toward 0 suggests positive and toward 4 negative autocorrelation. This is not a pass/fail rule or proof of independence. Rows retain their original order; excluded rows create gaps, and the statistic uses consecutive retained observations.')
             fig = px.scatter(x=result['source_rows'], y=residual, labels={'x': 'Original data row (1-based, excluding header)', 'y': 'Residual'})
             fig.add_hline(y=0, line_dash='dash')
-            st.plotly_chart(fig, use_container_width=True)
+            presentation.plotly_chart(fig, use_container_width=True)
         else:
             st.info('Durbin–Watson and the sequence plot are hidden until meaningful row order is confirmed. Independence remains unverified.')
         st.markdown('**Influential observations**')
@@ -61,4 +62,4 @@ def render_validation(result):
         st.write(f'{int(flagged.sum())} observations flagged for review; none removed automatically.')
         st.caption('Cook’s distance > 4/n or leverage > 2k/n are screening heuristics, not formal rejection rules. Here k includes the intercept. Undefined influence estimates are also flagged.')
         if flagged.any():
-            st.dataframe(influence.loc[flagged], hide_index=True, use_container_width=True)
+            presentation.dataframe(influence.loc[flagged], hide_index=True, use_container_width=True)

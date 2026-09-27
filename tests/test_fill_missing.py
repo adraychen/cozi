@@ -54,9 +54,13 @@ class FillMissingUITests(unittest.TestCase):
         app, source = EditingWorkspaceTests().app(frame)
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
-        app.selectbox(key='tf_operation_group').select('Restructure data').run(timeout=60)
-        self.assertEqual(app.selectbox(key='tf_operation').options,
-                         ['Aggregate — Group rows and calculate summaries', 'Pivot — Turn values into columns', 'Unpivot — Turn columns into rows'])
+        from utils.transform_ui import OPERATION_GROUPS, operation_menu_key
+        self.assertEqual([app.selectbox(key=operation_menu_key(group)).label
+                          for group in OPERATION_GROUPS], list(OPERATION_GROUPS))
+        select_operation(app, 'Aggregate')
+        self.assertIsNone(app.selectbox(key='tf_menu_combine_datasets').value)
+        self.assertEqual(app.selectbox(key='tf_menu_restructure_data').options,
+                         ['Choose operation…', 'Aggregate — Group rows and calculate summaries', 'Pivot — Turn values into columns', 'Unpivot — Turn columns into rows'])
         select_operation(app,'Fill missing values')
         self.assertEqual(app.selectbox(key='tf_fill_type').options,['Number'])
         app.text_input(key='tf_fill_value_Number').set_value('1.5')
@@ -67,9 +71,13 @@ class FillMissingUITests(unittest.TestCase):
         app.button(key='tf_preview').click().run(timeout=60)
         self.assertEqual(app.session_state['tf_result']['report']['Filled cells'],1)
         app.button(key='tf_apply').click().run(timeout=60)
-        self.assertEqual(app.selectbox(key='tf_operation_group').value,'Clean values')
-        self.assertEqual(app.selectbox(key='tf_operation').value,'Fill missing values')
-        app.selectbox(key='tf_operation_group').select('Manage columns').run(timeout=60)
+        self.assertEqual(app.selectbox(key='tf_menu_restructure_data').value, None)
+        self.assertEqual(app.selectbox(key='tf_menu_clean_values').value,'Fill missing values')
+        select_operation(app, 'Rename column')
+        self.assertIsNone(app.selectbox(key='tf_menu_clean_values').value)
+        app.selectbox(key='tf_menu_manage_columns').select(None).run(timeout=60)
+        self.assertTrue(all(app.selectbox(key=operation_menu_key(group)).value is None
+                            for group in OPERATION_GROUPS))
         self.assertNotIn('tf_result',app.session_state)
         self.assertIn('tf_draft',app.session_state)
         app.button(key='tf_draft_create').click().run(timeout=60)

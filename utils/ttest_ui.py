@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from utils import presentation
 from scipy import stats
 from utils.charts import make_histogram_boxplot, CHART_COLOR, _base_layout, _style_axes
 from utils.regression_reporting import format_table
@@ -107,12 +108,12 @@ def _render_ttest(df, numerical, categorical, guided=False):
             config.append(('Hypothesized mean', str(null_mean)))
         if mode == 'independent':
             config.append(('Equal variance assumption', 'Yes' if equal_var else 'No'))
-        st.table(pd.DataFrame(config, columns=['Test detail', 'Value']))
-        st.table(prepared['accounting'])
+        presentation.table(pd.DataFrame(config, columns=['Test detail', 'Value']))
+        presentation.table(prepared['accounting'])
         if structure == 'Separate-column format':
             st.caption('Missing/nonfinite values are excluded separately in each sample; row positions do not establish pairing.')
     with tabs[1]:
-        st.dataframe(format_table(prepared['descriptive']), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(prepared['descriptive']), hide_index=True, use_container_width=True)
         if mode == 'paired':
             st.caption('Original-variable summaries use the same complete pairs as the difference-based test.')
         st.download_button('Download descriptive statistics (CSV)', prepared['descriptive'].to_csv(index=False).encode('utf-8-sig'),
@@ -121,24 +122,24 @@ def _render_ttest(df, numerical, categorical, guided=False):
         st.write('Inference about the mean requires an appropriate sampling design. t-tests are often robust to moderate non-normality with adequate sample sizes, but strong skewness, extreme values, and very small samples can impair reliability. Graphical diagnostics do not certify assumptions.')
         if mode == 'paired':
             st.caption('All diagnostics below use Variable 1 - Variable 2 for complete pairs, not the original variables separately.')
-        st.dataframe(format_table(prepared['diagnostics']), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(prepared['diagnostics']), hide_index=True, use_container_width=True)
         for note in prepared['warnings']:
             st.warning(note)
         if not prepared['outliers'].empty:
             st.markdown('**Potential outliers (retained)**')
-            st.dataframe(prepared['outliers'], hide_index=True, use_container_width=True)
+            presentation.dataframe(prepared['outliers'], hide_index=True, use_container_width=True)
         samples = prepared['diagnostic_samples']
         index = choose('Diagnostic sample', list(range(len(samples))), 'gs_tt_diagnostic', format_func=lambda i: samples[i][0])
         label, values = samples[index]
         st.markdown(f'**{label}**')
         if len(values):
-            st.plotly_chart(make_histogram_boxplot(values), use_container_width=True, key='gs_tt_histogram')
+            presentation.plotly_chart(make_histogram_boxplot(values), use_container_width=True, key='gs_tt_histogram')
         if len(values) >= 3 and values.nunique() > 1:
             (x, y), (slope, intercept, _) = stats.probplot(values, dist='norm')
             fig = go.Figure(go.Scatter(x=x, y=y, mode='markers', marker_color=CHART_COLOR, name=label))
             fig.add_scatter(x=x, y=intercept+slope*x, mode='lines', name='Normal reference')
             fig.update_layout(**_base_layout(320), xaxis_title='Theoretical normal quantile', yaxis_title=str(label))
-            st.plotly_chart(_style_axes(fig), use_container_width=True, key='gs_tt_qq')
+            presentation.plotly_chart(_style_axes(fig), use_container_width=True, key='gs_tt_qq')
         else:
             st.info('A useful Q-Q plot needs at least three observations and nonconstant values.')
     with tabs[3]:
@@ -146,7 +147,7 @@ def _render_ttest(df, numerical, categorical, guided=False):
             st.warning(error)
         else:
             st.markdown(f'**{result["method"]}**')
-            st.table(result_table(result))
+            presentation.table(result_table(result))
             st.caption('Effect-size formula: ' + result['effect_formula'])
             if mode == 'independent' and not equal_var:
                 st.caption("For Welch, Cohen's d uses a pooled SD only as a descriptive standardizer; the test, standard error and confidence interval do not assume equal variances. Under unequal variances, interpret this standardizer with care.")

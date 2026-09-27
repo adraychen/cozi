@@ -1,6 +1,7 @@
 """Duplicate summaries and cleanup actions in the Inspect workflow."""
 import pandas as pd
 import streamlit as st
+from utils import presentation
 from utils.dataset_workspace import add_dataset
 from utils.table_editing import duplicate_columns, remove_duplicate_columns, remove_duplicate_rows
 
@@ -22,7 +23,7 @@ def render_duplicate_columns(frame, dataset_name):
         else:
             st.info('Duplicate columns cannot be assessed without rows.')
         return
-    st.dataframe(pd.DataFrame({'Column to remove': list(duplicates), 'Column to keep': list(duplicates.values())}),
+    presentation.dataframe(pd.DataFrame({'Column to remove': list(duplicates), 'Column to keep': list(duplicates.values())}),
                  hide_index=True, width='stretch')
     name = st.text_input('Output dataset name', dataset_name + ' · Unique columns', key='view_unique_columns_name')
     st.caption(f'{len(duplicates):,} columns will be removed. Creates a new dataset; the source remains available.')
@@ -42,7 +43,7 @@ def render_row_overview(frame, dataset_name):
         st.write('No duplicated rows found.')
         return
     st.caption('Rows to remove — showing the first 100 duplicates. Original row indices are shown.')
-    st.dataframe(frame.loc[duplicate_mask].head(100), width='stretch')
+    presentation.dataframe(frame.loc[duplicate_mask].head(100), width='stretch')
     name = st.text_input('Output dataset name', dataset_name + ' · Unique rows', key='view_unique_rows_name')
     st.caption(f'Keep the first occurrence of each row: {len(frame) - count:,} rows will remain. Creates a new dataset; the source remains available.')
     if st.button('Remove duplicated rows', key='view_remove_duplicate_rows', disabled=not name.strip()):

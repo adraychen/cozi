@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from scipy import stats
 from utils.anova_analysis import prepare_anova, run_anova
 
@@ -32,7 +33,7 @@ def render_anova(df, category, outcome):
     tabs = st.tabs(['Model Overview', 'Group Analysis', 'Diagnostics', 'Visual Analysis', 'ANOVA Findings'])
     with tabs[0]:
         st.markdown('**Model summary**')
-        st.table(pd.DataFrame([
+        presentation.table(pd.DataFrame([
             ('Response / Dependent Variable', str(outcome)),
             ('Grouping / Independent Variable', str(category)),
             ('Original rows', str(len(df))), ('Used rows', str(prepared['n'])),
@@ -48,15 +49,15 @@ def render_anova(df, category, outcome):
             st.info('Confirm the study design above to display the ANOVA result. Descriptive summaries and diagnostics remain available.')
         if result is not None:
             st.markdown(f'**{method} One-way ANOVA**')
-            st.dataframe(pd.DataFrame([result]), hide_index=True, use_container_width=True)
+            presentation.dataframe(pd.DataFrame([result]), hide_index=True, use_container_width=True)
     with tabs[1]:
         st.markdown('**Group summaries**')
-        st.dataframe(prepared['summary'], hide_index=True, use_container_width=True)
+        presentation.dataframe(prepared['summary'], hide_index=True, use_container_width=True)
     with tabs[2]:
         for note in prepared['warnings']:
             st.warning(note)
         st.write('Normality is checked within each group, not on the combined outcome. Shapiro–Wilk p-values below 0.05 flag departures; larger p-values do not prove normality. These exploratory diagnostics are unadjusted for multiple comparisons and should be interpreted with the plots.')
-        st.dataframe(prepared['normality'], hide_index=True, use_container_width=True)
+        presentation.dataframe(prepared['normality'], hide_index=True, use_container_width=True)
         if prepared['groups']:
             index = st.selectbox('Group for normal Q–Q plot', list(range(len(prepared['groups']))),
                                  format_func=lambda i: str(prepared['labels'][i]), key='rel_anova_qq')
@@ -65,7 +66,7 @@ def render_anova(df, category, outcome):
                 (x, y), (slope, intercept, _) = stats.probplot(g, dist='norm')
                 fig = px.scatter(x=x, y=y, labels={'x': 'Theoretical normal quantile', 'y': outcome})
                 fig.add_scatter(x=x, y=intercept+slope*x, mode='lines', name='Normal reference')
-                st.plotly_chart(fig, use_container_width=True)
+                presentation.plotly_chart(fig, use_container_width=True)
             else:
                 st.info('A useful normal Q–Q plot needs at least three observations and nonconstant values.')
         if np.isfinite(prepared['levene_p']):
@@ -80,7 +81,7 @@ def render_anova(df, category, outcome):
         if not prepared['summary'].empty:
             plot = prepared['clean'].copy()
             plot[category] = plot[category].astype(str)
-            st.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), use_container_width=True, key='rel_anova_box')
+            presentation.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), use_container_width=True, key='rel_anova_box')
         else:
             st.info('No usable observations to plot.')
     with tabs[4]:

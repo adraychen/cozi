@@ -2,6 +2,7 @@
 import json
 import pandas as pd
 import streamlit as st
+from utils import presentation
 from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError, detect_currency_columns
 from utils.dataset_workspace import add_dataset
 from utils.table_transforms import (
@@ -24,22 +25,35 @@ OPERATION_LABELS = {
 }
 
 
-def _change_operation_group():
-    st.session_state['tf_operation'] = OPERATION_GROUPS[st.session_state['tf_operation_group']][0]
+def operation_menu_key(group):
+    return 'tf_menu_' + group.lower().replace(' ', '_')
+
+
+def _choose_group_operation(key):
+    st.session_state['tf_operation'] = st.session_state[key]
     st.session_state.pop('tf_result', None)
 
 
 def render_operation_selector():
-    # Derive the group from persisted operations, including older sessions and
-    # the operation restored after Apply and continue.
+    # Keep one canonical operation across independent group dropdowns, including
+    # older sessions and the operation restored after Apply and continue.
     operation = st.session_state.get('tf_operation', 'Join')
-    group = next((g for g, ops in OPERATION_GROUPS.items() if operation in ops), 'Combine datasets')
-    st.session_state['tf_operation_group'] = group
-    st.selectbox('Operation group', list(OPERATION_GROUPS), key='tf_operation_group', on_change=_change_operation_group)
-    if operation not in OPERATION_GROUPS[group]:
-        st.session_state.pop('tf_operation', None)
-    return st.selectbox('Operation', OPERATION_GROUPS[group], key='tf_operation',
-                        format_func=lambda value: OPERATION_LABELS.get(value, value))
+    if operation not in [op for ops in OPERATION_GROUPS.values() for op in ops]:
+        operation = None
+    st.session_state['tf_operation'] = operation
+    for group, options in OPERATION_GROUPS.items():
+        st.session_state[operation_menu_key(group)] = operation if operation in options else None
+    # Fixed-width children in a horizontal container wrap on narrow screens.
+    with st.container(horizontal=True, gap='small'):
+        for group, options in OPERATION_GROUPS.items():
+            key = operation_menu_key(group)
+            with st.container(width=220):
+                st.selectbox(group, [None] + options, key=key,
+                             format_func=lambda value: 'Choose operation…' if value is None else OPERATION_LABELS.get(value, value),
+                             on_change=_choose_group_operation, args=(key,))
+    if operation:
+        st.markdown(f'**{OPERATION_LABELS.get(operation, operation)}**')
+    return operation
 
 
 def render_validation(report, operation):
@@ -56,7 +70,7 @@ def render_validation(report, operation):
         ]:
             rows.append({'Check': label, 'Left dataset': f'{report[left_key]:,}',
                          'Right dataset': f'{report[right_key]:,}'})
-        st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+        presentation.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
         st.markdown('**Many-to-many matches:** ' + ('Yes' if report['Many-to-many matches'] else 'No'))
         st.caption('Duplicate-key counts include every row sharing a repeated key. Many-to-many matches can multiply output rows.')
     else:
@@ -66,7 +80,7 @@ def render_validation(report, operation):
                 rows.extend({'Check': f'{label} — {name}', 'Result': str(detail)} for name, detail in value.items())
             else:
                 rows.append({'Check': label, 'Result': f'{value:,}' if isinstance(value, int) else str(value)})
-        st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+        presentation.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
 
 
 def render_transform(dataset_id, registry):
@@ -79,7 +93,7 @@ def render_transform(dataset_id, registry):
             st.write(f"{index}. {step['operation']}" + (f" — {step['column'] if step['column'] != 0 else 'All columns'}" if 'column' in step else ''))
         st.caption('These changes are retained while you configure the next operation. Create dataset saves the applied changes listed here.')
         with st.expander('Preview accumulated changes'):
-            st.dataframe(frame.head(100), width='stretch')
+            presentation.dataframe(frame.head(100), width='stretch')
         draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
         if st.button('Create dataset', key='tf_draft_create', type='primary', disabled=not draft_name.strip()):
             add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
@@ -91,6 +105,9 @@ def render_transform(dataset_id, registry):
             st.rerun()
     columns = list(frame)
     operation = render_operation_selector()
+    if operation is None:
+        st.info('Choose an operation from one of the groups above.')
+        return
     st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
     parents = [dataset_id]
@@ -330,7 +347,7 @@ def render_transform(dataset_id, registry):
             st.session_state.pop('tf_result', None)
             saved = None
             st.error(str(exc))
-            st.dataframe(exc.invalid, hide_index=True, width='stretch')
+            presentation.dataframe(exc.invalid, hide_index=True, width='stretch')
             st.caption('Use Replace Values to resolve these values, then Apply and continue and try the conversion again. No conversion has been applied.')
         except (ValueError, TypeError, KeyError, OverflowError) as exc:
             st.session_state.pop('tf_result', None)
@@ -339,7 +356,7 @@ def render_transform(dataset_id, registry):
     if saved:
         st.subheader('Result preview')
         st.caption(f"{len(saved['frame']):,} rows · {len(saved['frame'].columns):,} columns · Showing the first 100 rows")
-        st.dataframe(saved['frame'].head(100), use_container_width=True)
+        presentation.dataframe(saved['frame'].head(100), use_container_width=True)
         with st.expander('Validation details', expanded=True):
             render_validation(saved['report'], operation)
         for warning in saved['warnings']:

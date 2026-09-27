@@ -1,6 +1,7 @@
 """Descriptive display for clock times and elapsed durations (no invented dates)."""
 import pandas as pd
 import streamlit as st
+from utils import presentation
 import plotly.express as px
 from utils.charts import make_histogram_boxplot
 from utils.temporal import temporal_value
@@ -15,9 +16,9 @@ def render_noncalendar_temporal(series, subtype, key_prefix):
         counts = clean.value_counts().sort_index()
         table = pd.DataFrame({subtype: [temporal_value(v, subtype) for v in counts.index], 'Count': counts.to_numpy()})
         st.write(f'Used values: {len(clean)} · Missing / invalid values: {series.isna().sum()} · Unique values: {clean.nunique()}')
-        st.dataframe(table, hide_index=True, width='stretch')
+        presentation.dataframe(table, hide_index=True, width='stretch')
         if len(clean):
-            st.plotly_chart(px.bar(table, x=subtype, y='Count'), key=key_prefix+'_distribution', use_container_width=True)
+            presentation.plotly_chart(px.bar(table, x=subtype, y='Count'), key=key_prefix+'_distribution', use_container_width=True)
         if subtype != 'Year-Month':
             st.caption('These components are not full dates. Dated monthly trends and period comparisons require a Year-Month, Date, or DateTime variable.')
         return
@@ -31,6 +32,6 @@ def render_noncalendar_temporal(series, subtype, key_prefix):
         seconds = clean.dt.total_seconds()
         fig = make_histogram_boxplot(seconds)
         fig.update_xaxes(title_text='Seconds since midnight' if subtype == 'Time' else 'Elapsed seconds', row=2, col=1)
-        st.plotly_chart(fig, use_container_width=True, key=key_prefix+'_distribution')
-    st.table(pd.DataFrame(rows,columns=['Statistic','Value']))
+        presentation.plotly_chart(fig, use_container_width=True, key=key_prefix+'_distribution')
+    presentation.table(pd.DataFrame(rows,columns=['Statistic','Value']))
     st.caption('Calendar-based trends and period comparisons require Date or DateTime.')

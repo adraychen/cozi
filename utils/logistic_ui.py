@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from utils import presentation
 from utils.regression_controls import render_term_checkboxes
 from utils.regression_reporting import format_table,p_text,selected_terms_table
 from utils.regression_design import label
@@ -64,7 +65,7 @@ def render_logistic(df,target,predictors,cats,metadata):
                     outcomes=selected.loc[complete & (selected[c]==value),target]
                     count=int((outcomes==event).sum())
                     rows.append({'Predictor':c,'Category':repr(value),'Events':count,'Non-events':len(outcomes)-count})
-            st.dataframe(pd.DataFrame(rows),hide_index=True,use_container_width=True)
+            presentation.dataframe(pd.DataFrame(rows),hide_index=True,use_container_width=True)
             st.caption('Zero outcome cells can indicate separation; these counts remain available even when reliable estimation is impossible.')
     continuous=[c for c in nums if metadata.get(c,{}).get('variable_subtype','Continuous')=='Continuous']
     try:
@@ -83,7 +84,7 @@ def render_results(r,key):
     with tabs[0]:
         st.markdown('**Model summary**')
         summary=[('Response / Dependent Variable',str(spec['target'])),('Modeled event',repr(r['event'])),('Non-event',repr(r['non_event'])),('Predictors / Independent Variables',', '.join(map(str,spec['predictors']))),('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),('Excluded missing/nonfinite rows',str(r['excluded'])),('Percentage excluded',f"{100*r['excluded']/r['original_n']:.1f}%"),('Events',str(r['events'])),('Non-events',str(r['non_events'])),('Estimated parameters (including intercept)',str(r['k'])),('Confidence level',f'{confidence:g}%'),('Model-building method','Backward elimination — AIC' if r['elimination'] else 'No elimination')]
-        st.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        presentation.table(pd.DataFrame(summary,columns=['Model detail','Value']))
         st.markdown('**Fitted logistic regression equation**')
         eta=f'{model.params[0]:.5g}'+''.join(f' {b:+.5g} × {name}' for name,b in zip(r['names'][1:],model.params[1:]))
         st.write('log(p / (1 − p)) = '+eta)
@@ -91,50 +92,50 @@ def render_results(r,key):
         st.caption('p is the probability of '+event+'. Category contrasts represent indicators (1 for that category, 0 otherwise). Interactions and polynomial terms describe conditional associations on the log-odds scale.')
         st.markdown('**Model performance**')
         stats=[('Log likelihood',r['log_likelihood']),('Deviance',r['deviance']),('AIC',r['aic']),('BIC (log-likelihood definition)',r['bic']),('McFadden Pseudo-R²',r['pseudo_r2']),('Likelihood-ratio χ²',r['lr']),('Likelihood-ratio degrees of freedom',r['lr_df']),('Likelihood-ratio p-value',p_text(r['lr_p'])),('Brier score (in-sample)',r['brier'])]
-        st.table(pd.DataFrame([(name,f'{v:.5g}' if isinstance(v,(float,np.floating)) else str(v)) for name,v in stats],columns=['Measure','Value']))
+        presentation.table(pd.DataFrame([(name,f'{v:.5g}' if isinstance(v,(float,np.floating)) else str(v)) for name,v in stats],columns=['Measure','Value']))
         st.caption('The LR test compares with an intercept-only model on the same rows. McFadden Pseudo-R² is not percentage of variance explained and is not directly comparable with ordinary R². All fit/calibration measures describe these analysis observations; significance does not establish practical importance.')
-        st.markdown('**Selected terms**');st.table(selected_terms_table(r))
+        st.markdown('**Selected terms**');presentation.table(selected_terms_table(r))
         if spec['categorical']:
-            st.table(pd.DataFrame([{'Predictor':c,'Reference category':repr(spec['levels'][c][0]),'Observed levels':len(spec['levels'][c])} for c in spec['categorical']]))
+            presentation.table(pd.DataFrame([{'Predictor':c,'Reference category':repr(spec['levels'][c][0]),'Observed levels':len(spec['levels'][c])} for c in spec['categorical']]))
         with st.expander('Elimination history'):
             if r['history'].empty: st.write('No terms were removed.')
-            else: st.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
+            else: presentation.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
             if r['elimination']: st.caption('Selection uncertainty is not included in the reported p-values or intervals. AIC selection is exploratory, not proof of scientific importance.')
     with tabs[1]:
         st.caption(f'Wald statistics use χ² with one degree of freedom per coefficient. All confidence intervals use {confidence:g}%. Odds ratios multiply odds of {event}, not probabilities; the intercept OR represents baseline odds.')
-        st.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
         if not r['term_tests'].empty:
-            st.markdown('**Joint term tests**');st.dataframe(format_table(r['term_tests']),hide_index=True,use_container_width=True)
+            st.markdown('**Joint term tests**');presentation.dataframe(format_table(r['term_tests']),hide_index=True,use_container_width=True)
             st.caption('Multi-level factors and their interactions are tested jointly. Individual main-effect odds ratios in interaction/polynomial models are conditional at centered zero and reference categories; use probability curves for the overall relationship.')
         st.download_button('Download logistic coefficients (CSV)',r['coefficients'].to_csv(index=False),'logistic_coefficients.csv',key='rel_log_coeff_download')
     with tabs[2]:
         st.write('Convergence: achieved. '+r['separation']+'.')
-        st.table(pd.DataFrame({'Measure':['Events','Non-events','Parameters including intercept','Smaller outcome count per parameter'],'Value':[r['events'],r['non_events'],r['k'],min(r['events'],r['non_events'])/r['k']]}))
+        presentation.table(pd.DataFrame({'Measure':['Events','Non-events','Parameters including intercept','Smaller outcome count per parameter'],'Value':[r['events'],r['non_events'],r['k'],min(r['events'],r['non_events'])/r['k']]}))
         st.caption('Limited outcome information triggers a review warning, not a hard events-per-variable rule. Independence depends on study design; repeated or clustered observations require a suitable method.')
         st.markdown('**Linearity of the logit**')
         if r['linearity'].empty: st.info('No retained Continuous predictor requires a separate logit-linearity check.')
-        else: st.dataframe(format_table(r['linearity']),hide_index=True,use_container_width=True)
+        else: presentation.dataframe(format_table(r['linearity']),hide_index=True,use_container_width=True)
         st.caption('For eligible additive continuous predictors, compare the fitted model with additional quadratic/cubic terms using a nested LR test and Holm adjustment. This supports zero/negative values. A nonsignificant result does not prove linearity; tests may have low power. Existing nonlinear/interaction terms require visual review. No transformations are applied automatically.')
         if not r['sparse'].empty:
-            st.markdown('**Category-by-outcome counts**');st.dataframe(r['sparse'],hide_index=True,use_container_width=True)
+            st.markdown('**Category-by-outcome counts**');presentation.dataframe(r['sparse'],hide_index=True,use_container_width=True)
         for residual in ['Deviance Residual','Pearson Residual']:
             fig=px.scatter(r['influence'],x='Predicted Probability',y=residual,hover_data=['Original data row','Original index'])
             for cutoff in [-3,0,3]: fig.add_hline(y=cutoff,line_dash='dash')
-            st.plotly_chart(fig,use_container_width=True)
+            presentation.plotly_chart(fig,use_container_width=True)
         st.caption('Residual magnitude >3 is a review heuristic. Binary logistic residuals are not normally distributed; their branching patterns alone do not establish misspecification.')
     with tabs[3]:
         st.markdown('**Multicollinearity**')
         if r['vif'].empty: st.info('The retained model is intercept-only; VIF is not applicable.')
-        else: st.dataframe(format_table(r['vif']),hide_index=True,use_container_width=True)
+        else: presentation.dataframe(format_table(r['vif']),hide_index=True,use_container_width=True)
         st.caption('VIF <5: generally acceptable; 5–10: investigate; >10: strong warning. No variables are automatically removed based on VIF.')
         st.markdown('**Influential observations**')
         inf=r['influence']
-        st.dataframe(format_table(inf),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(inf),hide_index=True,use_container_width=True)
         st.caption('Review thresholds: |residual| >3, leverage >2k/n, Cook’s distance >4/n, or |DFBETA| >2/√n. k includes the intercept. These are heuristics; inspect cases and sensitivity rather than deleting observations automatically.')
         st.download_button('Download observation diagnostics (CSV)',inf.to_csv(index=False),'logistic_observations.csv',key='rel_log_inf_download')
         if not r['dfbetas'].empty:
             with st.expander('Coefficient influence (DFBETAs)'):
-                st.dataframe(format_table(r['dfbetas']),hide_index=True,use_container_width=True)
+                presentation.dataframe(format_table(r['dfbetas']),hide_index=True,use_container_width=True)
     with tabs[4]:
         render_visuals(r,key)
     with tabs[5]:
@@ -152,8 +153,8 @@ def draw_effect(r,xvar,moderator,title,key):
     curves,settings=adjusted_curves(r,xvar,moderator,levels,prediction_function=predict_logistic)
     fig=effect_figure(r,xvar,curves,title,confidence=r['confidence'])
     fig.update_yaxes(title_text=f"Probability of {r['spec']['target']} = {r['event']!r}",range=[0,1])
-    st.plotly_chart(fig,use_container_width=True,key=key)
-    if not settings.empty: st.dataframe(settings,hide_index=True,use_container_width=True)
+    presentation.plotly_chart(fig,use_container_width=True,key=key)
+    if not settings.empty: presentation.dataframe(settings,hide_index=True,use_container_width=True)
     st.caption(f"Adjusted event probabilities with pointwise {100*r['confidence']:g}% confidence intervals. Other numerical predictors use complete-case means and categories use reference levels, as shown. Numeric moderators use P25/P50/P75. Curves stay within observed predictor ranges (within category when applicable); sparse multivariable combinations can still be poorly supported. Category connections are visual guides.")
 
 
@@ -163,8 +164,8 @@ def render_visuals(r,key):
     fig=go.Figure(go.Scatter(x=cal.Predicted,y=cal.Observed,mode='lines+markers',name='Observed vs predicted',error_y=dict(type='data',symmetric=False,array=cal['Observed CI Upper']-cal.Observed,arrayminus=cal.Observed-cal['Observed CI Lower'])))
     fig.add_trace(go.Scatter(x=[0,1],y=[0,1],mode='lines',line=dict(dash='dash'),name='Perfect agreement'))
     fig.update_layout(xaxis_title='Mean predicted event probability',yaxis_title='Observed event proportion')
-    fig.update_xaxes(range=[0,1]);fig.update_yaxes(range=[0,1]);st.plotly_chart(fig,use_container_width=True)
-    st.dataframe(format_table(cal),hide_index=True,use_container_width=True)
+    fig.update_xaxes(range=[0,1]);fig.update_yaxes(range=[0,1]);presentation.plotly_chart(fig,use_container_width=True)
+    presentation.dataframe(format_table(cal),hide_index=True,use_container_width=True)
     st.caption(f"In-sample, quantile-grouped calibration with {100*r['confidence']:g}% Wilson intervals for observed proportions. Ties can reduce the number of groups. Brier score: {r['brier']:.4g}. Grouping and limited sample size affect appearance; this is not independent validation. An in-sample calibration intercept/slope is omitted because it can be ideal by construction.")
     st.markdown('**Odds ratios**')
     table=r['coefficients'].iloc[1:]
@@ -172,7 +173,7 @@ def render_visuals(r,key):
     table=table.loc[finite] if len(table) else table
     if not table.empty:
         fig=go.Figure(go.Scatter(x=table['Odds Ratio'],y=table.Term,mode='markers',error_x=dict(type='data',symmetric=False,array=table['OR CI Upper']-table['Odds Ratio'],arrayminus=table['Odds Ratio']-table['OR CI Lower'])))
-        fig.add_vline(x=1,line_dash='dash');fig.update_xaxes(type='log',title_text=f'Odds ratio ({100*r["confidence"]:g}% CI, log scale)');st.plotly_chart(fig,use_container_width=True)
+        fig.add_vline(x=1,line_dash='dash');fig.update_xaxes(type='log',title_text=f'Odds ratio ({100*r["confidence"]:g}% CI, log scale)');presentation.plotly_chart(fig,use_container_width=True)
     interactions=retained_interactions(r);polynomials=retained_polynomials(r)
     main=[c for c in r['spec']['predictors'] if ('main',c) in r['active']]
     if main:
@@ -198,7 +199,7 @@ def render_visuals(r,key):
             y=r['clean'][r['spec']['target']]
             fpr,tpr,_=roc_curve(y,r['model'].fittedvalues)
             fig=px.line(x=fpr,y=tpr,labels={'x':'False-positive rate','y':'True-positive rate'})
-            st.plotly_chart(fig,use_container_width=True)
+            presentation.plotly_chart(fig,use_container_width=True)
             st.write(f'In-sample ROC-AUC: {roc_auc_score(y,r["model"].fittedvalues):.3f}')
             st.caption('Discrimination does not establish calibration or statistical adequacy. No threshold is optimized and probabilities are not converted into classifications.')
 
@@ -210,7 +211,7 @@ def render_prediction(r,key):
     pred.columns=['Event probability',f'{confidence:g}% CI lower',f'{confidence:g}% CI upper']
     pred.insert(0,'Original data row',np.flatnonzero(r['valid'])+1)
     pred.insert(1,'Original index',[str(v) for v in r['clean'].index])
-    st.dataframe(pred,hide_index=True,use_container_width=True)
+    presentation.dataframe(pred,hide_index=True,use_container_width=True)
     st.caption('Only complete analysis rows have fitted probabilities. Excluded rows are not silently imputed. Intervals quantify uncertainty in the estimated event probability, not an individual 0/1 outcome.')
     st.download_button('Download fitted probabilities (CSV)',pred.to_csv(index=False),'logistic_probabilities.csv',key='rel_log_prob_download')
     st.markdown('**New observation**')
@@ -237,7 +238,7 @@ def render_findings(r,key):
     if concerns and status=='No major issues detected': status='Review recommended'
     if 'Dependence or clustering between observations' in concerns: status='Significant model concerns'
     st.write(status)
-    if not r['issues'].empty: st.dataframe(r['issues'],hide_index=True,use_container_width=True)
+    if not r['issues'].empty: presentation.dataframe(r['issues'],hide_index=True,use_container_width=True)
     if concerns: st.warning('User-identified concerns: '+', '.join(concerns)+'. Review specification and study design before interpreting inference.')
     st.caption('This summary reflects available diagnostics, not a pass/fail certificate. Independence and visual calibration require user review; no arbitrary adequacy score is calculated.')
     if status=='Significant model concerns':

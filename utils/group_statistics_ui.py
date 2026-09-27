@@ -2,6 +2,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from utils.variable_selection import variable_checkboxes
 from utils.group_statistics import STATISTICS, FREQUENCIES, summary, compare, contribution, temporal
 
@@ -105,9 +106,9 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                 fig = px.line(long, x="Period", y="Result", color="Segment", line_dash="Statistic")
             else:
                 fig = px.bar(chart, x="Segment", y=plotted[0], color="Segment")
-            st.plotly_chart(fig, use_container_width=True, key=key_prefix + "_chart")
+            presentation.plotly_chart(fig, use_container_width=True, key=key_prefix + "_chart")
         display = result.drop(columns=keys)
-        st.dataframe(display.style.format(precision=2, na_rep="N/A"), use_container_width=True)
+        presentation.dataframe(display.style.format(precision=2, na_rep="N/A"), use_container_width=True)
         st.download_button("Download statistics (CSV)", display.to_csv(index=False).encode("utf-8-sig"),
                            file_name="comparison.csv" if key_prefix != "gs" else "group_statistics.csv", mime="text/csv", key=key_prefix + "_download")
     except (ValueError, TypeError) as exc:

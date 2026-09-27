@@ -103,7 +103,7 @@ st.html("""
 <style>
     .cozy-brand { margin: 0.5rem 0 1rem; }
     .cozy-brand-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-    .cozy-brand-heading h1 { margin: 0; padding: 0; font-size: 2.75rem; font-weight: 750; line-height: 1.2; }
+    .cozy-brand-heading h1 { color: #A65F46; margin: 0; padding: 0; font-size: 2.75rem; font-weight: 750; line-height: 1.2; }
     .cozy-edition { display: inline-block; padding: 0.3rem 0.75rem; border-radius: 999px;
                     background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc;
                     font-size: 0.8rem; font-weight: 650; letter-spacing: 0.025em; }

@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from utils.regression_analysis import predict
 from utils.regression_design import label
 from utils.regression_plots import fitted_curve
@@ -97,7 +98,7 @@ def show_effect(result, xvar, moderator, title, widget_key):
             st.info('Select at least one category for this plot.')
             return
     curves, settings = adjusted_curves(result,xvar,moderator,levels)
-    st.plotly_chart(effect_figure(result,xvar,curves,title),use_container_width=True,key=widget_key+'_chart')
+    presentation.plotly_chart(effect_figure(result,xvar,curves,title),use_container_width=True,key=widget_key+'_chart')
     st.caption('Adjusted model predictions in original units, evaluated using the final retained model. Shading shows pointwise 95% confidence bands for the mean response; categorical-axis plots use 95% confidence bars. These are not prediction intervals or formal tests of interaction.')
     if result['perfect_fit']:
         st.info('Confidence intervals are unavailable for a perfect or near-perfect fit.')
@@ -105,7 +106,7 @@ def show_effect(result, xvar, moderator, title, widget_key):
         st.caption('No other predictors are held fixed.')
     else:
         st.caption('Other predictors are held at the following values:')
-        st.dataframe(settings,hide_index=True,use_container_width=True)
+        presentation.dataframe(settings,hide_index=True,use_container_width=True)
     if moderator is not None and moderator not in result['spec']['categorical']:
         st.caption('Numeric moderator lines use the 25th, 50th and 75th percentiles of the complete cases; labels report original-unit values. Tied percentiles may produce overlapping lines.')
     st.caption('Numeric axes stay within observed ranges (within each moderator category when applicable). Multivariable combinations can still be sparsely supported. Lines connecting categories are visual guides, not continuous trends. Intervals remain conditional on the fitted model, including any variable selection.')
@@ -138,7 +139,7 @@ def render_effect_plots(result, key):
         if len(result['spec']['predictors']) == 1:
             fig = fitted_curve(result)
             fig.update_layout(title=f'Polynomial relationship: {xvar}')
-            st.plotly_chart(fig,use_container_width=True,key='reg_poly_single_'+key[:12])
+            presentation.plotly_chart(fig,use_container_width=True,key='reg_poly_single_'+key[:12])
             st.caption('Observed points and fitted polynomial in original units. Blue shading shows the 95% mean-response confidence interval; orange shading shows the 95% prediction interval. No other predictors are held fixed.')
             if result['perfect_fit']:
                 st.info('Intervals are unavailable for a perfect or near-perfect fit.')

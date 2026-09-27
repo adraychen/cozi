@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats
 import streamlit as st
+from utils import presentation
 from utils.variable_selection import variable_checkboxes
 
 
@@ -177,7 +178,7 @@ def render_visual_analysis(df, col_types):
                 fig.update_yaxes(range=[0,100],title_text='Cumulative %',secondary_y=True)
             else:
                 fig=px.bar(table,x=key[category],y='Value',color=key[stack] if stack else None,barmode='group' if chart=='Grouped bar chart' else 'stack',labels=labels)
-            st.dataframe(table.rename(columns=labels),hide_index=True,use_container_width=True)
+            presentation.dataframe(table.rename(columns=labels),hide_index=True,use_container_width=True)
         elif chart in ['Line chart','Area chart']:
             axis=choose('X axis',dates+nums,'line_x')
             if not dates:
@@ -253,7 +254,7 @@ def render_visual_analysis(df, col_types):
                         for axis in fig.select_yaxes():
                             if axis.title.text in (str(col),key[col]):
                                 axis.update(categoryorder='array',categoryarray=order)
-            st.plotly_chart(fig,use_container_width=True,key='va_result_chart')
+            presentation.plotly_chart(fig,use_container_width=True,key='va_result_chart')
         st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
     except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
         st.info(str(exc))

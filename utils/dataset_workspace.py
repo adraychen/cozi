@@ -9,7 +9,7 @@ from utils.table_transforms import validate_table
 ADD_TAB = '＋ Add datasets'
 _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summary',
               'datetime_overrides', 'override_warnings', 'regression_cached_fit'}
-_PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'pa_', 'mc_',
+_PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'fac_', 'pa_', 'mc_',
              'col_ai_', 'heatmap_ai_', 'tf_', 'view_')
 _TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'tf_preview', 'tf_create',
              'tf_apply', 'tf_draft_create', 'tf_draft_discard', 'tf_draft_finish',

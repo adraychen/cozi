@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from utils.regression_analysis import regression
 from utils.regression_router import render_regression, response_candidates
 from utils.contingency_ui import render_contingency
@@ -45,10 +46,10 @@ def render_relationship_analysis(df, numerical, categorical, dates):
             elapsed = (values.index.to_timestamp()-values.index.to_timestamp()[0]).total_seconds()/86400
             trend = regression(pd.DataFrame({'Value':values.to_numpy(),'Elapsed days':elapsed}), 'Value',['Elapsed days'])
             chart = pd.DataFrame({'Date':values.index.to_timestamp(),'Observed':values.to_numpy(),'Linear trend':trend['fitted']})
-            st.plotly_chart(px.line(chart,x='Date',y=['Observed','Linear trend']),use_container_width=True)
+            presentation.plotly_chart(px.line(chart,x='Date',y=['Observed','Linear trend']),use_container_width=True)
             slope = trend['coefficients'].iloc[1]['Coefficient']
             st.write(f'Linear trend: {slope:.4g} units per elapsed day; R² = {trend["r2"]:.3f}.')
-            st.dataframe(chart,hide_index=True,use_container_width=True)
+            presentation.dataframe(chart,hide_index=True,use_container_width=True)
             st.caption(f'Excluded {len(df)-len(clean):,} invalid/missing pairs. Missing periods are omitted, not filled with zero; elapsed calendar time is used. Trend is descriptive, not a forecast or significance test: seasonality and autocorrelation are not modelled. Boundary periods may be incomplete.')
         else:
             render_regression(df, numerical, categorical)

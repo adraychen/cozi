@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from utils import presentation
 from utils.regression_analysis import regression, predict
 from utils.regression_reporting import format_table, findings, equation, p_text, selected_terms_table
 from utils.regression_plots import actual_fitted, fitted_curve, coefficient_plot, partial_plot
@@ -49,7 +50,7 @@ def render_regression(df, numerical, categorical, selection=None):
         st.error(f'Cannot fit this regression: {exc}')
         st.write(f'{exc.n} complete observations · {exc.coefficients} generated coefficients (including intercept) · {exc.rank} independently estimable columns after scaling.')
         st.markdown('**How to resolve this**')
-        st.dataframe(pd.DataFrame(exc.details), hide_index=True, width='stretch')
+        presentation.dataframe(pd.DataFrame(exc.details), hide_index=True, width='stretch')
         st.caption('Suggestions depend on the selected terms and complete cases. They are one possible simplification, not proof that a predictor is unimportant. No terms have been removed automatically. Removing predictors can change which rows are complete; the model is checked again after each change.')
         st.info('Start by unchecking the listed interactions or polynomial terms. If predictors are listed, choose which overlapping predictor to retain based on your analysis question. Backward elimination cannot start until the initial model can be fitted; changing its p-value threshold will not resolve this problem.')
     except (ValueError, TypeError, KeyError, np.linalg.LinAlgError, FloatingPointError) as exc:
@@ -67,7 +68,7 @@ def render_results(r,key):
                    ('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),
                    ('Excluded missing/nonfinite rows',str(r['excluded'])),
                    ('Model-building method','Backward elimination' if r['elimination'] else 'No elimination')]
-        st.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        presentation.table(pd.DataFrame(summary,columns=['Model detail','Value']))
         st.markdown('**Fitted regression equation**')
         st.write(equation(r))
         st.markdown('**Model performance**')
@@ -78,29 +79,29 @@ def render_results(r,key):
         stats = [('RMSE',f"{r['rmse']:.4g}"),('MAE',f"{r['mae']:.4g}"),
                  ('Model degrees of freedom',str(r['model_df'])),('Residual degrees of freedom',str(r['residual_df'])),
                  ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
-        st.table(pd.DataFrame(stats,columns=['Performance measure','Value']))
+        presentation.table(pd.DataFrame(stats,columns=['Performance measure','Value']))
         st.caption('Fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
         st.markdown('**Selected terms**')
-        st.table(selected_terms_table(r))
+        presentation.table(selected_terms_table(r))
         if not r['active']:
             st.info('The final model contains the intercept only.')
         if r['coding']:
             st.markdown('**Categorical reference coding**')
-            st.table(pd.DataFrame(r['coding']))
+            presentation.table(pd.DataFrame(r['coding']))
         st.caption('Category terms are indicators (1 for that level, otherwise 0). Main effects in interaction/polynomial models are conditional at centered zero and reference categories.')
         with st.expander('Elimination history'):
             if r['history'].empty:
                 st.write('No terms were removed.')
             else:
-                st.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
+                presentation.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
                 st.caption('Removal p-values are joint partial F-tests before removal. Adjusted R² describes the refitted model after each removal. The complete-case sample stays fixed throughout.')
         for note in r['warnings']:
             st.warning(note)
     with tabs[1]:
-        st.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
         st.caption('Standardized coefficients = coefficient × SD(X)/SD(Y), only for ordinary numeric main effects without retained interactions or powers. N/A for other terms. Interactions describe changing associations; powers jointly describe a curve, not constant slopes.')
         if not r['term_tests'].empty:
-            st.dataframe(format_table(r['term_tests'].drop(columns='block')),hide_index=True,use_container_width=True)
+            presentation.dataframe(format_table(r['term_tests'].drop(columns='block')),hide_index=True,use_container_width=True)
             st.caption('Joint term tests keep categorical levels together. Hierarchy-protected terms cannot be removed while their dependent higher-order terms remain.')
         st.download_button('Download regression coefficients (CSV)',r['coefficients'].to_csv(index=False),file_name='regression_coefficients.csv',key='reg_coeff_download')
     with tabs[2]:
@@ -115,11 +116,11 @@ def render_results(r,key):
             display = r['vif'].copy()
             display['VIF'] = display['VIF'].map(lambda v:f'{v:.2f}')
             display['Tolerance'] = display['Tolerance'].map(lambda v:f'{v:.3f}')
-            st.dataframe(display,hide_index=True,use_container_width=True)
+            presentation.dataframe(display,hide_index=True,use_container_width=True)
         st.caption('VIF < 5: generally acceptable; 5–10: potential concern; >10: serious concern. Tolerance = 1/VIF. These are guidelines for clearly labeled encoded terms. Interaction/polynomial terms can be correlated even after centering.')
         if len(spec['numeric'])>=2:
             corr = r['clean'][spec['numeric']].corr()
-            st.plotly_chart(px.imshow(corr,zmin=-1,zmax=1,text_auto='.2f',color_continuous_scale='RdBu_r',title='Original numeric predictor correlations'),use_container_width=True)
+            presentation.plotly_chart(px.imshow(corr,zmin=-1,zmax=1,text_auto='.2f',color_continuous_scale='RdBu_r',title='Original numeric predictor correlations'),use_container_width=True)
             st.caption('Original selected numeric predictors on the same complete cases. Categorical codes and generated terms are excluded.')
         else:
             st.info('A numeric predictor correlation matrix requires at least two numeric predictors.')
@@ -128,29 +129,29 @@ def render_results(r,key):
         st.write(f"{int(inf['Flagged'].sum())} observations flagged for review. None removed.")
         st.caption('Internally studentized residuals: |r| > 2 merits review, >3 is potentially extreme. Leverage > 2k/n and Cook’s distance > 4/n are heuristics; k includes the intercept. Undefined measures also warrant review.')
         ranked = inf.sort_values("Cook's distance",ascending=False,na_position='last').head(20)
-        st.dataframe(format_table(ranked),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(ranked),hide_index=True,use_container_width=True)
         st.write('Highest-leverage observations')
-        st.dataframe(format_table(inf.sort_values('Leverage',ascending=False).head(10)),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(inf.sort_values('Leverage',ascending=False).head(10)),hide_index=True,use_container_width=True)
         for measure, cutoff in [("Cook's distance",4/r['n']),('Leverage',2*r['k']/r['n']),('Studentized residual',2)]:
             fig = px.scatter(inf,x='Original data row',y=measure,hover_data=['Original index'],title=measure)
             fig.add_hline(y=cutoff,line_dash='dash')
             if measure=='Studentized residual':
                 fig.add_hline(y=-2,line_dash='dash'); fig.add_hline(y=3,line_dash='dot'); fig.add_hline(y=-3,line_dash='dot')
-            st.plotly_chart(fig,use_container_width=True)
+            presentation.plotly_chart(fig,use_container_width=True)
         st.download_button('Download all observation diagnostics (CSV)',inf.to_csv(index=False),file_name='regression_influence.csv',key='reg_inf_download')
     with tabs[4]:
         render_effect_plots(r,key)
         if len(spec['predictors'])==1 and not spec['categorical'] and not any(b[0]=='power' for b in r['active']):
-            st.plotly_chart(fitted_curve(r),use_container_width=True)
+            presentation.plotly_chart(fitted_curve(r),use_container_width=True)
             st.caption('Curve covers the observed predictor range. Blue confidence band: uncertainty around the mean response. Orange prediction band: uncertainty for an individual future observation. Bands rely on the regression assumptions; they are not guarantees.')
-        st.plotly_chart(actual_fitted(r),use_container_width=True)
+        presentation.plotly_chart(actual_fitted(r),use_container_width=True)
         st.caption('Actual versus fitted values describe fit on these observations; the reference line represents perfect agreement.')
         if r['active']:
-            st.plotly_chart(coefficient_plot(r),use_container_width=True)
+            presentation.plotly_chart(coefficient_plot(r),use_container_width=True)
         eligible = [c for c in spec['numeric'] if ('main',c) in r['active'] and not any(b[0]=='interaction' and c in b[1:] for b in r['active'])]
         if eligible:
             c = st.selectbox('Continuous predictor for partial residual plot',eligible,key='reg_partial_'+key[:12])
-            st.plotly_chart(partial_plot(r,c),use_container_width=True)
+            presentation.plotly_chart(partial_plot(r,c),use_container_width=True)
             st.caption('Residual plus this predictor’s fitted component, including retained powers. This checks form after accounting for the other fitted components.')
         else:
             st.info('A partial residual plot is not shown when no continuous main effect without interactions remains; its interpretation would be ambiguous.')

@@ -45,8 +45,8 @@ def overview_html(raw, metadata):
         cells=[text(column),text(row['Data Type']),classified(m['variable_type'],m['source']),classified(m['variable_subtype'],m['source']),f'<span>{raw[column].nunique(dropna=True)}</span> {detail}',text(row['Total Values']),text(row['Missing Values'])]
         rows.append('<tr>'+''.join('<td>'+cell+'</td>' for cell in cells)+f'<td{style}>{missing:.2f}</td></tr>')
     return '''<style>
-.vm-overview {overflow:auto; max-height:540px; border:1px solid #8885; border-radius:8px;}
-.vm-overview table {width:100%; border-collapse:collapse; font-size:14px; text-align:left;}
+.vm-overview {width:fit-content; max-width:100%; overflow:auto; max-height:540px; border:1px solid #8885; border-radius:8px;}
+.vm-overview table {width:max-content; max-width:1200px; border-collapse:collapse; font-size:14px; text-align:left;}
 .vm-overview th,.vm-overview td {padding:10px 12px; border-bottom:1px solid #8883; vertical-align:top;}
 .vm-overview th {white-space:nowrap; font-weight:600;}
 .vm-badge {display:inline-block; position:relative; border:1px solid #8888; border-radius:5px; padding:0 4px; font-size:11px; font-weight:600; cursor:help;}

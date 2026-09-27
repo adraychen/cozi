@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import streamlit as st
+from utils import presentation
 
 
 from utils.charts import (
@@ -46,7 +47,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         bool_cols = preview_df.select_dtypes(include="bool").columns.tolist()
         if bool_cols:
             preview_df[bool_cols] = preview_df[bool_cols].astype(str)
-        st.dataframe(preview_df, use_container_width=True, height=300)
+        presentation.dataframe(preview_df, use_container_width=True, height=300)
         filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', dataset_name).strip(' .') or 'Dataset'
         filename = re.sub(r'\.(csv|xlsx|xls)$', '', filename, flags=re.IGNORECASE) + '.csv'
         st.download_button('Download dataset (CSV)', data=dataset_csv(df),
@@ -117,11 +118,11 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with left:
                     if is_discrete:
                         fig, truncated, total_unique = make_bar_chart(series)
-                        st.plotly_chart(fig, use_container_width=True, key='view_quality_numerical_' + str(col_name))
+                        presentation.plotly_chart(fig, use_container_width=True, key='view_quality_numerical_' + str(col_name))
                         if truncated:
                             st.caption(f"Showing top 10 of {total_unique} unique values.")
                     else:
-                        st.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_numerical_' + str(col_name))
+                        presentation.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_numerical_' + str(col_name))
                 with right:
                     for label, val in [
                         ("Missing Values", missing),
@@ -156,7 +157,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 left, right = st.columns([3, 2])
                 with left:
                     fig, truncated, total_unique = make_bar_chart(series)
-                    st.plotly_chart(fig, use_container_width=True, key='view_quality_categorical_' + str(col_name))
+                    presentation.plotly_chart(fig, use_container_width=True, key='view_quality_categorical_' + str(col_name))
                     if truncated:
                         st.caption(f"Showing top 10 of {total_unique} unique values.")
                 with right:
@@ -199,7 +200,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 st.markdown(f"**{col_name}**")
                 left, right = st.columns([3, 2])
                 with left:
-                    st.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_temporal_' + str(col_name))
+                    presentation.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_temporal_' + str(col_name))
                 with right:
                     for label, val in [
                         ("Missing Values",         missing),
@@ -327,16 +328,16 @@ def render_analyze(raw, _show_feedback):
                     st.markdown("**Distribution**")
                     if is_discrete:
                         fig, truncated, total_unique = make_bar_chart(series, height=360)
-                        st.plotly_chart(fig, use_container_width=True)
+                        presentation.plotly_chart(fig, use_container_width=True)
                         if truncated:
                             st.caption(f"Showing top 10 of {total_unique} unique values.")
                     else:
-                        st.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
+                        presentation.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
                     from utils.distribution_fit_ui import render_distribution_fit
                     render_distribution_fit(series, selected_col, variable_metadata[selected_col]["variable_subtype"])
                 with chart_r:
                     st.markdown("**Violin Plot**")
-                    st.plotly_chart(make_violin(series, height=360), use_container_width=True)
+                    presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
 
                 st.markdown("**Summary Statistics**")
                 stats = numerical_stats(series)
@@ -404,7 +405,7 @@ def render_analyze(raw, _show_feedback):
 
                 st.markdown("**Frequency Chart**")
                 fig, truncated, total_unique = make_bar_chart(series, max_bars=max_bars, height=400)
-                st.plotly_chart(fig, use_container_width=True)
+                presentation.plotly_chart(fig, use_container_width=True)
                 if truncated:
                     st.caption(f"Showing {max_bars} of {total_unique} categories; ordinal variables follow their configured order, others follow frequency.")
 
@@ -420,7 +421,7 @@ def render_analyze(raw, _show_feedback):
                         pass
                     return ""
 
-                st.dataframe(
+                presentation.dataframe(
                     freq_df.style
                         .map(_style_rare_pct, subset=["Percentage"])
                         .format({"Percentage": "{:.2f}%"}),
@@ -473,10 +474,10 @@ def render_analyze(raw, _show_feedback):
                 chart_l, chart_r = st.columns([3, 2])
                 with chart_l:
                     st.markdown("**Distribution**")
-                    st.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
+                    presentation.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
                 with chart_r:
                     st.markdown("**Violin Plot**")
-                    st.plotly_chart(make_violin(series, height=360), use_container_width=True)
+                    presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
 
                 st.markdown("**Summary Statistics**")
                 stats = datetime_stats(series)
@@ -485,7 +486,7 @@ def render_analyze(raw, _show_feedback):
                         "Statistic": list(stats.keys()),
                         "Value":     [str(v) for v in stats.values()],
                     })
-                    st.dataframe(stats_df, use_container_width=True, hide_index=True)
+                    presentation.dataframe(stats_df, use_container_width=True, hide_index=True)
 
                 ai_key = f"col_ai_{selected_col}"
                 with st.expander("🤖 AI Interpretation"):
@@ -584,7 +585,7 @@ def render_analyze(raw, _show_feedback):
 
                 # ── Heatmap — Numerical Values ────────────────────────────────────────
                 if chart_type == "Heatmap — Numerical Values":
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_pivot_heatmap(df, sel_cat[0], sel_cat[1], sel_num[0], height=460),
                         use_container_width=True,
                     )
@@ -599,7 +600,7 @@ def render_analyze(raw, _show_feedback):
                     fig, truncated, total_cats = make_boxplot_by_category(
                         df, num_col=sel_num[0], cat_col=sel_cat[0], height=420,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    presentation.plotly_chart(fig, use_container_width=True)
                     if truncated:
                         st.caption(
                             f"Showing top 15 of {total_cats} categories, sorted by median descending."
@@ -607,7 +608,7 @@ def render_analyze(raw, _show_feedback):
 
                 # ── Line Chart — Trend ────────────────────────────────────────────────
                 elif chart_type == "Line Chart — Trend":
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_line_chart(df, x_col=sel_dt[0], y_cols=sel_num, height=420),
                         use_container_width=True,
                     )
@@ -615,7 +616,7 @@ def render_analyze(raw, _show_feedback):
                 # ── Scatter Plot — Correlation ────────────────────────────────────────
                 elif chart_type == "Scatter Plot — Correlation":
                     corr_val = df[sel_num].corr().iloc[0, 1]
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_scatter(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
                         use_container_width=True,
                     )
@@ -623,14 +624,14 @@ def render_analyze(raw, _show_feedback):
 
                 # ── Interaction Chart — Density ───────────────────────────────────────
                 elif chart_type == "Interaction Chart — Density":
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_density_contour(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
                         use_container_width=True,
                     )
 
                 # ── Heatmap — Occurrence ──────────────────────────────────────────────
                 elif chart_type == "Heatmap — Occurrence":
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_occurrence_heatmap(df, sel_cat[0], sel_cat[1], height=460),
                         use_container_width=True,
                     )
@@ -641,7 +642,7 @@ def render_analyze(raw, _show_feedback):
 
                 # ── Interaction Chart — Grouped Bar ───────────────────────────────────
                 elif chart_type == "Interaction Chart — Grouped Bar":
-                    st.plotly_chart(
+                    presentation.plotly_chart(
                         make_grouped_bar(df, sel_cat[0], sel_cat[1], height=420),
                         use_container_width=True,
                     )
@@ -739,7 +740,7 @@ def render_analyze(raw, _show_feedback):
                 {"Model": "Random Forest", "Parameter": "Min Samples per Leaf",    "Values Tested": "3, 5",       "Total Fits": str(TOTAL_FITS)},
                 {"Model": "Combined",      "Parameter": "Cross-Validation Folds",  "Values Tested": str(CV_FOLDS),"Total Fits": str(COMPARISON_TOTAL_FITS)},
             ])
-            st.dataframe(config_df, use_container_width=True, hide_index=True)
+            presentation.dataframe(config_df, use_container_width=True, hide_index=True)
             time_est = estimate_training_time_comparison(len(df))
         elif is_binary_comparison:
             config_df = pd.DataFrame([
@@ -750,7 +751,7 @@ def render_analyze(raw, _show_feedback):
                 {"Model": "Random Forest",        "Parameter": "Min Samples per Leaf","Values Tested": "3, 5",               "Total Fits": str(TOTAL_FITS_CLASSIFIER)},
                 {"Model": "Combined",             "Parameter": "CV Folds",            "Values Tested": str(CV_FOLDS),         "Total Fits": str(BINARY_COMPARISON_TOTAL_FITS)},
             ])
-            st.dataframe(config_df, use_container_width=True, hide_index=True)
+            presentation.dataframe(config_df, use_container_width=True, hide_index=True)
             time_est = estimate_binary_comparison_time(len(df))
         elif is_multiclass_comparison:
             config_df = pd.DataFrame([
@@ -761,7 +762,7 @@ def render_analyze(raw, _show_feedback):
                 {"Model": "Random Forest",  "Parameter": "Min Samples per Leaf","Values Tested": "3, 5",             "Total Fits": str(TOTAL_FITS_CLASSIFIER)},
                 {"Model": "Combined",       "Parameter": "CV Folds",            "Values Tested": str(CV_FOLDS),       "Total Fits": str(MULTICLASS_COMPARISON_TOTAL_FITS)},
             ])
-            st.dataframe(config_df, use_container_width=True, hide_index=True)
+            presentation.dataframe(config_df, use_container_width=True, hide_index=True)
             time_est = estimate_multiclass_comparison_time(len(df))
         else:
             _combos = TOTAL_COMBOS if is_regression else TOTAL_COMBOS_CLASSIFIER
@@ -779,7 +780,7 @@ def render_analyze(raw, _show_feedback):
                 {"Parameter": "Total Combinations", "Values Tested": str(_combos),  "What it controls": "—"},
                 {"Parameter": "Total Fits",         "Values Tested": str(_fits),    "What it controls": "—"},
             ]
-            st.dataframe(pd.DataFrame(param_rows), use_container_width=True, hide_index=True)
+            presentation.dataframe(pd.DataFrame(param_rows), use_container_width=True, hide_index=True)
             time_est = estimate_training_time(len(df))
 
         st.info(f"⏱ **Estimated training time: {time_est}** based on {len(df):,} rows.")
@@ -905,7 +906,7 @@ def render_analyze(raw, _show_feedback):
                 )
                 return styles
 
-            st.dataframe(
+            presentation.dataframe(
                 cdf.style.apply(_style_cmp, axis=1).format({"Lasso": "{:.3f}", "Random Forest": "{:.3f}"}),
                 use_container_width=True, hide_index=True,
             )
@@ -921,24 +922,24 @@ def render_analyze(raw, _show_feedback):
             st.divider()
 
             st.markdown(f"**Learning Curve** — {winner}")
-            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="R² Score"), use_container_width=True)
+            presentation.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="R² Score"), use_container_width=True)
             st.markdown(interpret_learning_curve(results["train_scores"], results["val_scores"]))
             st.divider()
 
             if winner == "Random Forest":
                 st.markdown("**Feature Importance** — top 20 predictors")
-                st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+                presentation.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
             else:
                 st.markdown("**Coefficient Importance** — top 20 predictors")
                 st.caption("Blue = positive effect on target. Orange = negative effect.")
-                st.plotly_chart(make_coefficient_chart(results["coefficients"]), use_container_width=True)
+                presentation.plotly_chart(make_coefficient_chart(results["coefficients"]), use_container_width=True)
             st.divider()
 
             st.markdown(f"**SHAP Summary** — {winner}")
             st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
             plt.figure()
             _shap.summary_plot(results["shap_values"], results["X_sample"], feature_names=clean_names, show=False)
-            st.pyplot(plt.gcf(), bbox_inches="tight")
+            presentation.pyplot(plt.gcf(), bbox_inches="tight")
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
@@ -976,7 +977,7 @@ def render_analyze(raw, _show_feedback):
                 )
                 return styles
 
-            st.dataframe(
+            presentation.dataframe(
                 cdf.style.apply(_style_binary_cmp, axis=1)
                    .format({"Logistic Regression": "{:.3f}", "Random Forest": "{:.3f}"}),
                 use_container_width=True, hide_index=True,
@@ -996,14 +997,14 @@ def render_analyze(raw, _show_feedback):
             cm_col, roc_col = st.columns(2)
             with cm_col:
                 st.markdown("**Confusion Matrix**")
-                st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+                presentation.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
             with roc_col:
                 st.markdown("**ROC Curve**")
-                st.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], wm["roc_auc"]), use_container_width=True)
+                presentation.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], wm["roc_auc"]), use_container_width=True)
             st.divider()
 
             st.markdown(f"**Learning Curve** — {winner}")
-            st.plotly_chart(
+            presentation.plotly_chart(
                 make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="F1 Score"),
                 use_container_width=True,
             )
@@ -1012,18 +1013,18 @@ def render_analyze(raw, _show_feedback):
 
             if winner == "Random Forest":
                 st.markdown("**Feature Importance** — top 20 predictors")
-                st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+                presentation.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
             else:
                 st.markdown("**Coefficient Importance** — top 20 predictors")
                 st.caption("Blue = increases probability of positive class. Orange = decreases it.")
-                st.plotly_chart(make_coefficient_chart(results["coefficients"]), use_container_width=True)
+                presentation.plotly_chart(make_coefficient_chart(results["coefficients"]), use_container_width=True)
                 if results["odds_ratio_df"] is not None:
                     st.markdown("**Odds Ratios**")
                     st.caption(
                         "Odds Ratio > 1: feature increases the likelihood of the positive class. "
                         "Odds Ratio < 1: feature decreases it."
                     )
-                    st.dataframe(
+                    presentation.dataframe(
                         results["odds_ratio_df"].style.format({"Coefficient": "{:.4f}", "Odds Ratio": "{:.4f}"}),
                         use_container_width=True, hide_index=True,
                     )
@@ -1033,7 +1034,7 @@ def render_analyze(raw, _show_feedback):
             st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
             plt.figure()
             _shap.summary_plot(results["shap_display"], results["X_sample"], feature_names=clean_names, show=False)
-            st.pyplot(plt.gcf(), bbox_inches="tight")
+            presentation.pyplot(plt.gcf(), bbox_inches="tight")
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
@@ -1068,26 +1069,26 @@ def render_analyze(raw, _show_feedback):
             cm_col, roc_col = st.columns(2)
             with cm_col:
                 st.markdown("**Confusion Matrix**")
-                st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+                presentation.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
             with roc_col:
                 st.markdown("**ROC Curve**")
-                st.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], results["roc_auc"]), use_container_width=True)
+                presentation.plotly_chart(make_roc_curve(results["fpr"], results["tpr"], results["roc_auc"]), use_container_width=True)
             st.divider()
 
             st.markdown("**Learning Curve** — training vs validation accuracy")
-            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="Accuracy"), use_container_width=True)
+            presentation.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="Accuracy"), use_container_width=True)
             st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
             st.divider()
 
             st.markdown("**Feature Importance** — top 20 predictors")
-            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            presentation.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
             st.divider()
 
             st.markdown("**SHAP Summary** — positive class")
             st.caption(f"Based on {min(1000, results['X_sample'].shape[0]):,} test rows.")
             plt.figure()
             _shap.summary_plot(results["shap_vals_class1"], results["X_sample"], feature_names=clean_names, show=False)
-            st.pyplot(plt.gcf(), bbox_inches="tight")
+            presentation.pyplot(plt.gcf(), bbox_inches="tight")
             plt.close("all")
 
         # ── Multiclass comparison ─────────────────────────────────────────────────
@@ -1108,7 +1109,7 @@ def render_analyze(raw, _show_feedback):
                 )
                 return styles
 
-            st.dataframe(
+            presentation.dataframe(
                 cdf.style.apply(_style_mc_cmp, axis=1)
                    .format({_lr_col: "{:.3f}", _rf_col: "{:.3f}"}),
                 use_container_width=True, hide_index=True,
@@ -1126,11 +1127,11 @@ def render_analyze(raw, _show_feedback):
             st.divider()
 
             st.markdown("**Confusion Matrix**")
-            st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            presentation.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
             st.divider()
 
             st.markdown(f"**Learning Curve** — {winner}")
-            st.plotly_chart(
+            presentation.plotly_chart(
                 make_learning_curve_chart(results["train_sizes"], results["train_scores"],
                                           results["val_scores"], score_label="Weighted F1"),
                 use_container_width=True,
@@ -1140,17 +1141,17 @@ def render_analyze(raw, _show_feedback):
 
             if winner == "Random Forest":
                 st.markdown("**Feature Importance** — top 20 predictors")
-                st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+                presentation.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
             else:
                 st.markdown("**Coefficient Importance** — select a class to view its top predictors")
                 st.caption("Blue = increases probability of this class. Orange = decreases it.")
                 sel_cls_coef = st.selectbox("Select class", options=results["class_labels"], key="pa_coef_class")
                 coef_s = results["coefficients_per_class"][sel_cls_coef]
-                st.plotly_chart(make_coefficient_chart(coef_s), use_container_width=True)
+                presentation.plotly_chart(make_coefficient_chart(coef_s), use_container_width=True)
                 if results["odds_ratio_per_class"] and sel_cls_coef in results["odds_ratio_per_class"]:
                     st.markdown(f"**Odds Ratios — class: {sel_cls_coef}**")
                     st.caption("Odds Ratio > 1: feature increases the likelihood of this class. Odds Ratio < 1: feature decreases it.")
-                    st.dataframe(
+                    presentation.dataframe(
                         results["odds_ratio_per_class"][sel_cls_coef]
                            .style.format({"Coefficient": "{:.4f}", "Odds Ratio": "{:.4f}"}),
                         use_container_width=True, hide_index=True,
@@ -1168,7 +1169,7 @@ def render_analyze(raw, _show_feedback):
                 shap_cls = sv[:, :, class_idx]
             plt.figure()
             _shap.summary_plot(shap_cls, results["X_sample"], feature_names=clean_names, show=False)
-            st.pyplot(plt.gcf(), bbox_inches="tight")
+            presentation.pyplot(plt.gcf(), bbox_inches="tight")
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
@@ -1201,16 +1202,16 @@ def render_analyze(raw, _show_feedback):
             st.divider()
 
             st.markdown("**Confusion Matrix**")
-            st.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
+            presentation.plotly_chart(make_confusion_matrix(results["cm"], results["class_labels"]), use_container_width=True)
             st.divider()
 
             st.markdown("**Learning Curve** — training vs validation accuracy")
-            st.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="Accuracy"), use_container_width=True)
+            presentation.plotly_chart(make_learning_curve_chart(results["train_sizes"], results["train_scores"], results["val_scores"], score_label="Accuracy"), use_container_width=True)
             st.markdown(interpret_learning_curve_classifier(results["train_scores"], results["val_scores"]))
             st.divider()
 
             st.markdown("**Feature Importance** — top 20 predictors")
-            st.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
+            presentation.plotly_chart(make_feature_importance_chart(results["feat_imp"]), use_container_width=True)
             st.divider()
 
             st.markdown("**SHAP Summary** — feature impact by class")
@@ -1221,7 +1222,7 @@ def render_analyze(raw, _show_feedback):
             shap_cls   = sv[:, :, class_idx] if not isinstance(sv, list) else sv[class_idx]
             plt.figure()
             _shap.summary_plot(shap_cls, results["X_sample"], feature_names=clean_names, show=False)
-            st.pyplot(plt.gcf(), bbox_inches="tight")
+            presentation.pyplot(plt.gcf(), bbox_inches="tight")
             plt.close("all")
 
         st.divider()

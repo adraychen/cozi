@@ -1,6 +1,7 @@
 """Column Overview with a type-dependent classification editor."""
 import pandas as pd
 import streamlit as st
+from utils import presentation
 from utils.variable_overview_display import overview_html
 from utils.variable_metadata import ALLOWED, ensure_metadata, infer_variable_subtype, category_order, apply_user_override, effective_data
 
@@ -25,7 +26,7 @@ def render_column_overview(raw, dataset_id):
             values,recognized=category_order(raw[col])
             proposed=m['order'] if m['order'] else values
             st.caption('Set lowest to highest. Enter category numbers in the desired order; every category must appear once. Unrecognized orders start in observed order, not alphabetical order.')
-            st.table(pd.DataFrame({'Category number':range(1,len(proposed)+1),'Observed value':[repr(v) for v in proposed]}))
+            presentation.table(pd.DataFrame({'Category number':range(1,len(proposed)+1),'Observed value':[repr(v) for v in proposed]}))
             order_text=st.text_input('Category order (lowest to highest)',value=', '.join(str(i) for i in range(1,len(proposed)+1)),key=prefix+'_order')
             try:
                 indices=[int(x.strip()) for x in order_text.split(',')]

@@ -17,10 +17,9 @@ with patch('utils.database.record_visit'), patch('utils.database.get_stats', ret
 
 
 def select_operation(app, operation):
-    from utils.transform_ui import OPERATION_GROUPS
+    from utils.transform_ui import OPERATION_GROUPS, operation_menu_key
     group = next(g for g, options in OPERATION_GROUPS.items() if operation in options)
-    app.selectbox(key='tf_operation_group').select(group).run(timeout=60)
-    app.selectbox(key='tf_operation').select(operation).run(timeout=60)
+    app.selectbox(key=operation_menu_key(group)).select(operation).run(timeout=60)
     return app
 
 
@@ -81,7 +80,7 @@ class WorkspaceTests(unittest.TestCase):
             self.assertFalse(app.exception)
             self.assertEqual(app.session_state['ws_workflow'], selected)
             if selected == 'Transform':
-                self.assertTrue(app.selectbox(key='tf_operation'))
+                self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
 
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
         script = "import streamlit as st\n" + FIXTURE.replace('utils.ai_interpreter.interpret_dataset_overview', 'utils.dataset_views.interpret_dataset_overview').replace(
@@ -267,7 +266,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         app.session_state['ws_workflow'] = 'Transform'
         app.run(timeout=60)
         self.assertFalse(app.exception)
-        self.assertTrue(app.selectbox(key='tf_operation'))
+        self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
         app.session_state['ws_workflow'] = 'Inspect'
         app.run(timeout=60)
         self.assertFalse(app.exception)

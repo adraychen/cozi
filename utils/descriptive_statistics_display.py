@@ -37,7 +37,7 @@ def statistics_html(statistics):
             term = safe_label
         rows.append(f'<tr><th scope="row">{term}</th><td>{escape(str(value))}</td></tr>')
     return '''<style>
-    .ds-statistics {border:1px solid #8885; border-radius:8px; overflow:hidden;}
+    .ds-statistics {width:fit-content; max-width:min(100%, 640px); border:1px solid #8885; border-radius:8px; overflow:hidden;}
     .ds-statistics table {width:100%; border-collapse:collapse; font-size:14px; text-align:left;}
     .ds-statistics th,.ds-statistics td {padding:10px 12px; border-bottom:1px solid #8883; vertical-align:top; overflow-wrap:anywhere;}
     .ds-statistics thead th {font-weight:600;}

@@ -4,6 +4,7 @@ import io
 import uuid
 import pandas as pd
 import streamlit as st
+from utils import presentation
 
 
 def validate_frame(frame):
@@ -91,7 +92,7 @@ def render_manual_input(on_add=None):
                 try:
                     preview, detected = parse_grid(edited, header_mode)
                     st.caption('First row used as headers.' if detected else 'Generated column names; first row kept as data.')
-                    st.dataframe(preview.head(5), hide_index=True, use_container_width=True)
+                    presentation.dataframe(preview.head(5), hide_index=True, use_container_width=True)
                 except ValueError as exc:
                     st.caption(str(exc))
         else:
