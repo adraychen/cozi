@@ -21,9 +21,9 @@ def choose(label, options, key, format_func=str):
     return st.selectbox(label, options, key=key, format_func=format_func)
 
 
-def render_ttest(df, numerical, categorical):
+def render_ttest(df, numerical, categorical, guided=False):
     try:
-        _render_ttest(df, numerical, categorical)
+        _render_ttest(df, numerical, categorical, guided=guided)
     except TTestInputError as exc:
         st.info(str(exc))
     except Exception:
@@ -31,7 +31,7 @@ def render_ttest(df, numerical, categorical):
         st.error('Unable to calculate this t-test. Review the selected variables, usable sample sizes, and measurement scale.')
 
 
-def _render_ttest(df, numerical, categorical):
+def _render_ttest(df, numerical, categorical, guided=False):
     numbers = numerical_candidates(df, numerical, st.session_state.get('variable_metadata', {}))
     if not numbers:
         st.info('Select at least one quantitative Numerical variable in Comparison. Review Variable Type/Subtype in Column Overview; automatically classified identifier-like names are excluded.')
@@ -39,7 +39,12 @@ def _render_ttest(df, numerical, categorical):
     categories = [c for c in categorical if c in df and st.session_state.get('variable_metadata', {}).get(c, {}).get('variable_type', 'Categorical') == 'Categorical']
     st.markdown('##### t-Test')
     st.caption('Choose the study design explicitly. Two separate columns are not automatically paired. Use meaningful measurements; identifier-like names require a deliberate Numerical override in Column Overview.')
-    mode_label = choose('Test type', list(MODES), 'gs_tt_mode')
+    modes = list(MODES)
+    if guided:
+        modes = (['Two Independent Samples t-Test'] if categories else
+                 ['One-Sample t-Test'] if len(numbers) == 1 else
+                 ['Two Independent Samples t-Test', 'Paired Samples t-Test'])
+    mode_label = choose('Test type', modes, 'gs_tt_mode')
     mode = MODES[mode_label]
     second = group = levels = None
     null_mean = 0.

@@ -9,6 +9,25 @@ from utils.group_statistics_ui import render_group_statistics
 ANALYSES = ['One-way ANOVA', 'Segment Comparison', 'Period-over-Period Comparison', 't-Test', 'Factorial ANOVA']
 
 
+def available_comparisons(df, selected, metadata=None):
+    """Match the full selection to supported analysis roles, not a subset."""
+    n, c, t = (len(selected[k]) for k in ('numerical', 'categorical', 'datetime'))
+    quantitative = numerical_candidates(df, selected['numerical'], metadata)
+    methods = []
+    if n == 1 and c == 1 and t == 0:
+        methods.append('One-way ANOVA')
+    if n == 1 and len(quantitative) == 1 and c >= 2 and t == 0:
+        methods.append('Factorial ANOVA')
+    if n <= 1 and c >= 1 and t == 0:
+        methods.append('Segment Comparison')
+    if n <= 1 and t == 1:
+        methods.append('Period-over-Period Comparison')
+    if t == 0 and len(quantitative) == n:
+        if (n in (1, 2) and c == 0) or (n == 1 and c == 1 and df[selected['categorical'][0]].nunique(dropna=True) == 2):
+            methods.append('t-Test')
+    return methods
+
+
 def render_comparison(df, col_types):
     st.markdown('#### Comparison')
     st.caption('Compare groups or periods to identify differences in your data.')
@@ -31,18 +50,20 @@ def render_comparison(df, col_types):
             for cell, column in zip(cells, columns[start:start + 4]):
                 if cell.checkbox(column, key=f'gs_cmp_variable_{column}'):
                     selected[kind].append(column)
-    methods = []
-    if selected['numerical'] and selected['categorical']:
-        methods.append(ANALYSES[0])
-        methods.append(ANALYSES[4])
-    if selected['categorical']:
-        methods.append(ANALYSES[1])
-    if selected['datetime']:
-        methods.append(ANALYSES[2])
-    if numerical_candidates(df, selected['numerical'], st.session_state.get('variable_metadata', {})):
-        methods.append(ANALYSES[3])
+    methods = available_comparisons(df, selected, st.session_state.get('variable_metadata', {}))
+    st.caption(f"Selected: {len(selected['numerical'])} numerical · {len(selected['categorical'])} categorical · {len(selected['datetime'])} temporal. Available analyses match this selection.")
+    with st.expander('Which variables should I select?'):
+        st.markdown(
+            '- **One-way ANOVA:** one numerical response and one categorical factor.\n'
+            '- **Factorial ANOVA:** one quantitative numerical response and two or more categorical factors.\n'
+            '- **t-Test:** one quantitative numerical variable for a one-sample test; one numerical variable and one categorical variable with exactly two observed groups for an independent-samples test; or two numerical variables for separate samples or paired measurements. Choose the study design explicitly.\n'
+            '- **Segment Comparison:** one or more categorical variables, with zero or one numerical measure. Without a measure, compare row counts.\n'
+            '- **Period-over-Period Comparison:** exactly one temporal variable, zero or one numerical measure, and optional categorical segments.\n\n'
+            'Select temporal variables only for period comparisons. Eligibility does not establish that statistical assumptions are met; each analysis performs further validation. Identifier-like variables are excluded from quantitative t-test and factorial response choices unless explicitly classified as Numerical.'
+        )
     if not methods:
-        st.info('Select numerical and categorical variables for ANOVA, a quantitative numerical variable for t-Test, categorical variables for segment comparison, or a Temporal variable for period comparison. Comparisons can use row counts without a numerical measure.')
+        st.session_state.pop('gs_cmp_analysis', None)
+        st.info('No comparison matches the full selection. Select numerical and categorical variables according to the guide above. For ANOVA, keep exactly one numerical response; for a two-column t-test, keep two numerical variables and no categorical or temporal variables.')
         return
     if st.session_state.get('gs_cmp_analysis') == 'Group Comparison (ANOVA)':
         st.session_state['gs_cmp_analysis'] = 'One-way ANOVA'
@@ -51,8 +72,16 @@ def render_comparison(df, col_types):
     st.markdown('##### Comparison analysis')
     analysis = st.selectbox('Analysis method', methods, key='gs_cmp_analysis')
     col_types = selected
+    context = (st.session_state.get('file_id'), tuple(selected['numerical']),
+               tuple(selected['categorical']), tuple(selected['datetime']))
+    if st.session_state.get('gs_cmp_selection_context') != context:
+        st.session_state['gs_cmp_selection_context'] = context
+        st.session_state['fac_x'] = selected['categorical'][:]
+        for prefix in ('gs_cmp_segment', 'gs_cmp_period'):
+            st.session_state[prefix + '_dimensions'] = selected['categorical'][:]
+            st.session_state[prefix + '_measure_optional'] = selected['numerical'][0] if len(selected['numerical']) == 1 else None
     if analysis == 't-Test':
-        render_ttest(df, col_types['numerical'], col_types['categorical'])
+        render_ttest(df, col_types['numerical'], col_types['categorical'], guided=True)
     elif analysis == 'Factorial ANOVA':
         render_factorial_anova(df, col_types['numerical'], col_types['categorical'])
     elif analysis=='One-way ANOVA':

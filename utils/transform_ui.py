@@ -45,7 +45,7 @@ def render_transform(dataset_id, registry):
         st.subheader('Pending changes')
         for index, step in enumerate(draft['steps'], 1):
             st.write(f"{index}. {step['operation']}" + (f" — {step['column'] if step['column'] != 0 else 'All columns'}" if 'column' in step else ''))
-        st.caption('These changes are retained while you configure the next operation. Create a dataset when you are finished.')
+        st.caption('These changes are retained while you configure the next operation. Create dataset saves the applied changes listed here.')
         with st.expander('Preview accumulated changes'):
             st.dataframe(frame.head(100), width='stretch')
         draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
@@ -316,16 +316,12 @@ def render_transform(dataset_id, registry):
             st.session_state['tf_draft_name'] = output_name
             st.session_state['tf_operation'] = operation
             st.rerun()
-        name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
-        st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
-        if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
-            add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
-                        operation={'steps': steps} if draft else config)
-            st.rerun()
-    elif draft:
-        st.divider()
-        st.success(f"{len(draft['steps'])} applied change(s) ready to save.")
-        st.caption(f'Create dataset saves the applied changes as “{draft_name}”. Preview the current settings first if you want to include another change.')
-        if st.button('Create dataset', key='tf_draft_finish', type='primary', disabled=not draft_name.strip()):
-            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
-            st.rerun()
+        if draft:
+            st.caption('To include this preview, choose Apply and continue, then Create dataset under Pending changes above.')
+        else:
+            name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
+            st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
+            if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
+                add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
+                            operation={'steps': steps} if draft else config)
+                st.rerun()

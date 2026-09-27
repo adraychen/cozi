@@ -6,6 +6,7 @@ import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from utils.regression_design import specification, design, dependencies, label
 from utils.regression_statistics import summarize
+from utils.regression_estimability import explain_singularity
 
 
 def near_perfect(model):
@@ -33,7 +34,7 @@ def regression(df, target, predictors, categorical=None, interactions=(), degree
         if len(clean) <= x.shape[1]:
             raise ValueError(f'More than {x.shape[1]} complete rows are required for this model, including all generated coefficients.')
         if np.linalg.matrix_rank(x) < x.shape[1]:
-            raise ValueError('Predictors or generated terms are constant, perfectly collinear, or numerically singular. Remove redundant terms or rescale predictors.')
+            raise explain_singularity(x, names, indices, active)
         model = sm.OLS(clean[target].to_numpy(dtype=float), x).fit()
         if not np.isfinite(model.params).all() or not np.isfinite(model.resid).all():
             raise ValueError('Model calculations are nonfinite. Rescale the numeric variables and retry.')

@@ -2,6 +2,47 @@ import unittest
 from streamlit.testing.v1 import AppTest
 
 class ComparisonUITests(unittest.TestCase):
+    def test_selection_drives_eligibility(self):
+        import pandas as pd
+        from utils.comparison_ui import available_comparisons
+        df = pd.DataFrame({'y':[1.,2,3,4], 'z':[2.,4,6,8], 'w':[3.,5,7,9],
+                           'a':['A','A','B','B'], 'b':['A','B','C','C'], 'c':['X','Y','X','Y'],
+                           'date':pd.date_range('2024-01-01', periods=4)})
+        cases = [
+            (['y','z','w'], ['a','b','c'], [], []),
+            (['y'], ['a','b','c'], [], ['Factorial ANOVA','Segment Comparison']),
+            (['y'], ['a'], [], ['One-way ANOVA','Segment Comparison','t-Test']),
+            (['y'], ['b'], [], ['One-way ANOVA','Segment Comparison']),
+            (['y','z'], [], [], ['t-Test']),
+            (['y'], [], [], ['t-Test']),
+            ([], ['a','b'], [], ['Segment Comparison']),
+            (['y'], ['a'], ['date'], ['Period-over-Period Comparison']),
+            (['y','z'], ['a'], [], []),
+        ]
+        for numerical, categorical, temporal, expected in cases:
+            with self.subTest(numerical=numerical, categorical=categorical, temporal=temporal):
+                self.assertEqual(available_comparisons(df, dict(numerical=numerical, categorical=categorical, datetime=temporal)), expected)
+
+    def test_excess_selection_guidance_and_recovery(self):
+        app = AppTest.from_string('''
+from tests.test_factorial_anova import fixture
+from utils.comparison_ui import render_comparison
+df = fixture()
+df['Z'] = df.Y + 1
+df['W'] = df.Y + 2
+render_comparison(df, {'numerical':['Y','Z','W'], 'categorical':['A','B','D'], 'datetime':[]})
+''').run(timeout=30)
+        app.button(key='gs_cmp_all_numerical').click().run()
+        app.button(key='gs_cmp_all_categorical').click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(any(s.key == 'gs_cmp_analysis' for s in app.selectbox))
+        self.assertTrue(any('No comparison matches' in m.value for m in app.info))
+        app.checkbox(key='gs_cmp_variable_Z').uncheck().run()
+        app.checkbox(key='gs_cmp_variable_W').uncheck().run()
+        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Factorial ANOVA','Segment Comparison'])
+        self.assertEqual(app.multiselect(key='fac_x').value, ['A','B','D'])
+        self.assertFalse(app.exception)
+
     def test_three_analyses_and_independent_controls(self):
         app=AppTest.from_string('''
 import pandas as pd
@@ -21,9 +62,9 @@ with c: render_comparison(df,types)
         self.assertEqual(app.selectbox(key='gs_analysis').options,['Group Summary','Running & Cumulative Statistics','Rolling Averages','Contribution to Total'])
         self.assertFalse(any('ANOVA' in option for option in app.selectbox(key='rel_method').options))
         self.assertFalse(any(x.key == 'gs_cmp_analysis' for x in app.selectbox))
-        for kind in ['numerical', 'categorical', 'datetime']:
+        for kind in ['numerical', 'categorical']:
             app.button(key='gs_cmp_all_' + kind).click().run(timeout=40)
-        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options,['One-way ANOVA','Factorial ANOVA','Segment Comparison','Period-over-Period Comparison','t-Test'])
+        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options,['One-way ANOVA','Segment Comparison','t-Test'])
         app.selectbox(key='gs_cmp_analysis').select('Segment Comparison').run(timeout=40)
         app.multiselect(key='gs_cmp_segment_dimensions').set_value(['g']).run(timeout=40)
         app.selectbox(key='gs_cmp_segment_measure_optional').select('v').run(timeout=40)
@@ -31,9 +72,11 @@ with c: render_comparison(df,types)
         self.assertFalse(app.checkbox(key='gs_dimensions_column_g').value)
         self.assertFalse(app.checkbox(key='gs_measure_column_v').value)
         self.assertTrue(any('Difference %' in table.value.columns for table in app.dataframe))
-        app.selectbox(key='gs_cmp_analysis').select('Period-over-Period Comparison').run(timeout=40)
+        app.button(key='gs_cmp_all_datetime').click().run(timeout=40)
+        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Period-over-Period Comparison'])
         self.assertFalse(app.exception)
         self.assertTrue(any('Previous' in table.value.columns for table in app.dataframe))
+        app.button(key='gs_cmp_clear_datetime').click().run(timeout=40)
         app.selectbox(key='gs_cmp_analysis').select('One-way ANOVA').run(timeout=40)
         app.checkbox(key='rel_anova_independent').check().run(timeout=40)
         self.assertFalse(app.exception)
@@ -41,8 +84,9 @@ with c: render_comparison(df,types)
         self.assertEqual([t.label for t in app.tabs][-5:], ['Model Overview', 'Group Analysis', 'Diagnostics', 'Visual Analysis', 'ANOVA Findings'])
         app.button(key='gs_cmp_clear_numerical').click().run(timeout=40)
         self.assertFalse(app.exception)
-        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Segment Comparison', 'Period-over-Period Comparison'])
+        self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Segment Comparison'])
         self.assertEqual(app.selectbox(key='gs_cmp_segment_measure_optional').options, ['None (categorical data / row counts)'])
+        app.button(key='gs_cmp_all_datetime').click().run(timeout=40)
         app.button(key='gs_cmp_clear_categorical').click().run(timeout=40)
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Period-over-Period Comparison'])

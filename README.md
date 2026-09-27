@@ -238,6 +238,8 @@ Calculations live in `utils/group_statistics.py`; Streamlit rendering lives in `
 
 ### Comparison
 
+The analysis menu matches the full checked-variable selection. One-way ANOVA requires one numerical response and one categorical factor; Factorial ANOVA requires one quantitative numerical response and at least two factors. Segment Comparison accepts categorical variables and at most one numerical measure. Period comparison requires exactly one temporal variable and at most one numerical measure, with optional categorical segments. Temporal selections exclude non-period analyses. t-Test accepts one quantitative numerical variable alone, two quantitative numerical variables alone, or one quantitative numerical variable plus one categorical variable with exactly two observed groups. Its test-type menu follows that selection while leaving the choice between independent and paired samples explicit. Unsupported selections show guidance instead of analyses that would silently use a subset of the variables.
+
 The **Comparison** tab sits immediately after **Relationship** and contains:
 
 - **t-Test:** one-sample, independent samples (stacked or separate columns), and paired samples. Welch is the independent-sample default; pooled Student is optional. Directional hypotheses, confidence intervals, effect sizes, graphical diagnostics and CSV exports are included. See [TTEST.md](TTEST.md).

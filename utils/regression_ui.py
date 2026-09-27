@@ -10,6 +10,7 @@ from utils.regression_plots import actual_fitted, fitted_curve, coefficient_plot
 from utils.regression_validation_ui import render_validation
 from utils.regression_effect_plots import render_effect_plots
 from utils.regression_controls import render_checkbox_specification, render_term_checkboxes
+from utils.regression_estimability import RegressionDesignError
 
 
 def fit_cached(df, target, predictors, categorical, interactions, degrees, elimination, threshold):
@@ -44,6 +45,13 @@ def render_regression(df, numerical, categorical, selection=None):
     try:
         key, result = fit_cached(df,target,predictors,cats,interactions,degrees,mode!='No elimination',threshold)
         render_results(result,key)
+    except RegressionDesignError as exc:
+        st.error(f'Cannot fit this regression: {exc}')
+        st.write(f'{exc.n} complete observations · {exc.coefficients} generated coefficients (including intercept) · {exc.rank} independently estimable columns after scaling.')
+        st.markdown('**How to resolve this**')
+        st.dataframe(pd.DataFrame(exc.details), hide_index=True, width='stretch')
+        st.caption('Suggestions depend on the selected terms and complete cases. They are one possible simplification, not proof that a predictor is unimportant. No terms have been removed automatically. Removing predictors can change which rows are complete; the model is checked again after each change.')
+        st.info('Start by unchecking the listed interactions or polynomial terms. If predictors are listed, choose which overlapping predictor to retain based on your analysis question. Backward elimination cannot start until the initial model can be fitted; changing its p-value threshold will not resolve this problem.')
     except (ValueError, TypeError, KeyError, np.linalg.LinAlgError, FloatingPointError) as exc:
         st.error(f'Cannot fit this regression: {exc}')
 

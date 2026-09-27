@@ -33,7 +33,7 @@ def render_factorial_anova(df, numerical, categorical):
     _prune('fac_x', categorical, True)
     outcome = st.selectbox('Response (Y)', numerical, key='fac_y')
     if 'fac_x' not in st.session_state:
-        st.session_state['fac_x'] = categorical[:2]
+        st.session_state['fac_x'] = categorical[:]
     factors = st.multiselect('Factors (X)', categorical, key='fac_x')
     if len(factors) < 2:
         st.info('Choose at least two categorical factors.')
