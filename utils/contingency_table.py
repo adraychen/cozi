@@ -7,9 +7,9 @@ def contingency_table_html(result, row_name, column_name):
     label = lambda value: escape(str(value), quote=True)
     total_label = 'All (total)' if 'All' in observed.index or 'All' in observed.columns else 'All'
     parts = ['''<style>
-    .ct-report {overflow-x:auto; padding:8px 0 16px;}
+    .ct-report {width:fit-content; max-width:100%; overflow-x:auto; padding:8px 0 16px;}
     .ct-report h4 {color:#0077b6; margin:0 0 18px;}
-    .ct-report table {border-collapse:collapse; width:auto; font-variant-numeric:tabular-nums;}
+    .ct-report table {border-collapse:collapse; width:max-content; font-variant-numeric:tabular-nums;}
     .ct-report th,.ct-report td {border:0; padding:8px 18px; text-align:right; vertical-align:top; white-space:nowrap;}
     .ct-report thead {border-bottom:2px solid currentColor;}
     .ct-report th:first-child {text-align:left;}

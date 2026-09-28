@@ -6,7 +6,7 @@ function equal(actual: unknown, expected: unknown) {
 const id = '10000000-0000-4000-8000-000000000001';
 const secret = 'offline-test-webhook-secret-32-characters';
 const record: EnquiryRecord = {id,created_at:'2026-09-28T12:00:00Z',name:'Example Person',work_email:'person@example.org',organization:'Example Org',deployment_interest:'AWS'};
-function request(body: unknown = {type:'INSERT',schema:'public',table:'enterprise_enquiries',record:{id,name:'Untrusted content'}}, token = secret) {
+function request(body: unknown = {type:'INSERT',schema:'public',table:'data_analytics_enterprise_enquiries',record:{id,name:'Untrusted content'}}, token = secret) {
   return new Request('https://example.invalid/webhook',{method:'POST',headers:{'X-Cozy-Webhook-Secret':token},body:JSON.stringify(body)});
 }
 class Store implements NotificationStore {
@@ -28,7 +28,7 @@ Deno.test('authentication and event validation prevent email and database access
   const handler = createHandler({secret,store,email:{send:async()=>{emails++;return 'receipt';}}});
   equal((await handler(request(undefined,'wrong'))).status,401);
   equal((await handler(request({type:'UPDATE'}))).status,400);
-  equal((await handler(request({type:'INSERT',schema:'public',table:'enterprise_enquiries',record:{id:'invalid'}}))).status,400);
+  equal((await handler(request({type:'INSERT',schema:'public',table:'data_analytics_enterprise_enquiries',record:{id:'invalid'}}))).status,400);
   equal((await handler(new Request('https://example.invalid'))).status,405);
   equal(store.calls,0); equal(emails,0);
 });

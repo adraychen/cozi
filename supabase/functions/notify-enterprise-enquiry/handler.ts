@@ -61,7 +61,7 @@ export function createHandler(dependencies: {
       const body = await request.text();
       if (body.length > 32768) return response(413,'payload_too_large');
       const payload = JSON.parse(body);
-      if (payload.type !== 'INSERT' || payload.schema !== 'public' || payload.table !== 'enterprise_enquiries'
+      if (payload.type !== 'INSERT' || payload.schema !== 'public' || payload.table !== 'data_analytics_enterprise_enquiries'
           || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.record?.id || ''))
         return response(400,'invalid_event');
       id = payload.record.id;

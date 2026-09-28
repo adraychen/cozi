@@ -1,5 +1,6 @@
 import streamlit as st
 from utils.database import record_visit, get_stats, submit_feedback
+from utils.branding import render_brand
 from utils.enterprise_ui import (enterprise_requested, preserve_page_state,
                                  render_enterprise_page, render_footer)
 
@@ -90,7 +91,7 @@ def _show_feedback(section: str, key: str) -> None:
 st.set_page_config(page_title="Cozy — Community Edition", page_icon="📊", layout="wide")
 preserve_page_state()
 if enterprise_requested():
-    st.set_page_config(page_title="Cozy Enterprise")
+    st.set_page_config(page_title="Cozy — Enterprise Edition")
     render_enterprise_page()
     st.stop()
 
@@ -106,21 +107,7 @@ except Exception:
     _b2.metric("👍 Likes",        "—")
     _b3.metric("👎 Dislikes",     "—")
 
-st.html("""
-<style>
-    .cozy-brand { margin: 0.5rem 0 1rem; }
-    .cozy-brand-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-    .cozy-brand-heading h1 { color: #A65F46; margin: 0; padding: 0; font-size: 2.75rem; font-weight: 750; line-height: 1.2; }
-    .cozy-edition { display: inline-block; padding: 0.3rem 0.75rem; border-radius: 999px;
-                    background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc;
-                    font-size: 0.8rem; font-weight: 650; letter-spacing: 0.025em; }
-    .cozy-subtitle { margin: 0.4rem 0 0; font-size: 1.1rem; font-style: italic; }
-</style>
-<header class="cozy-brand">
-    <div class="cozy-brand-heading"><h1>Cozy</h1><span class="cozy-edition">Community Edition</span></div>
-    <p class="cozy-subtitle">Automated Data Analytics</p>
-</header>
-""")
+render_brand()
 st.caption(
     "Upload or input your data and analyze it through a broad range of guided analytical workflows and visualizations. "
     "Designed to make data analysis more accessible, structured, and efficient."

@@ -3,6 +3,7 @@ from html import escape
 
 import streamlit as st
 
+from utils.branding import render_brand
 from utils.enterprise_enquiries import DEPLOYMENTS, USER_COUNTS, get_enquiry_store, submit_enquiry
 
 
@@ -77,16 +78,13 @@ def render_enquiry_form():
 def render_enterprise_page():
     st.button('← Back to Cozy Community', key='enterprise_back', type='tertiary',
               on_click=navigate, args=('community',))
+    render_brand(enterprise=True)
     st.html('''<style>
-    .enterprise-brand {margin:0.5rem 0 1.5rem;}
-    .enterprise-brand h1 {color:#285D63; margin:0; padding:0; font-size:2.75rem; font-weight:750; line-height:1.2;}
-    .enterprise-brand p {margin:0.65rem 0 0; font-size:1.25rem;}
     .enterprise-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:1rem; margin:0.5rem 0 2rem;}
     .enterprise-card {border:1px solid #8884; border-radius:8px; padding:1.25rem; min-width:0; overflow-wrap:anywhere;}
     .enterprise-card h3 {font-size:1.05rem; line-height:1.45; margin:0 0 0.65rem; padding:0;}
     .enterprise-card p {margin:0; line-height:1.65;}
-    </style><header class="enterprise-brand"><h1>Cozy Enterprise</h1>
-    <p>Analytics designed around your organization.</p></header>''')
+    </style>''')
     st.write("Cozy Enterprise brings Cozy's guided analytics platform into your organization's own environment, with customized analytical capabilities designed around your data, workflows, and analytical needs.")
     st.write('Deploy on Azure, AWS, Google Cloud, or on-premises while maintaining greater control over your data and infrastructure.')
     st.header('Deployment options')

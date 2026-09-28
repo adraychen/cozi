@@ -60,7 +60,7 @@ class FillMissingUITests(unittest.TestCase):
         select_operation(app, 'Aggregate')
         self.assertIsNone(app.selectbox(key='tf_menu_combine_datasets').value)
         self.assertEqual(app.selectbox(key='tf_menu_restructure_data').options,
-                         ['Choose operation…', 'Aggregate — Group rows and calculate summaries', 'Pivot — Turn values into columns', 'Unpivot — Turn columns into rows'])
+                         ['Choose operation…', 'Aggregate', 'Pivot', 'Unpivot'])
         select_operation(app,'Fill missing values')
         self.assertEqual(app.selectbox(key='tf_fill_type').options,['Number'])
         app.text_input(key='tf_fill_value_Number').set_value('1.5')

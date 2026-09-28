@@ -7,7 +7,7 @@ from utils.charts import make_histogram_boxplot
 from utils.temporal import temporal_value
 
 
-def render_noncalendar_temporal(series, subtype, key_prefix):
+def render_noncalendar_temporal(series, subtype, key_prefix, *, interactive_summary=False):
     clean = series.dropna()
     if subtype in ('Year', 'Month', 'Year-Month'):
         st.caption('Year: a calendar year, without a month or day.' if subtype == 'Year' else
@@ -33,5 +33,9 @@ def render_noncalendar_temporal(series, subtype, key_prefix):
         fig = make_histogram_boxplot(seconds)
         fig.update_xaxes(title_text='Seconds since midnight' if subtype == 'Time' else 'Elapsed seconds', row=2, col=1)
         presentation.plotly_chart(fig, use_container_width=True, key=key_prefix+'_distribution')
-    presentation.table(pd.DataFrame(rows,columns=['Statistic','Value']))
+    summary = pd.DataFrame(rows, columns=['Statistic', 'Value'])
+    if interactive_summary:
+        presentation.dataframe(summary, hide_index=True, use_container_width=True)
+    else:
+        presentation.table(summary)
     st.caption('Calendar-based trends and period comparisons require Date or DateTime.')

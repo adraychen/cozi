@@ -11,17 +11,22 @@ from utils import presentation
 
 
 class PresentationTests(unittest.TestCase):
-    def test_tables_account_for_columns_text_styles_and_hidden_columns(self):
-        small = pd.DataFrame({'Level': ['A','B'], 'Mean': [1.2,3.4]})
-        wide = pd.DataFrame({f'Measure {i}': [1,2] for i in range(6)})
-        prose = pd.DataFrame({'Check': ['Independence'], 'Explanation': ['Study design and repeated observations need review. '*4]})
-        compact = presentation.table_width(small, hide_index=True)
-        self.assertLess(compact, presentation.table_width(wide, hide_index=True))
-        self.assertLess(compact, presentation.table_width(prose, hide_index=True))
-        self.assertEqual(compact, presentation.table_width(small.style.format(precision=2), hide_index=True))
-        self.assertEqual(compact, presentation.table_width(wide, hide_index=True, column_order=['Measure 0','Measure 1']))
-        self.assertLess(presentation.table_width(wide,column_config={'Measure 0':None}), presentation.table_width(wide))
-        self.assertLessEqual(presentation.table_width(pd.DataFrame(np.ones((10,200)))),1200)
+    def test_tables_fit_content_without_fixed_width_caps_or_column_squeezing(self):
+        for count in (2, 16, 200):
+            frame = pd.DataFrame({f'Column {i}': ['Long content ' * 20] for i in range(count)})
+            config = {'Column 0': {'width': 80, 'help': 'Keep this help'}, 'Column 1': None}
+            with patch.object(presentation.st, 'dataframe') as renderer:
+                presentation.dataframe(frame, width=1200, column_config=config)
+                self.assertEqual(renderer.call_args.kwargs['width'], 'content')
+                actual = renderer.call_args.kwargs['column_config']
+                self.assertIsNone(actual['Column 0']['width'])
+                self.assertEqual(actual['Column 0']['help'], 'Keep this help')
+                self.assertIsNone(actual['Column 1'])
+                self.assertEqual(config['Column 0']['width'], 80)
+        with patch.object(presentation.st, 'dataframe') as renderer:
+            presentation.table(frame)
+            self.assertEqual(renderer.call_args.kwargs['width'], 'content')
+            self.assertTrue(renderer.call_args.kwargs['hide_index'])
 
     def test_charts_size_by_structure_not_scatter_sample_count(self):
         simple = px.bar(x=['A','B'], y=[1,2])
@@ -46,7 +51,7 @@ class PresentationTests(unittest.TestCase):
             presentation.dataframe(styled,hide_index=True,key='table',use_container_width=True,height=300)
             self.assertIs(renderer.call_args.args[0],styled)
             self.assertEqual(renderer.call_args.kwargs['key'],'table')
-            self.assertIsInstance(renderer.call_args.kwargs['width'],int)
+            self.assertEqual(renderer.call_args.kwargs['width'],'content')
             self.assertNotIn('use_container_width',renderer.call_args.kwargs)
             self.assertLess(renderer.call_args.kwargs['height'],300)
         figure=px.bar(frame,x='a',y='b')

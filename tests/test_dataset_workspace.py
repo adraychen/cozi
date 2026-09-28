@@ -188,7 +188,7 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         self.assertTrue(any(t.label == '＋ Add datasets' for t in app.tabs))
         self.add_manual(app, 'Sales', 'id,amount\n1,20\n2,30')
         self.assertEqual(len(app.session_state['ws_datasets']), 1)
-        self.assertEqual([e.label for e in app.expander][:3], ['Dataset Preview', 'Column Overview', 'Edit variable classification'])
+        self.assertEqual([e.label for e in app.expander][:4], ['Dataset Preview', 'Column Overview', 'ⓘ Unique value details', 'Edit variable classification'])
         app.selectbox(key='vm_column').select('id').run(timeout=60)
         app.selectbox(key='vm_0_0_type').select('Categorical').run(timeout=60)
         app.button(key='vm_apply').click().run(timeout=60)

@@ -13,7 +13,7 @@ test('migration, least privilege, idempotent submission and notification lifecyc
     await db.exec(`create table public.test_insert_events (id uuid);
       create function public.test_capture_insert() returns trigger language plpgsql security definer set search_path='' as $$
       begin insert into public.test_insert_events values (new.id); return new; end $$;
-      create trigger test_insert after insert on public.enterprise_enquiries for each row execute function public.test_capture_insert();`);
+      create trigger test_insert after insert on public.data_analytics_enterprise_enquiries for each row execute function public.test_capture_insert();`);
     const query = async (sql, params=[]) => (await db.query(sql,params)).rows;
     const asRole = async (role, fn) => {
       await db.exec(`set role ${role}`);
@@ -23,11 +23,11 @@ test('migration, least privilege, idempotent submission and notification lifecyc
     const values = [randomUUID(),'Test Person','test@example.org','Test Organization','AWS',null,null,null];
     let id;
     await t.test('RLS is enabled without public policies; public CRUD and RPC access denied', async () => {
-      assert.equal((await query("select relrowsecurity from pg_class where oid='public.enterprise_enquiries'::regclass"))[0].relrowsecurity,true);
-      assert.equal((await query("select * from pg_policies where tablename='enterprise_enquiries'")).length,0);
+      assert.equal((await query("select relrowsecurity from pg_class where oid='public.data_analytics_enterprise_enquiries'::regclass"))[0].relrowsecurity,true);
+      assert.equal((await query("select * from pg_policies where tablename='data_analytics_enterprise_enquiries'")).length,0);
       for (const role of ['anon','authenticated','cozy_enquiry_submitter','service_role']) {
         await asRole(role, async()=>{
-          for (const sql of ['select * from public.enterprise_enquiries',"update public.enterprise_enquiries set status='closed'",'delete from public.enterprise_enquiries','insert into public.enterprise_enquiries default values']) {
+          for (const sql of ['select * from public.data_analytics_enterprise_enquiries',"update public.data_analytics_enterprise_enquiries set status='closed'",'delete from public.data_analytics_enterprise_enquiries','insert into public.data_analytics_enterprise_enquiries default values']) {
             await assert.rejects(query(sql),{code:'42501'});
           }
           if (role!=='cozy_enquiry_submitter') await assert.rejects(query(submitSql,values),{code:'42501'});
@@ -42,7 +42,7 @@ test('migration, least privilege, idempotent submission and notification lifecyc
         const changed=[...values]; changed[1]='Changed';
         await assert.rejects(query(submitSql,changed),{code:'22023'});
       });
-      const rows=await query('select * from public.enterprise_enquiries');
+      const rows=await query('select * from public.data_analytics_enterprise_enquiries');
       assert.equal(rows.length,1); assert.equal(rows[0].notification_status,'pending');
       assert.equal(rows[0].status,'new'); assert.equal(rows[0].job_title,null);
       assert.deepEqual(await query('select * from public.test_insert_events'),[{id}]);
@@ -61,7 +61,7 @@ test('migration, least privilege, idempotent submission and notification lifecyc
         assert.equal((await query('select public.finish_enterprise_notification($1,$2,false) as done',[id,randomUUID()]))[0].done,false);
         assert.equal((await query('select public.finish_enterprise_notification($1,$2,false) as done',[id,attempt]))[0].done,true);
       });
-      assert.equal((await query('select notification_status from public.enterprise_enquiries where id=$1',[id]))[0].notification_status,'failed');
+      assert.equal((await query('select notification_status from public.data_analytics_enterprise_enquiries where id=$1',[id]))[0].notification_status,'failed');
       await asRole('service_role',async()=>{
         const attempt=randomUUID();
         assert.equal((await query('select * from public.claim_enterprise_notification($1,$2)',[id,attempt])).length,1);
@@ -69,7 +69,7 @@ test('migration, least privilege, idempotent submission and notification lifecyc
         assert.equal((await query('select public.finish_enterprise_notification($1,$2,true,$3) as done',[id,attempt,'test-provider-receipt']))[0].done,true);
         assert.equal((await query('select * from public.claim_enterprise_notification($1,$2)',[id,randomUUID()])).length,0);
       });
-      const saved=(await query('select * from public.enterprise_enquiries where id=$1',[id]))[0];
+      const saved=(await query('select * from public.data_analytics_enterprise_enquiries where id=$1',[id]))[0];
       assert.equal(saved.notification_status,'sent');assert.ok(saved.notification_sent_at);
       assert.equal(saved.name,values[1]);assert.equal(saved.notification_provider_id,'test-provider-receipt');
     });
@@ -78,14 +78,14 @@ test('migration, least privilege, idempotent submission and notification lifecyc
       const next=(await asRole('cozy_enquiry_submitter',()=>query(submitSql,second)))[0].id;
       const oldAttempt=randomUUID();
       await asRole('service_role',()=>query('select * from public.claim_enterprise_notification($1,$2)',[next,oldAttempt]));
-      await query("update public.enterprise_enquiries set notification_claimed_at=now()-interval '6 minutes' where id=$1",[next]);
+      await query("update public.data_analytics_enterprise_enquiries set notification_claimed_at=now()-interval '6 minutes' where id=$1",[next]);
       await asRole('service_role',async()=>{
         assert.equal((await query('select * from public.claim_enterprise_notification($1,$2)',[next,randomUUID()])).length,1);
         assert.equal((await query('select public.finish_enterprise_notification($1,$2,true,$3) as done',[next,oldAttempt,'stale']))[0].done,false);
       });
-      await query("update public.enterprise_enquiries set notification_started_at=now()-interval '23 hours' where id=$1",[next]);
+      await query("update public.data_analytics_enterprise_enquiries set notification_started_at=now()-interval '23 hours' where id=$1",[next]);
       await asRole('service_role',async()=>assert.equal((await query('select * from public.claim_enterprise_notification($1,$2)',[next,randomUUID()])).length,0));
-      assert.equal((await query('select notification_status from public.enterprise_enquiries where id=$1',[next]))[0].notification_status,'manual_review');
+      assert.equal((await query('select notification_status from public.data_analytics_enterprise_enquiries where id=$1',[next]))[0].notification_status,'manual_review');
     });
   } finally { await db.close(); }
 });

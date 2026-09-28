@@ -84,7 +84,7 @@ def render_results(r,key):
     with tabs[0]:
         st.markdown('**Model summary**')
         summary=[('Response / Dependent Variable',str(spec['target'])),('Modeled event',repr(r['event'])),('Non-event',repr(r['non_event'])),('Predictors / Independent Variables',', '.join(map(str,spec['predictors']))),('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),('Excluded missing/nonfinite rows',str(r['excluded'])),('Percentage excluded',f"{100*r['excluded']/r['original_n']:.1f}%"),('Events',str(r['events'])),('Non-events',str(r['non_events'])),('Estimated parameters (including intercept)',str(r['k'])),('Confidence level',f'{confidence:g}%'),('Model-building method','Backward elimination — AIC' if r['elimination'] else 'No elimination')]
-        presentation.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        presentation.dataframe(pd.DataFrame(summary,columns=['Model detail','Value']))
         st.markdown('**Fitted logistic regression equation**')
         eta=f'{model.params[0]:.5g}'+''.join(f' {b:+.5g} × {name}' for name,b in zip(r['names'][1:],model.params[1:]))
         st.write('log(p / (1 − p)) = '+eta)
@@ -92,11 +92,11 @@ def render_results(r,key):
         st.caption('p is the probability of '+event+'. Category contrasts represent indicators (1 for that category, 0 otherwise). Interactions and polynomial terms describe conditional associations on the log-odds scale.')
         st.markdown('**Model performance**')
         stats=[('Log likelihood',r['log_likelihood']),('Deviance',r['deviance']),('AIC',r['aic']),('BIC (log-likelihood definition)',r['bic']),('McFadden Pseudo-R²',r['pseudo_r2']),('Likelihood-ratio χ²',r['lr']),('Likelihood-ratio degrees of freedom',r['lr_df']),('Likelihood-ratio p-value',p_text(r['lr_p'])),('Brier score (in-sample)',r['brier'])]
-        presentation.table(pd.DataFrame([(name,f'{v:.5g}' if isinstance(v,(float,np.floating)) else str(v)) for name,v in stats],columns=['Measure','Value']))
+        presentation.dataframe(pd.DataFrame([(name,f'{v:.5g}' if isinstance(v,(float,np.floating)) else str(v)) for name,v in stats],columns=['Measure','Value']))
         st.caption('The LR test compares with an intercept-only model on the same rows. McFadden Pseudo-R² is not percentage of variance explained and is not directly comparable with ordinary R². All fit/calibration measures describe these analysis observations; significance does not establish practical importance.')
-        st.markdown('**Selected terms**');presentation.table(selected_terms_table(r))
+        st.markdown('**Selected terms**');presentation.dataframe(selected_terms_table(r))
         if spec['categorical']:
-            presentation.table(pd.DataFrame([{'Predictor':c,'Reference category':repr(spec['levels'][c][0]),'Observed levels':len(spec['levels'][c])} for c in spec['categorical']]))
+            presentation.dataframe(pd.DataFrame([{'Predictor':c,'Reference category':repr(spec['levels'][c][0]),'Observed levels':len(spec['levels'][c])} for c in spec['categorical']]))
         with st.expander('Elimination history'):
             if r['history'].empty: st.write('No terms were removed.')
             else: presentation.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
@@ -110,7 +110,7 @@ def render_results(r,key):
         st.download_button('Download logistic coefficients (CSV)',r['coefficients'].to_csv(index=False),'logistic_coefficients.csv',key='rel_log_coeff_download')
     with tabs[2]:
         st.write('Convergence: achieved. '+r['separation']+'.')
-        presentation.table(pd.DataFrame({'Measure':['Events','Non-events','Parameters including intercept','Smaller outcome count per parameter'],'Value':[r['events'],r['non_events'],r['k'],min(r['events'],r['non_events'])/r['k']]}))
+        presentation.dataframe(pd.DataFrame({'Measure':['Events','Non-events','Parameters including intercept','Smaller outcome count per parameter'],'Value':[r['events'],r['non_events'],r['k'],min(r['events'],r['non_events'])/r['k']]}))
         st.caption('Limited outcome information triggers a review warning, not a hard events-per-variable rule. Independence depends on study design; repeated or clustered observations require a suitable method.')
         st.markdown('**Linearity of the logit**')
         if r['linearity'].empty: st.info('No retained Continuous predictor requires a separate logit-linearity check.')

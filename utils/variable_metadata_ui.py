@@ -2,14 +2,14 @@
 import pandas as pd
 import streamlit as st
 from utils import presentation
-from utils.variable_overview_display import overview_html
+from utils.variable_overview_display import render_overview
 from utils.variable_metadata import ALLOWED, ensure_metadata, infer_variable_subtype, category_order, apply_user_override, effective_data
 
 
 def render_column_overview(raw, dataset_id):
     metadata=ensure_metadata(st.session_state,raw,dataset_id)
     st.caption('Variable Type defines whether a variable is treated analytically as numerical, categorical, or temporal. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
-    st.html(overview_html(raw,metadata))
+    render_overview(raw, metadata)
     st.caption('A = Automatic classification  M = Manual Override')
     with st.expander('Edit variable classification',expanded=False):
         col=st.selectbox('Column to edit',list(raw),key='vm_column')

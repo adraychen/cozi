@@ -68,7 +68,7 @@ def render_results(r,key):
                    ('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),
                    ('Excluded missing/nonfinite rows',str(r['excluded'])),
                    ('Model-building method','Backward elimination' if r['elimination'] else 'No elimination')]
-        presentation.table(pd.DataFrame(summary,columns=['Model detail','Value']))
+        presentation.dataframe(pd.DataFrame(summary,columns=['Model detail','Value']))
         st.markdown('**Fitted regression equation**')
         st.write(equation(r))
         st.markdown('**Model performance**')
@@ -79,15 +79,15 @@ def render_results(r,key):
         stats = [('RMSE',f"{r['rmse']:.4g}"),('MAE',f"{r['mae']:.4g}"),
                  ('Model degrees of freedom',str(r['model_df'])),('Residual degrees of freedom',str(r['residual_df'])),
                  ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
-        presentation.table(pd.DataFrame(stats,columns=['Performance measure','Value']))
+        presentation.dataframe(pd.DataFrame(stats,columns=['Performance measure','Value']))
         st.caption('Fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
         st.markdown('**Selected terms**')
-        presentation.table(selected_terms_table(r))
+        presentation.dataframe(selected_terms_table(r))
         if not r['active']:
             st.info('The final model contains the intercept only.')
         if r['coding']:
             st.markdown('**Categorical reference coding**')
-            presentation.table(pd.DataFrame(r['coding']))
+            presentation.dataframe(pd.DataFrame(r['coding']))
         st.caption('Category terms are indicators (1 for that level, otherwise 0). Main effects in interaction/polynomial models are conditional at centered zero and reference categories.')
         with st.expander('Elimination history'):
             if r['history'].empty:

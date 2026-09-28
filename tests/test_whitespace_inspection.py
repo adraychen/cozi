@@ -39,16 +39,17 @@ class WhitespaceInspectionTests(unittest.TestCase):
             app.session_state[key] = value
         app.run(timeout=60)
         self.assertFalse(app.exception)
-        rows = [m.value for m in app.markdown]
-        positions = [i for i, value in enumerate(rows) if '<b>Special Characters:</b>' in value]
-        self.assertEqual(len(positions), 2)
-        for position, expected in zip(positions, ['75.00%', '0.00%']):
-            self.assertIn('<b>Leading/Trailing Whitespace:</b>', rows[position + 1])
-            self.assertIn(expected, rows[position + 1])
-        self.assertIn('>No</span>', rows[positions[0]])
-        # Existing Inspect classification converts these columns to pandas string
-        # storage; its unchanged Special Characters logic reports No for that dtype.
-        self.assertIn('>No</span>', rows[positions[1]])
+        tables = [element.value for element in app.dataframe
+                  if list(element.value.columns) == ['Statistic', 'Value']
+                  and 'Leading/Trailing Whitespace' in element.value['Statistic'].tolist()]
+        self.assertEqual(len(tables), 2)
+        for table, expected in zip(tables, ['75.00%', '0.00%']):
+            labels = table['Statistic'].tolist()
+            self.assertEqual(labels[labels.index('Special Characters') + 1], 'Leading/Trailing Whitespace')
+            values = table.set_index('Statistic')['Value']
+            self.assertEqual(values['Leading/Trailing Whitespace'], expected)
+            # Inspect's existing conversion to string storage is unchanged.
+            self.assertEqual(values['Special Characters'], 'No')
         self.assertEqual(before['Special Characters Found'].tolist(), ['No', 'Yes'])
         pd.testing.assert_frame_equal(app.session_state['ws_datasets'][source_id]['frame'], original)
         pd.testing.assert_frame_equal(check_categorical_quality(frame, list(frame)), before)

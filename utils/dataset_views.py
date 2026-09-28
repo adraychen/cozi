@@ -89,16 +89,6 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         # ── Data Quality Summary ──────────────────────────────────────────────────────
 
 
-        def _stats_row(label: str, value) -> None:
-            st.markdown(
-                f"<div style='padding:3px 0'>"
-                f"<span style='color:#6B7280'><b>{label}:</b></span> "
-                f"<span style='color:#5B8DB8'>{value}</span>"  # change from #1A1A1A to #6B7280
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-
-
         def render_numerical_panel(col_name: str) -> None:
             series = df[col_name]
             total = len(series)
@@ -124,7 +114,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                     else:
                         presentation.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_numerical_' + str(col_name))
                 with right:
-                    for label, val in [
+                    statistics = [
                         ("Missing Values", missing),
                         ("Missing %",      f"{missing_pct:.2f}%"),
                         ("Unique Values",  unique),
@@ -132,8 +122,8 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                         ("Minimum",        mn),
                         ("Maximum",        mx),
                         ("Average",        avg),
-                    ]:
-                        _stats_row(label, val)
+                    ]
+                    presentation.dataframe(pd.DataFrame([(label, str(value)) for label, value in statistics], columns=["Statistic", "Value"]), hide_index=True)
 
 
         def render_categorical_panel(col_name: str) -> None:
@@ -161,7 +151,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                     if truncated:
                         st.caption(f"Showing top 10 of {total_unique} unique values.")
                 with right:
-                    for label, val in [
+                    statistics = [
                         ("Missing Values",     missing),
                         ("Missing %",          f"{missing_pct:.2f}%"),
                         ("Unique Values",      unique),
@@ -169,10 +159,8 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                         ("Case Inconsistency", case_issue),
                         ("Special Characters", special_chars),
                         ("Leading/Trailing Whitespace", f"{leading_trailing_whitespace_pct(raw[col_name]):.2f}%"),
-                    ]:
-                        _stats_row(label, val)
-                        if label == "Unique Values":
-                            st.caption("(Cardinality)")
+                    ]
+                    presentation.dataframe(pd.DataFrame([(label, str(value)) for label, value in statistics], columns=["Statistic", "Value"]), hide_index=True)
 
 
         def render_datetime_panel(col_name: str) -> None:
@@ -202,7 +190,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with left:
                     presentation.plotly_chart(make_histogram_boxplot(series), use_container_width=True, key='view_quality_temporal_' + str(col_name))
                 with right:
-                    for label, val in [
+                    statistics = [
                         ("Missing Values",         missing),
                         ("Missing %",              f"{missing_pct:.2f}%"),
                         ("Unique Values",          unique),
@@ -211,8 +199,8 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                         ("Latest Date",            latest),
                         ("Date Range",             date_range),
                         ("Future Dates", invalid),
-                    ]:
-                        _stats_row(label, val)
+                    ]
+                    presentation.dataframe(pd.DataFrame([(label, str(value)) for label, value in statistics], columns=["Statistic", "Value"]), hide_index=True)
 
 
         def render_panels(col_list: list, render_fn) -> None:
@@ -346,9 +334,8 @@ def render_analyze(raw, _show_feedback):
                     all_stats = dict(stats)
                     all_stats["Outliers Found (IQR)"] = outlier_summary["count"]
                     all_stats["Outlier %"]            = outlier_summary["pct"]
-                    from utils.descriptive_statistics_display import statistics_html
-                    st.caption('Click ⓘ beside a statistic to see how to interpret it. Click again to close the explanation.')
-                    st.html(statistics_html(all_stats))
+                    from utils.descriptive_statistics_display import render_statistics
+                    render_statistics(all_stats)
                     st.caption(
                         "Standard error = sample standard deviation / √n. The 95% confidence interval estimates "
                         "the population mean using Student's t distribution; it assumes independent observations "
@@ -467,7 +454,7 @@ def render_analyze(raw, _show_feedback):
             # ── Date / Time ───────────────────────────────────────────────────────────
             elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
                 from utils.temporal_ui import render_noncalendar_temporal
-                render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal')
+                render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal', interactive_summary=True)
             elif col_type == "Date / Time":
                 series = pd.to_datetime(df[selected_col], errors="coerce")
 
@@ -691,23 +678,20 @@ def render_analyze(raw, _show_feedback):
     pa_pred_num = [c for c in col_types["numerical"]  if c != pa_target]
     pa_pred_cat = [c for c in col_types["categorical"] if c != pa_target]
     pa_pred_dt  = [c for c in col_types["datetime"]    if c != pa_target]
-    _all_available = pa_pred_num + pa_pred_cat + pa_pred_dt
-
-    _sa1, _sa2 = st.columns(2)
-    if _sa1.button("✅ Select All", key="pa_select_all"):
-        for _c in _all_available:
-            st.session_state[f"pa_pred_{_c}"] = True
-        st.rerun()
-    if _sa2.button("☐ Deselect All", key="pa_deselect_all"):
-        for _c in _all_available:
-            st.session_state[f"pa_pred_{_c}"] = False
-        st.rerun()
+    def set_predictor_group(columns, selected):
+        for column in columns:
+            st.session_state[f"pa_pred_{column}"] = selected
 
     pa_predictors = []
     for grp_label, grp_cols in [("Numerical", pa_pred_num), ("Categorical", pa_pred_cat), ("Temporal", pa_pred_dt)]:
         if not grp_cols:
             continue
         st.markdown(f"**{grp_label}**")
+        select_button, clear_button = st.columns(2)
+        select_button.button('Select all', key=f'pa_select_all_{grp_label}',
+                             on_click=set_predictor_group, args=(grp_cols, True))
+        clear_button.button('Clear all', key=f'pa_clear_all_{grp_label}',
+                            on_click=set_predictor_group, args=(grp_cols, False))
         for i in range(0, len(grp_cols), 4):
             row = st.columns(4)
             for j, cname in enumerate(grp_cols[i : i + 4]):

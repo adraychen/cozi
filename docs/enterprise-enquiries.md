@@ -51,13 +51,13 @@ From the repository root, after authenticating the CLI and choosing your project
 supabase functions deploy notify-enterprise-enquiry --project-ref <PROJECT-REF>
 ```
 
-`supabase/config.toml` disables gateway JWT verification **only for this function** because database webhooks use a custom shared-secret header. The handler independently verifies `X-Cozy-Webhook-Secret` before parsing events or accessing the database. It accepts only POST/INSERT/public.enterprise_enquiries events and uses only their record UUID. Contact fields supplied by a caller are not trusted as email content. The sender and recipient always come from backend configuration.
+`supabase/config.toml` disables gateway JWT verification **only for this function** because database webhooks use a custom shared-secret header. The handler independently verifies `X-Cozy-Webhook-Secret` before parsing events or accessing the database. It accepts only POST/INSERT/public.data_analytics_enterprise_enquiries events and uses only their record UUID. Contact fields supplied by a caller are not trusted as email content. The sender and recipient always come from backend configuration.
 
 ## 4. Create the database webhook
 
 In Supabase Dashboard → Database → Webhooks, enable the feature if needed, then create:
 
-- Table: `public.enterprise_enquiries`
+- Table: `public.data_analytics_enterprise_enquiries`
 - Event: **INSERT only** (never UPDATE, which would loop on notification status changes)
 - Method: POST
 - URL: `https://<PROJECT-REF>.supabase.co/functions/v1/notify-enterprise-enquiry`
@@ -80,7 +80,7 @@ First use a development Supabase project and a controlled recipient inbox. Run t
 For a private retry, POST the following JSON with the same protected header using a trusted backend/API client. Keep secrets out of shell history and screenshots:
 
 ```json
-{"type":"INSERT","schema":"public","table":"enterprise_enquiries","record":{"id":"<EXISTING-ENQUIRY-UUID>"}}
+{"type":"INSERT","schema":"public","table":"data_analytics_enterprise_enquiries","record":{"id":"<EXISTING-ENQUIRY-UUID>"}}
 ```
 
 The database claim is atomic. Active claims expire after five minutes, and already-sent records are skipped. Retries use the same Resend idempotency key (`cozy-enterprise/<enquiry UUID>`). Resend retains these keys for 24 hours; automated claims stop 22 hours after the first attempt and switch to `manual_review`. This prevents uncertain sends from being repeated after the provider's deduplication window expires. If a status update fails after provider acceptance, leave the lease intact and retry after five minutes **within this window**. If the webhook never reached the function, the row remains `pending` and can be replayed later.

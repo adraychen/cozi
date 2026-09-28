@@ -1,6 +1,6 @@
 """Content-aware result sizing shared by the application's renderers.
 
-Streamlit caps integer widths at the parent width, including on mobile. Tables
+Native content widths stop at the parent container, including on mobile. Tables
 keep their native scrolling, sorting, formatting, and download behavior.
 """
 import math
@@ -11,59 +11,19 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-def table_width(data, hide_index=None, column_order=None, column_config=None):
-    """Estimate readable column widths from a bounded sample, including headers."""
-    styled = getattr(data, 'data', None)
-    frame = styled if isinstance(styled, pd.DataFrame) else data
-    if isinstance(frame, pd.Series):
-        frame = frame.to_frame()
-    if not isinstance(frame, pd.DataFrame):
-        try:
-            frame = pd.DataFrame(frame)
-        except (TypeError, ValueError):
-            return 'content'
-    config = column_config or {}
-    columns = list(frame.columns if column_order is None else column_order)
-    width = 24
-    if hide_index is not True:
-        width += max(60, min(240, 28 + 7*max((len(str(v)) for v in frame.index[:64]), default=0)))
-    for column in columns:
-        if column not in frame or (column in config and config[column] is None):
-            continue
-        settings = config.get(column)
-        settings = settings if isinstance(settings, dict) else {}
-        label = settings.get('label', column)
-        configured_width = settings.get('width')
-        if isinstance(configured_width, int):
-            width += configured_width
-            continue
-        if configured_width in ('small', 'medium', 'large'):
-            width += {'small': 75, 'medium': 200, 'large': 400}[configured_width]
-            continue
-        series = frame[column]
-        if isinstance(series, pd.DataFrame):  # duplicate names in displayed data
-            series = series.iloc[:, 0]
-        samples = series.iloc[np.linspace(0, len(series)-1, min(len(series), 64), dtype=int)] if len(series) else series
-        def text(value):
-            if isinstance(value, (float, np.floating)) and math.isfinite(value):
-                return f'{value:.6g}'
-            return str(value)
-        length = max([len(str(label))] + [min(len(text(v)), 100) for v in samples])
-        # Long explanations should get room to wrap, not be forced into a tiny cell.
-        width += max(110, min(600 if length > 70 else 360, 36 + 7*length))
-    return min(1200, max(260, width))
-
-
 def _table_options(data, options, static=False):
+    """Let the browser fit displayed content and scroll at the container boundary."""
     options = dict(options)
     options.pop('use_container_width', None)
-    if options.get('width') in (None, 'stretch', 'content'):
-        hidden = options.get('hide_index')
-        styled = getattr(data, 'data', None)
-        frame = styled if isinstance(styled, pd.DataFrame) else data
-        if static and hidden is None and isinstance(getattr(frame, 'index', None), pd.RangeIndex):
-            hidden = True
-        options['width'] = table_width(data, hidden, options.get('column_order'), options.get('column_config'))
+    options['width'] = 'content'
+    if options.get('column_config'):
+        options['column_config'] = {
+            key: {**value, 'width': None} if isinstance(value, dict) else value
+            for key, value in options['column_config'].items()
+        }
+    frame = data.data if isinstance(getattr(data, 'data', None), pd.DataFrame) else data
+    if static and options.get('hide_index') is None and isinstance(getattr(frame, 'index', None), pd.RangeIndex):
+        options['hide_index'] = True
     return options
 
 
@@ -76,7 +36,7 @@ def dataframe(data=None, **kwargs):
 
 
 def table(data=None, **kwargs):
-    return st.table(data, **_table_options(data, kwargs, static=True))
+    return dataframe(data, **_table_options(data, kwargs, static=True))
 
 
 def _labels(values):

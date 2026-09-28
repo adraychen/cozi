@@ -129,7 +129,7 @@ One row per column showing:
 
 Integers default to Discrete, floats to Continuous. Categorical pairs default to Binary; other categories default to Nominal unless an explicit ordered dtype or recognized complete semantic sequence identifies Ordinal. Numeric 0/1 values remain numerical until overridden. Ordinal order is editable using category numbers from lowest to highest, preserving the original labels. Automatic and user-overridden classifications are shown as A/M badges beside both Variable Type and Variable Subtype. Hover text reads Automatic classification or Manual Override. Overrides persist in session metadata and reset when the dataset is replaced. Upload identity includes a content hash, preventing equal-name/equal-size replacements from retaining stale metadata.
 
-The overview shows Unique Values with an info control: Continuous and Discrete with more than 10 unique values show min/max; Discrete with at most 10 and Binary show all values; Nominal shows the first five observed unique values; Ordinal shows all values in configured order. Missing values are excluded. Classification Source and Category Order are no longer separate columns; ordinal order remains editable. Missing percentages retain their color coding. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md) for implementation and validation details.
+The overview shows Unique Values, with a column selector in the expandable value-details section below the table: Continuous and Discrete with more than 10 unique values show min/max; Discrete with at most 10 and Binary show all values; Nominal shows the first five observed unique values; Ordinal shows all values in configured order. Missing values are excluded. Classification Source and Category Order are no longer separate columns; ordinal order remains editable. Missing percentages retain their color coding. See [VARIABLE_CLASSIFICATION.md](VARIABLE_CLASSIFICATION.md) for implementation and validation details.
 
 ---
 
@@ -164,7 +164,7 @@ Three tabbed panels, each rendered as bordered cards (two per row):
 ### Categorical Columns
 - Left: vertical bar chart, top 10 by frequency, sorted descending
 - Right: Missing Values, Missing %, Unique Values, Unique %, Case Inconsistency, Special Characters
-- **(Cardinality)** appears directly beneath the Unique Values count; the count excludes missing values.
+- Unique Values reports cardinality and excludes missing values.
 
 ### Temporal Columns
 - Left: histogram stacked above a boxplot
@@ -818,9 +818,13 @@ Group Statistics and Visual Analysis hide variable-type headings and controls wh
 
 ### Content-aware result sizing
 
-The Cozy title uses muted terracotta (`#A65F46`). Shared renderers in `utils/presentation.py` size result tables from column headings, sampled text lengths, visible columns, and index/configuration choices. Short two-column results remain compact; wider tables and prose get more room, capped at 1,200 pixels and the available parent width. Small previews shrink vertically instead of reserving empty rows. Existing table scrolling, formatting, selection keys, and downloads remain available.
+The Cozy title uses muted terracotta (`#A65F46`). Shared renderers in `utils/presentation.py` use native content-sized interactive tables. Columns fit their content; short tables remain compact, while wide tables fill the available parent width and scroll horizontally without a fixed 1,200-pixel cap. Inspect tables use the Dataset Preview format, with Column Overview value details in an expander below the table. Small previews shrink vertically instead of reserving empty rows. Existing table scrolling, formatting, selection keys, and downloads remain available.
 
-Plotly charts size by categories, label length, series/legend complexity, heatmap dimensions, and subplot domains rather than scatter-point count. Simple charts begin at 640 × 360 pixels, with larger plots capped at 1,200 × 900; widths shrink to the screen/container on mobile. Existing deliberate chart heights are preserved within that bound. Matplotlib figures use their native aspect and an appropriate bounded display width. Custom HTML summary/overview tables also fit their content and retain mobile wrapping or horizontal scrolling. Calculation and statistical behavior are unchanged.
+Plotly charts size by categories, label length, series/legend complexity, heatmap dimensions, and subplot domains rather than scatter-point count. Simple charts begin at 640 × 360 pixels, with larger plots capped at 1,200 × 900; widths shrink to the screen/container on mobile. Existing deliberate chart heights are preserved within that bound. Matplotlib figures use their native aspect and an appropriate bounded display width. The specialized HTML contingency report fits its content and scrolls horizontally; Inspect overview tables use the native interactive renderer. Calculation and statistical behavior are unchanged.
+
+### Database table naming
+
+All database tables for this app must use the `data_analytics_` prefix and lowercase snake_case names. Existing tables are `data_analytics_visits` and `data_analytics_feedback`; Enterprise enquiries use `data_analytics_enterprise_enquiries`.
 
 ### Cozy Enterprise
 
@@ -831,3 +835,11 @@ The enquiry form validates required contact/organization fields, basic email syn
 The form now persists through a server-only PostgreSQL adapter using `SUPABASE_ENQUIRY_DB_URL` and a restricted submission login. A confirmed database commit clears the form and shows success; failed saves retain inputs. Stable submission IDs and a database uniqueness constraint protect retries and reruns. Supabase INSERT webhooks invoke the protected `notify-enterprise-enquiry` Edge Function to send administrator email through Resend independently of the form. Notification failure never rolls back an enquiry.
 
 Apply the migration, configure the restricted login, deploy the function and set up the authenticated webhook and email secrets using [Enterprise backend setup](docs/enterprise-enquiries.md). This code does not configure a live project or establish live email delivery. Python form/persistence tests and offline Edge Function tests cover validation, failures, success, duplicate protection and preserved analytics state.
+
+### UI control inventory
+
+See [UI controls and pending standardization decisions](docs/ui-controls.md) for the current dropdown, checkbox, radio, button and navigation patterns, including inconsistencies awaiting a product decision. This documents current behavior; it does not impose a new standard.
+
+### UI standard
+
+[Inspect, Transform and Analyze UI standard](docs/ui-standard.md) documents the agreed table format and sizing, classification controls, Transform menus and information badges, and Analyze presentation rules. It distinguishes approved standards from control choices still awaiting a decision.

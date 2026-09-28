@@ -60,3 +60,36 @@ def overview_html(raw, metadata):
 .vm-missing-high {background:#f8d7da; color:#842029;}
 .vm-missing-medium {background:#fff3cd; color:#664d03;}
 </style><div class="vm-overview"><table aria-label="Column Overview"><thead><tr>'''+''.join('<th scope="col">'+h+'</th>' for h in headers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
+
+
+def render_overview(raw, metadata):
+    """Native preview-style table; retain classification and value explanations."""
+    import streamlit as st
+    from utils import presentation
+
+    overview = get_dataframe_info(raw).copy()
+    overview['Unique Values'] = [raw[column].nunique(dropna=True) for column in overview['Column Name']]
+    for field, title in [('variable_type', 'Variable Type'), ('variable_subtype', 'Variable Subtype')]:
+        overview[title] = [
+            ('Temporal' if metadata[column][field] == 'Date / Time' else metadata[column][field])
+            + (' (M)' if metadata[column]['source'] == 'User override' else ' (A)')
+            for column in overview['Column Name']
+        ]
+    overview = overview[['Column Name', 'Data Type', 'Variable Type', 'Variable Subtype',
+                         'Unique Values', 'Total Values', 'Missing Values', 'Missing %']]
+    def missing_color(value):
+        return ('background-color: #f8d7da; color: #842029' if value >= 20 else
+                'background-color: #fff3cd; color: #664d03' if value >= 5 else '')
+    styled = overview.style.format({'Missing %': '{:.2f}'}).map(missing_color, subset=['Missing %'])
+    presentation.dataframe(styled, hide_index=True, column_config={
+        'Variable Type': st.column_config.TextColumn(help='A = Automatic classification; M = Manual Override.'),
+        'Variable Subtype': st.column_config.TextColumn(help='A = Automatic classification; M = Manual Override.'),
+        'Unique Values': st.column_config.NumberColumn(help='Open Unique value details below for values or ranges.'),
+    })
+    with st.expander('ⓘ Unique value details'):
+        column = st.selectbox('Column for value details', list(raw), key='vm_value_details_column')
+        heading, values = value_details(raw[column], metadata[column])
+        st.write(heading)
+        if values:
+            presentation.dataframe(pd.DataFrame([(str(label), str(value)) for label, value in values],
+                                               columns=['Detail', 'Value']), hide_index=True)
