@@ -23,7 +23,8 @@ def dataset_state_key(key):
     owned = key in _DATA_KEYS or key.startswith(_PREFIXES)
     trigger = (key in _TRIGGERS or key.endswith(('_download', '_all', '_clear'))
                or key.startswith(('va_graph_button_', 'mc_all_', 'mc_clear_',
-                                  'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_')))
+                                  'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_',
+                                  'pa_select_all_', 'pa_clear_all_')))
     return owned and not trigger
 
 
@@ -44,7 +45,8 @@ def activate(state, dataset_id):
             del state[key]
     entry = state['ws_datasets'][dataset_id]
     for key, value in entry['state'].items():
-        state[key] = value
+        if dataset_state_key(key):
+            state[key] = value
     state['ws_active'] = dataset_id
     state['df'] = entry['frame']
     state['file_id'] = dataset_id

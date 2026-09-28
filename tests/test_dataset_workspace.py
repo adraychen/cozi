@@ -145,6 +145,46 @@ render_validation({'Output rows': 1418, 'Matched left rows': 1418,
         result = pd.read_csv(io.BytesIO(dataset_csv(frame)))
         pd.testing.assert_frame_equal(result, frame)
 
+    def test_predictor_bulk_buttons_survive_reruns_without_state_assignment(self):
+        script = """
+import streamlit as st
+from utils.enterprise_ui import preserve_page_state
+preserve_page_state()
+def choose(value):
+    st.session_state['pa_pred_x'] = value
+for group in ('Numerical', 'Categorical', 'Temporal'):
+    st.button('Select all', key='pa_select_all_' + group, on_click=choose, args=(True,))
+    st.button('Clear all', key='pa_clear_all_' + group, on_click=choose, args=(False,))
+st.checkbox('x', key='pa_pred_x')
+"""
+        app = AppTest.from_string(script).run()
+        for group in ('Numerical', 'Categorical', 'Temporal'):
+            app.button(key='pa_select_all_' + group).click().run()
+            self.assertFalse(app.exception)
+            self.assertTrue(app.checkbox(key='pa_pred_x').value)
+            app.button(key='pa_clear_all_' + group).click().run()
+            self.assertFalse(app.exception)
+            self.assertFalse(app.checkbox(key='pa_pred_x').value)
+        app.run()
+        self.assertFalse(app.exception)
+
+    def test_old_saved_predictor_button_values_are_not_restored(self):
+        state = {}
+        frame = pd.DataFrame({'x': [1, 2]})
+        first = add_dataset(state, frame, 'First', 'test')
+        second = add_dataset(state, frame, 'Second', 'test')
+        state['ws_datasets'][first]['state'].update({
+            'pa_select_all_Numerical': True, 'pa_clear_all_Numerical': False,
+            'pa_pred_x': True,
+        })
+        activate(state, first)
+        self.assertNotIn('pa_select_all_Numerical', state)
+        self.assertNotIn('pa_clear_all_Numerical', state)
+        self.assertTrue(state['pa_pred_x'])
+        state['pa_select_all_Numerical'] = True
+        activate(state, second)
+        self.assertNotIn('pa_select_all_Numerical', state['ws_datasets'][first]['state'])
+
     def test_registry_and_isolated_state(self):
         state = {}
         frame = pd.DataFrame({'x': [1, 2]})
