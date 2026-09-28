@@ -1,13 +1,27 @@
 import streamlit as st
 import psycopg2
+import os
+from streamlit.errors import StreamlitSecretNotFoundError
 
 _VISITS_TABLE   = "data_analytics_visits"
 _FEEDBACK_TABLE = "data_analytics_feedback"
 
 
-def _connect():
+def configured_value(name):
+    """Server-only configuration, using the existing Streamlit secrets convention."""
+    try:
+        value = st.secrets.get(name)
+    except (StreamlitSecretNotFoundError, FileNotFoundError):
+        value = None
+    return value or os.environ.get(name)
+
+
+def _connect(secret_name="SUPABASE_DB_URL", **kwargs):
     """Open a new PostgreSQL connection using the pooler URL."""
-    return psycopg2.connect(st.secrets["SUPABASE_DB_URL"])
+    value = configured_value(secret_name)
+    if not value:
+        raise RuntimeError('Database configuration is unavailable.')
+    return psycopg2.connect(value, **kwargs)
 
 
 def record_visit() -> None:

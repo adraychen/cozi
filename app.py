@@ -1,5 +1,7 @@
 import streamlit as st
 from utils.database import record_visit, get_stats, submit_feedback
+from utils.enterprise_ui import (enterprise_requested, preserve_page_state,
+                                 render_enterprise_page, render_footer)
 
 # ── Sample datasets ───────────────────────────────────────────────────────────
 _SAMPLE_DATASETS = [
@@ -86,6 +88,11 @@ def _show_feedback(section: str, key: str) -> None:
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Cozy — Community Edition", page_icon="📊", layout="wide")
+preserve_page_state()
+if enterprise_requested():
+    st.set_page_config(page_title="Cozy Enterprise")
+    render_enterprise_page()
+    st.stop()
 
 # ── App stats banner (above title) ───────────────────────────────────────────
 _b1, _b2, _b3 = st.columns(3)
@@ -154,3 +161,4 @@ st.divider()
 from utils.dataset_workspace import render_workspace
 
 render_workspace(_SAMPLE_DATASETS, _show_feedback)
+render_footer()

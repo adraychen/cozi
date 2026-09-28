@@ -1,0 +1,4 @@
+[functions.notify-enterprise-enquiry]
+# Database webhooks are not user JWTs. The handler requires a separate, strong
+# X-Cozy-Webhook-Secret and rejects all unauthenticated calls before parsing data.
+verify_jwt = false
