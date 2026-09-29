@@ -391,7 +391,7 @@ Both models trained simultaneously. Winner determined by weighted Test F1 Score.
 
 ### AI Interpretation (Predictive Analytics)
 
-After results load, an **🤖 AI Interpretation** expander generates a 4–5 sentence plain-English explanation covering:
+After results load, select **Generate interpretation** inside the **🤖 AI Interpretation** expander to generate a 4–5 sentence plain-English explanation covering:
 1. Which model won and what it suggests about the data's complexity
 2. The 2–3 most important features and what drives predictions
 3. How top features push predictions up or down (based on SHAP)
@@ -843,3 +843,7 @@ See [UI controls and pending standardization decisions](docs/ui-controls.md) for
 ### UI standard
 
 [Inspect, Transform and Analyze UI standard](docs/ui-standard.md) documents the agreed table format and sizing, classification controls, Transform menus and information badges, and Analyze presentation rules. It distinguishes approved standards from control choices still awaiting a decision.
+
+### Analyze loading performance
+
+Analyze renders only its open exploratory tab, with Predictive Analytics remaining below the five exploratory tabs in the original layout. AI interpretations are generated/refreshed explicitly by button, not automatically on page load. Prediction configuration is separated from training dependencies so sklearn/SHAP do not load merely to display prediction controls. Run still performs the existing model training; displaying saved results loads the necessary plotting libraries. Selections and cached results persist across panel switches.

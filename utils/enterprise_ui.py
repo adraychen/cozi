@@ -30,7 +30,7 @@ def enterprise_requested():
 def render_footer(show_enterprise=True):
     st.divider()
     if show_enterprise:
-        st.markdown('**Cozy Enterprise**')
+        render_brand(enterprise=True, show_subtitle=False)
         st.caption("Deploy Cozy securely in your organization's cloud or private infrastructure, with customized analytical capabilities designed around your organization's needs.")
         st.button('Learn more about Cozy Enterprise →', key='enterprise_learn_more', type='tertiary',
                   on_click=navigate, args=('enterprise',))

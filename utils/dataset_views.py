@@ -288,383 +288,382 @@ def render_analyze(raw, _show_feedback):
     # ── Exploratory Data Analysis ─────────────────────────────────────────────────
     st.subheader("Exploratory Data Analysis")
 
-    profile_tab, group_tab, visual_tab, relationships_tab, comparison_tab = st.tabs(["Descriptive Statistics", "Group Statistics", "Visual Analysis", "Relationship", "Comparison"])
+    if st.session_state.get('view_analyze_tabs') == 'Predictive Analytics':
+        st.session_state['view_analyze_tabs'] = 'Descriptive Statistics'
+    profile_tab, group_tab, visual_tab, relationships_tab, comparison_tab = st.tabs(["Descriptive Statistics", "Group Statistics", "Visual Analysis", "Relationship", "Comparison"], key="view_analyze_tabs", on_change="rerun")
 
     with profile_tab:
-        # ── Single Column ─────────────────────────────────────────────────────────────
-        st.markdown("#### Descriptive Statistics")
-        st.caption("Select one variable to view its statistics, charts, and anomaly detection. Selecting another variable clears the previous selection.")
+        if profile_tab.open:
+            # ── Single Column ─────────────────────────────────────────────────────────────
+            st.markdown("#### Descriptive Statistics")
+            st.caption("Select one variable to view its statistics, charts, and anomaly detection. Selecting another variable clears the previous selection.")
 
-        from utils.descriptive_controls import select_descriptive_variable
-        selected_col = select_descriptive_variable(col_types)
-        if selected_col is None:
-            st.info("Select one variable above to display its descriptive statistics.")
+            from utils.descriptive_controls import select_descriptive_variable
+            selected_col = select_descriptive_variable(col_types)
+            if selected_col is None:
+                st.info("Select one variable above to display its descriptive statistics.")
 
-        if selected_col is not None:
-            col_type = col_to_type.get(selected_col, "Unknown")
-            st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {'Temporal' if col_type == 'Date / Time' else col_type}")
-            st.divider()
+            if selected_col is not None:
+                col_type = col_to_type.get(selected_col, "Unknown")
+                st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {'Temporal' if col_type == 'Date / Time' else col_type}")
+                st.divider()
 
-            # ── Numerical ─────────────────────────────────────────────────────────────
-            if col_type == "Numerical":
-                series = df[selected_col]
-                unique = int(series.nunique())
-                is_discrete = variable_metadata[selected_col]["variable_subtype"] == "Discrete"
+                # ── Numerical ─────────────────────────────────────────────────────────────
+                if col_type == "Numerical":
+                    series = df[selected_col]
+                    unique = int(series.nunique())
+                    is_discrete = variable_metadata[selected_col]["variable_subtype"] == "Discrete"
 
-                chart_l, chart_r = st.columns([3, 2])
-                with chart_l:
-                    st.markdown("**Distribution**")
-                    if is_discrete:
-                        fig, truncated, total_unique = make_bar_chart(series, height=360)
-                        presentation.plotly_chart(fig, use_container_width=True)
-                        if truncated:
-                            st.caption(f"Showing top 10 of {total_unique} unique values.")
+                    chart_l, chart_r = st.columns([3, 2])
+                    with chart_l:
+                        st.markdown("**Distribution**")
+                        if is_discrete:
+                            fig, truncated, total_unique = make_bar_chart(series, height=360)
+                            presentation.plotly_chart(fig, use_container_width=True)
+                            if truncated:
+                                st.caption(f"Showing top 10 of {total_unique} unique values.")
+                        else:
+                            presentation.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
+                        from utils.distribution_fit_ui import render_distribution_fit
+                        render_distribution_fit(series, selected_col, variable_metadata[selected_col]["variable_subtype"])
+                    with chart_r:
+                        st.markdown("**Violin Plot**")
+                        presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
+
+                    st.markdown("**Summary Statistics**")
+                    stats = numerical_stats(series)
+                    outlier_summary, _ = detect_outliers(series)
+                    if stats:
+                        all_stats = dict(stats)
+                        all_stats["Outliers Found (IQR)"] = outlier_summary["count"]
+                        all_stats["Outlier %"]            = outlier_summary["pct"]
+                        from utils.descriptive_statistics_display import render_statistics
+                        render_statistics(all_stats)
+                        st.caption(
+                            "Standard error = sample standard deviation / √n. The 95% confidence interval estimates "
+                            "the population mean using Student's t distribution; it assumes independent observations "
+                            "and approximately normal data or a sufficiently large sample. Missing and infinite values "
+                            "are excluded. At least two valid values are required."
+                        )
+                        st.caption(
+                            "Coefficient of variation = sample standard deviation / mean × 100%. "
+                            "Shown only for a positive mean; meaningful for ratio-scale data with a true zero "
+                            "and unstable when the mean is close to zero."
+                        )
+
+                    ai_key = f"col_ai_descriptive_v2_{selected_col}"
+                    with st.expander("🤖 AI Interpretation"):
+                        if st.button("Refresh interpretation" if st.session_state.get(ai_key) else "Generate interpretation", key="view_ai_generate_" + ai_key):
+                            with st.spinner("Generating interpretation…"):
+                                try:
+                                    extra = {
+                                        "Outliers found":    outlier_summary["count"],
+                                        "Outlier %":         outlier_summary["pct"],
+                                        "Lower bound (IQR)": outlier_summary["lower_bound"] or "—",
+                                        "Upper bound (IQR)": outlier_summary["upper_bound"] or "—",
+                                    }
+                                    st.session_state[ai_key] = interpret_single_column(
+                                        col_name=selected_col, col_type=col_type,
+                                        stats=stats, extra=extra,
+                                    )
+                                except Exception as e:
+                                    st.session_state[ai_key] = None
+                                    st.error(f"Could not generate interpretation: {e}")
+                        if st.session_state.get(ai_key):
+                            st.info(st.session_state[ai_key])
+
+                # ── Categorical ───────────────────────────────────────────────────────────
+                elif col_type == "Categorical":
+                    series = df[selected_col]
+                    unique = int(series.nunique())
+
+                    if unique <= 5:
+                        max_bars = unique
                     else:
+                        _slider_max = min(50, unique)
+                        max_bars = st.slider(
+                            "Number of bars to display",
+                            min_value=5,
+                            max_value=_slider_max,
+                            value=min(20, _slider_max),
+                            step=5,
+                            help="Controls how many category values are shown in the bar chart.",
+                        key="view_slider_100")
+
+                    st.markdown("**Frequency Chart**")
+                    fig, truncated, total_unique = make_bar_chart(series, max_bars=max_bars, height=400)
+                    presentation.plotly_chart(fig, use_container_width=True)
+                    if truncated:
+                        st.caption(f"Showing {max_bars} of {total_unique} categories; ordinal variables follow their configured order, others follow frequency.")
+
+                    st.markdown("**Frequency Table**")
+                    st.caption("Rows highlighted in yellow appear in less than 1% of records.")
+                    freq_df = frequency_table(series)
+
+                    def _style_rare_pct(val):
+                        try:
+                            if float(val) < 1.0:
+                                return "background-color: #fff3cd; color: #333333"
+                        except (ValueError, TypeError):
+                            pass
+                        return ""
+
+                    presentation.dataframe(
+                        freq_df.style
+                            .map(_style_rare_pct, subset=["Percentage"])
+                            .format({"Percentage": "{:.2f}%"}),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    st.markdown("**Mode**")
+                    mode_counts = series.value_counts(dropna=True)
+                    mode_counts = mode_counts[mode_counts > 0]
+                    if mode_counts.empty:
+                        st.caption("No mode available: this column has no non-missing values.")
+                    else:
+                        mode_frequency = int(mode_counts.max())
+                        mode_values = mode_counts[mode_counts == mode_frequency].index.tolist()
+                        st.text("; ".join(str(value) for value in mode_values))
+                        st.caption(
+                            f"Frequency: {mode_frequency:,} each. Missing values are excluded."
+                            + (" All tied modes are shown." if len(mode_values) > 1 else "")
+                        )
+
+                    ai_key = f"col_ai_{selected_col}"
+                    stats  = categorical_stats(series)
+                    rare_df = rare_categories(series)
+                    with st.expander("🤖 AI Interpretation"):
+                        if st.button("Refresh interpretation" if st.session_state.get(ai_key) else "Generate interpretation", key="view_ai_generate_" + ai_key):
+                            with st.spinner("Generating interpretation…"):
+                                try:
+                                    extra = {"Rare categories (< 1%)": len(rare_df) if not rare_df.empty else 0}
+                                    st.session_state[ai_key] = interpret_single_column(
+                                        col_name=selected_col, col_type=col_type,
+                                        stats=stats, extra=extra,
+                                    )
+                                except Exception as e:
+                                    st.session_state[ai_key] = None
+                                    st.error(f"Could not generate interpretation: {e}")
+                        if st.session_state.get(ai_key):
+                            st.info(st.session_state[ai_key])
+
+                # ── Date / Time ───────────────────────────────────────────────────────────
+                elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
+                    from utils.temporal_ui import render_noncalendar_temporal
+                    render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal', interactive_summary=True)
+                elif col_type == "Date / Time":
+                    series = pd.to_datetime(df[selected_col], errors="coerce")
+
+                    chart_l, chart_r = st.columns([3, 2])
+                    with chart_l:
+                        st.markdown("**Distribution**")
                         presentation.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
-                    from utils.distribution_fit_ui import render_distribution_fit
-                    render_distribution_fit(series, selected_col, variable_metadata[selected_col]["variable_subtype"])
-                with chart_r:
-                    st.markdown("**Violin Plot**")
-                    presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
+                    with chart_r:
+                        st.markdown("**Violin Plot**")
+                        presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
 
-                st.markdown("**Summary Statistics**")
-                stats = numerical_stats(series)
-                outlier_summary, _ = detect_outliers(series)
-                if stats:
-                    all_stats = dict(stats)
-                    all_stats["Outliers Found (IQR)"] = outlier_summary["count"]
-                    all_stats["Outlier %"]            = outlier_summary["pct"]
-                    from utils.descriptive_statistics_display import render_statistics
-                    render_statistics(all_stats)
-                    st.caption(
-                        "Standard error = sample standard deviation / √n. The 95% confidence interval estimates "
-                        "the population mean using Student's t distribution; it assumes independent observations "
-                        "and approximately normal data or a sufficiently large sample. Missing and infinite values "
-                        "are excluded. At least two valid values are required."
-                    )
-                    st.caption(
-                        "Coefficient of variation = sample standard deviation / mean × 100%. "
-                        "Shown only for a positive mean; meaningful for ratio-scale data with a true zero "
-                        "and unstable when the mean is close to zero."
-                    )
+                    st.markdown("**Summary Statistics**")
+                    stats = datetime_stats(series)
+                    if stats:
+                        stats_df = pd.DataFrame({
+                            "Statistic": list(stats.keys()),
+                            "Value":     [str(v) for v in stats.values()],
+                        })
+                        presentation.dataframe(stats_df, use_container_width=True, hide_index=True)
 
-                ai_key = f"col_ai_descriptive_v2_{selected_col}"
-                with st.expander("🤖 AI Interpretation"):
-                    if ai_key not in st.session_state:
-                        with st.spinner("Generating interpretation…"):
-                            try:
-                                extra = {
-                                    "Outliers found":    outlier_summary["count"],
-                                    "Outlier %":         outlier_summary["pct"],
-                                    "Lower bound (IQR)": outlier_summary["lower_bound"] or "—",
-                                    "Upper bound (IQR)": outlier_summary["upper_bound"] or "—",
-                                }
-                                st.session_state[ai_key] = interpret_single_column(
-                                    col_name=selected_col, col_type=col_type,
-                                    stats=stats, extra=extra,
-                                )
-                            except Exception as e:
-                                st.session_state[ai_key] = None
-                                st.error(f"Could not generate interpretation: {e}")
-                    if st.session_state.get(ai_key):
-                        st.info(st.session_state[ai_key])
-                        if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
-                            st.session_state.pop(ai_key, None)
-                            st.rerun()
+                    ai_key = f"col_ai_{selected_col}"
+                    with st.expander("🤖 AI Interpretation"):
+                        if st.button("Refresh interpretation" if st.session_state.get(ai_key) else "Generate interpretation", key="view_ai_generate_" + ai_key):
+                            with st.spinner("Generating interpretation…"):
+                                try:
+                                    st.session_state[ai_key] = interpret_single_column(
+                                        col_name=selected_col, col_type=col_type, stats=stats,
+                                    )
+                                except Exception as e:
+                                    st.session_state[ai_key] = None
+                                    st.error(f"Could not generate interpretation: {e}")
+                        if st.session_state.get(ai_key):
+                            st.info(st.session_state[ai_key])
 
-            # ── Categorical ───────────────────────────────────────────────────────────
-            elif col_type == "Categorical":
-                series = df[selected_col]
-                unique = int(series.nunique())
-
-                if unique <= 5:
-                    max_bars = unique
-                else:
-                    _slider_max = min(50, unique)
-                    max_bars = st.slider(
-                        "Number of bars to display",
-                        min_value=5,
-                        max_value=_slider_max,
-                        value=min(20, _slider_max),
-                        step=5,
-                        help="Controls how many category values are shown in the bar chart.",
-                    key="view_slider_100")
-
-                st.markdown("**Frequency Chart**")
-                fig, truncated, total_unique = make_bar_chart(series, max_bars=max_bars, height=400)
-                presentation.plotly_chart(fig, use_container_width=True)
-                if truncated:
-                    st.caption(f"Showing {max_bars} of {total_unique} categories; ordinal variables follow their configured order, others follow frequency.")
-
-                st.markdown("**Frequency Table**")
-                st.caption("Rows highlighted in yellow appear in less than 1% of records.")
-                freq_df = frequency_table(series)
-
-                def _style_rare_pct(val):
-                    try:
-                        if float(val) < 1.0:
-                            return "background-color: #fff3cd; color: #333333"
-                    except (ValueError, TypeError):
-                        pass
-                    return ""
-
-                presentation.dataframe(
-                    freq_df.style
-                        .map(_style_rare_pct, subset=["Percentage"])
-                        .format({"Percentage": "{:.2f}%"}),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-                st.markdown("**Mode**")
-                mode_counts = series.value_counts(dropna=True)
-                mode_counts = mode_counts[mode_counts > 0]
-                if mode_counts.empty:
-                    st.caption("No mode available: this column has no non-missing values.")
-                else:
-                    mode_frequency = int(mode_counts.max())
-                    mode_values = mode_counts[mode_counts == mode_frequency].index.tolist()
-                    st.text("; ".join(str(value) for value in mode_values))
-                    st.caption(
-                        f"Frequency: {mode_frequency:,} each. Missing values are excluded."
-                        + (" All tied modes are shown." if len(mode_values) > 1 else "")
-                    )
-
-                ai_key = f"col_ai_{selected_col}"
-                stats  = categorical_stats(series)
-                rare_df = rare_categories(series)
-                with st.expander("🤖 AI Interpretation"):
-                    if ai_key not in st.session_state:
-                        with st.spinner("Generating interpretation…"):
-                            try:
-                                extra = {"Rare categories (< 1%)": len(rare_df) if not rare_df.empty else 0}
-                                st.session_state[ai_key] = interpret_single_column(
-                                    col_name=selected_col, col_type=col_type,
-                                    stats=stats, extra=extra,
-                                )
-                            except Exception as e:
-                                st.session_state[ai_key] = None
-                                st.error(f"Could not generate interpretation: {e}")
-                    if st.session_state.get(ai_key):
-                        st.info(st.session_state[ai_key])
-                        if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
-                            st.session_state.pop(ai_key, None)
-                            st.rerun()
-
-            # ── Date / Time ───────────────────────────────────────────────────────────
-            elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
-                from utils.temporal_ui import render_noncalendar_temporal
-                render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal', interactive_summary=True)
-            elif col_type == "Date / Time":
-                series = pd.to_datetime(df[selected_col], errors="coerce")
-
-                chart_l, chart_r = st.columns([3, 2])
-                with chart_l:
-                    st.markdown("**Distribution**")
-                    presentation.plotly_chart(make_histogram_boxplot(series, height=360), use_container_width=True)
-                with chart_r:
-                    st.markdown("**Violin Plot**")
-                    presentation.plotly_chart(make_violin(series, height=360), use_container_width=True)
-
-                st.markdown("**Summary Statistics**")
-                stats = datetime_stats(series)
-                if stats:
-                    stats_df = pd.DataFrame({
-                        "Statistic": list(stats.keys()),
-                        "Value":     [str(v) for v in stats.values()],
-                    })
-                    presentation.dataframe(stats_df, use_container_width=True, hide_index=True)
-
-                ai_key = f"col_ai_{selected_col}"
-                with st.expander("🤖 AI Interpretation"):
-                    if ai_key not in st.session_state:
-                        with st.spinner("Generating interpretation…"):
-                            try:
-                                st.session_state[ai_key] = interpret_single_column(
-                                    col_name=selected_col, col_type=col_type, stats=stats,
-                                )
-                            except Exception as e:
-                                st.session_state[ai_key] = None
-                                st.error(f"Could not generate interpretation: {e}")
-                    if st.session_state.get(ai_key):
-                        st.info(st.session_state[ai_key])
-                        if st.button("🔄 Refresh", key=f"refresh_{ai_key}"):
-                            st.session_state.pop(ai_key, None)
-                            st.rerun()
-
-        st.divider()
+            st.divider()
 
 
     with group_tab:
-        from utils.group_statistics_ui import render_group_statistics
-        render_group_statistics(df, col_types)
+        if group_tab.open:
+            from utils.group_statistics_ui import render_group_statistics
+            render_group_statistics(df, col_types)
 
     with visual_tab:
-        from utils.visual_analysis import render_visual_analysis
-        render_visual_analysis(df, col_types)
+        if visual_tab.open:
+            from utils.visual_analysis import render_visual_analysis
+            render_visual_analysis(df, col_types)
 
     with comparison_tab:
-        from utils.comparison_ui import render_comparison
-        render_comparison(df, col_types)
+        if comparison_tab.open:
+            from utils.comparison_ui import render_comparison
+            render_comparison(df, col_types)
 
     with relationships_tab:
-        # ── Multi-Column Analysis ─────────────────────────────────────────────────────
-        st.markdown("#### Relationship")
-        st.caption("Explore relationships between variables in your data.")
+        if relationships_tab.open:
+            # ── Multi-Column Analysis ─────────────────────────────────────────────────────
+            st.markdown("#### Relationship")
+            st.caption("Explore relationships between variables in your data.")
 
-        # ── Grouped checkboxes by variable type ────────────────────────────────────────
-        selected_cols = []
-        checkbox_groups = [
-            ("Numerical",   col_types["numerical"]),
-            ("Categorical", col_types["categorical"]),
-            ("Temporal", col_types["datetime"]),
-        ]
-        def set_relationship_group(columns, selected):
-            for column in columns:
-                st.session_state[f'mc_{column}'] = selected
+            # ── Grouped checkboxes by variable type ────────────────────────────────────────
+            selected_cols = []
+            checkbox_groups = [
+                ("Numerical",   col_types["numerical"]),
+                ("Categorical", col_types["categorical"]),
+                ("Temporal", col_types["datetime"]),
+            ]
+            def set_relationship_group(columns, selected):
+                for column in columns:
+                    st.session_state[f'mc_{column}'] = selected
 
-        for group_label, group_cols in checkbox_groups:
-            if not group_cols:
-                continue
-            st.markdown(f"**{group_label}**")
-            if group_label in ("Numerical", "Categorical"):
-                select_button, clear_button = st.columns(2)
-                select_button.button("Select all", key=f"mc_all_{group_label}",
-                                     on_click=set_relationship_group, args=(group_cols, True))
-                clear_button.button("Clear all", key=f"mc_clear_{group_label}",
-                                    on_click=set_relationship_group, args=(group_cols, False))
-            n_per_row = 4
-            for i in range(0, len(group_cols), n_per_row):
-                row_cols = st.columns(n_per_row)
-                for j, col_name in enumerate(group_cols[i : i + n_per_row]):
-                    if row_cols[j].checkbox(col_name, key=f"mc_{col_name}"):
-                        selected_cols.append(col_name)
+            for group_label, group_cols in checkbox_groups:
+                if not group_cols:
+                    continue
+                st.markdown(f"**{group_label}**")
+                if group_label in ("Numerical", "Categorical"):
+                    select_button, clear_button = st.columns(2)
+                    select_button.button("Select all", key=f"mc_all_{group_label}",
+                                         on_click=set_relationship_group, args=(group_cols, True))
+                    clear_button.button("Clear all", key=f"mc_clear_{group_label}",
+                                        on_click=set_relationship_group, args=(group_cols, False))
+                n_per_row = 4
+                for i in range(0, len(group_cols), n_per_row):
+                    row_cols = st.columns(n_per_row)
+                    for j, col_name in enumerate(group_cols[i : i + n_per_row]):
+                        if row_cols[j].checkbox(col_name, key=f"mc_{col_name}"):
+                            selected_cols.append(col_name)
 
-        if len(selected_cols) >= 2:
-            sel_num = [c for c in selected_cols if col_to_type.get(c) == "Numerical"]
-            sel_cat = [c for c in selected_cols if col_to_type.get(c) == "Categorical"]
-            sel_dt  = [c for c in selected_cols if col_to_type.get(c) == "Date / Time"]
-            n_num, n_cat, n_dt = len(sel_num), len(sel_cat), len(sel_dt)
+            if len(selected_cols) >= 2:
+                sel_num = [c for c in selected_cols if col_to_type.get(c) == "Numerical"]
+                sel_cat = [c for c in selected_cols if col_to_type.get(c) == "Categorical"]
+                sel_dt  = [c for c in selected_cols if col_to_type.get(c) == "Date / Time"]
+                n_num, n_cat, n_dt = len(sel_num), len(sel_cat), len(sel_dt)
 
-            from utils.relationship_ui import render_relationship_analysis
-            render_relationship_analysis(df, sel_num, sel_cat, sel_dt)
+                from utils.relationship_ui import render_relationship_analysis
+                render_relationship_analysis(df, sel_num, sel_cat, sel_dt)
 
-            # Determine available charts
-            available = []
-            if n_cat == 2 and n_num == 1 and n_dt == 0:
-                available.append("Heatmap — Numerical Values")
-            if n_num == 1 and n_cat == 1 and n_dt == 0:
-                available.append("Boxplot — Distribution by Category")
-            if n_dt == 1 and n_num >= 1 and n_cat == 0:
-                available.append("Line Chart — Trend")
-            if n_num == 2 and n_cat == 0 and n_dt == 0:
-                available += ["Scatter Plot — Correlation", "Interaction Chart — Density"]
-            if n_cat == 2 and n_num == 0 and n_dt == 0:
-                available += ["Heatmap — Occurrence", "Interaction Chart — Grouped Bar"]
+                # Determine available charts
+                available = []
+                if n_cat == 2 and n_num == 1 and n_dt == 0:
+                    available.append("Heatmap — Numerical Values")
+                if n_num == 1 and n_cat == 1 and n_dt == 0:
+                    available.append("Boxplot — Distribution by Category")
+                if n_dt == 1 and n_num >= 1 and n_cat == 0:
+                    available.append("Line Chart — Trend")
+                if n_num == 2 and n_cat == 0 and n_dt == 0:
+                    available += ["Scatter Plot — Correlation", "Interaction Chart — Density"]
+                if n_cat == 2 and n_num == 0 and n_dt == 0:
+                    available += ["Heatmap — Occurrence", "Interaction Chart — Grouped Bar"]
 
-            if not available and n_num < 2:
-                st.info(
-                    "No charts available for this combination. Try selecting: "
-                    "1 date + 1 or more numerical, 2 or more numerical, or exactly 2 categorical columns."
-                )
-            elif available:
-                chart_type = st.radio("Chart type", available, horizontal=True, key="view_radio_287")
-
-                # ── Heatmap — Numerical Values ────────────────────────────────────────
-                if chart_type == "Heatmap — Numerical Values":
-                    presentation.plotly_chart(
-                        make_pivot_heatmap(df, sel_cat[0], sel_cat[1], sel_num[0], height=460),
-                        use_container_width=True,
+                if not available and n_num < 2:
+                    st.info(
+                        "No charts available for this combination. Try selecting: "
+                        "1 date + 1 or more numerical, 2 or more numerical, or exactly 2 categorical columns."
                     )
-                    st.caption(
-                        f"Average of **{sel_num[0]}** for each combination of "
-                        f"**{sel_cat[0]}** (rows) and **{sel_cat[1]}** (columns). "
-                        f"Showing up to 10 most frequent values per column."
-                    )
+                elif available:
+                    chart_type = st.radio("Chart type", available, horizontal=True, key="view_radio_287")
 
-                # ── Boxplot — Distribution by Category ───────────────────────────────
-                elif chart_type == "Boxplot — Distribution by Category":
-                    fig, truncated, total_cats = make_boxplot_by_category(
-                        df, num_col=sel_num[0], cat_col=sel_cat[0], height=420,
-                    )
-                    presentation.plotly_chart(fig, use_container_width=True)
-                    if truncated:
+                    # ── Heatmap — Numerical Values ────────────────────────────────────────
+                    if chart_type == "Heatmap — Numerical Values":
+                        presentation.plotly_chart(
+                            make_pivot_heatmap(df, sel_cat[0], sel_cat[1], sel_num[0], height=460),
+                            use_container_width=True,
+                        )
                         st.caption(
-                            f"Showing top 15 of {total_cats} categories, sorted by median descending."
+                            f"Average of **{sel_num[0]}** for each combination of "
+                            f"**{sel_cat[0]}** (rows) and **{sel_cat[1]}** (columns). "
+                            f"Showing up to 10 most frequent values per column."
                         )
 
-                # ── Line Chart — Trend ────────────────────────────────────────────────
-                elif chart_type == "Line Chart — Trend":
-                    presentation.plotly_chart(
-                        make_line_chart(df, x_col=sel_dt[0], y_cols=sel_num, height=420),
-                        use_container_width=True,
-                    )
+                    # ── Boxplot — Distribution by Category ───────────────────────────────
+                    elif chart_type == "Boxplot — Distribution by Category":
+                        fig, truncated, total_cats = make_boxplot_by_category(
+                            df, num_col=sel_num[0], cat_col=sel_cat[0], height=420,
+                        )
+                        presentation.plotly_chart(fig, use_container_width=True)
+                        if truncated:
+                            st.caption(
+                                f"Showing top 15 of {total_cats} categories, sorted by median descending."
+                            )
 
-                # ── Scatter Plot — Correlation ────────────────────────────────────────
-                elif chart_type == "Scatter Plot — Correlation":
-                    corr_val = df[sel_num].corr().iloc[0, 1]
-                    presentation.plotly_chart(
-                        make_scatter(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
-                        use_container_width=True,
-                    )
-                    st.caption(f"Correlation coefficient (r): **{corr_val:.2f}**")
+                    # ── Line Chart — Trend ────────────────────────────────────────────────
+                    elif chart_type == "Line Chart — Trend":
+                        presentation.plotly_chart(
+                            make_line_chart(df, x_col=sel_dt[0], y_cols=sel_num, height=420),
+                            use_container_width=True,
+                        )
 
-                # ── Interaction Chart — Density ───────────────────────────────────────
-                elif chart_type == "Interaction Chart — Density":
-                    presentation.plotly_chart(
-                        make_density_contour(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
-                        use_container_width=True,
-                    )
+                    # ── Scatter Plot — Correlation ────────────────────────────────────────
+                    elif chart_type == "Scatter Plot — Correlation":
+                        corr_val = df[sel_num].corr().iloc[0, 1]
+                        presentation.plotly_chart(
+                            make_scatter(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
+                            use_container_width=True,
+                        )
+                        st.caption(f"Correlation coefficient (r): **{corr_val:.2f}**")
 
-                # ── Heatmap — Occurrence ──────────────────────────────────────────────
-                elif chart_type == "Heatmap — Occurrence":
-                    presentation.plotly_chart(
-                        make_occurrence_heatmap(df, sel_cat[0], sel_cat[1], height=460),
-                        use_container_width=True,
-                    )
-                    st.caption(
-                        f"Showing up to 10 most frequent values per column. "
-                        f"Rows = **{sel_cat[0]}**, Columns = **{sel_cat[1]}**."
-                    )
+                    # ── Interaction Chart — Density ───────────────────────────────────────
+                    elif chart_type == "Interaction Chart — Density":
+                        presentation.plotly_chart(
+                            make_density_contour(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
+                            use_container_width=True,
+                        )
 
-                # ── Interaction Chart — Grouped Bar ───────────────────────────────────
-                elif chart_type == "Interaction Chart — Grouped Bar":
-                    presentation.plotly_chart(
-                        make_grouped_bar(df, sel_cat[0], sel_cat[1], height=420),
-                        use_container_width=True,
-                    )
-                    st.caption(
-                        f"Showing up to 10 most frequent values per column. "
-                        f"X-axis = **{sel_cat[0]}**, grouped by **{sel_cat[1]}**."
-                    )
+                    # ── Heatmap — Occurrence ──────────────────────────────────────────────
+                    elif chart_type == "Heatmap — Occurrence":
+                        presentation.plotly_chart(
+                            make_occurrence_heatmap(df, sel_cat[0], sel_cat[1], height=460),
+                            use_container_width=True,
+                        )
+                        st.caption(
+                            f"Showing up to 10 most frequent values per column. "
+                            f"Rows = **{sel_cat[0]}**, Columns = **{sel_cat[1]}**."
+                        )
 
-        elif len(selected_cols) == 1:
-            st.info("Select at least one more column to see available charts.")
+                    # ── Interaction Chart — Grouped Bar ───────────────────────────────────
+                    elif chart_type == "Interaction Chart — Grouped Bar":
+                        presentation.plotly_chart(
+                            make_grouped_bar(df, sel_cat[0], sel_cat[1], height=420),
+                            use_container_width=True,
+                        )
+                        st.caption(
+                            f"Showing up to 10 most frequent values per column. "
+                            f"X-axis = **{sel_cat[0]}**, grouped by **{sel_cat[1]}**."
+                        )
+
+            elif len(selected_cols) == 1:
+                st.info("Select at least one more column to see available charts.")
 
 
     _show_feedback("Exploratory Data Analysis", "eda")
 
-    # ── Predictive Analytics ──────────────────────────────────────────────────────
     st.divider()
+    render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback)
+
+
+def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback):
     st.subheader("Predictive Analytics")
 
-    from utils.modelling import (
+    from utils.modelling_config import (
         detect_target_type, detect_id_columns, estimate_training_time,
         get_model_explanation, interpret_learning_curve, interpret_r2,
-        run_random_forest_regressor, PARAM_GRID, CV_FOLDS, TOTAL_COMBOS, TOTAL_FITS,
-        run_random_forest_classifier, interpret_classifier_f1,
+        PARAM_GRID, CV_FOLDS, TOTAL_COMBOS, TOTAL_FITS,
+        interpret_classifier_f1,
         interpret_learning_curve_classifier,
-        run_random_forest_multiclass_classifier, interpret_multiclass_f1,
+        interpret_multiclass_f1,
         PARAM_GRID_CLASSIFIER, TOTAL_COMBOS_CLASSIFIER, TOTAL_FITS_CLASSIFIER,
-        run_regression_comparison, estimate_training_time_comparison,
+        estimate_training_time_comparison,
         LASSO_PARAM_GRID, LASSO_TOTAL_FITS, COMPARISON_TOTAL_FITS,
-        run_binary_classification_comparison, estimate_binary_comparison_time,
+        estimate_binary_comparison_time,
         LOGISTIC_PARAM_GRID, LOGISTIC_TOTAL_FITS, BINARY_COMPARISON_TOTAL_FITS,
-        run_multiclass_classification_comparison, estimate_multiclass_comparison_time,
+        estimate_multiclass_comparison_time,
         MULTICLASS_COMPARISON_TOTAL_FITS,
     )
-    import matplotlib.pyplot as plt
-    import shap as _shap
 
     # Select Target Column
     st.markdown("#### Select Target Column")
@@ -779,6 +778,9 @@ def render_analyze(raw, _show_feedback):
         run_btn = st.button("▶ Run", type="primary", key="pa_run_btn")
 
         def _train_model():
+            from utils.modelling import (run_regression_comparison,
+                                         run_binary_classification_comparison,
+                                         run_multiclass_classification_comparison)
             if pa_target_type == "continuous_numerical":
                 return run_regression_comparison(df, pa_target, pa_predictors)
             elif pa_target_type == "binary":
@@ -805,6 +807,8 @@ def render_analyze(raw, _show_feedback):
 
     # ── Results (shown first when available) ──────────────────────────────────────
     if st.session_state.get("pa_results"):
+        import matplotlib.pyplot as plt
+        import shap as _shap
         results    = st.session_state["pa_results"]
         model_type = results.get("_model_type", "")
         clean_names = [n.split("__", 1)[-1] for n in results["feature_names"]]
@@ -927,7 +931,7 @@ def render_analyze(raw, _show_feedback):
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
-                if _pa_ai_key not in st.session_state:
+                if st.button("Refresh interpretation" if st.session_state.get(_pa_ai_key) else "Generate interpretation", key="view_ai_generate_" + _pa_ai_key):
                     with st.spinner("Generating interpretation…"):
                         try:
                             st.session_state[_pa_ai_key] = interpret_predictive_results(
@@ -1022,7 +1026,7 @@ def render_analyze(raw, _show_feedback):
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
-                if _pa_ai_key not in st.session_state:
+                if st.button("Refresh interpretation" if st.session_state.get(_pa_ai_key) else "Generate interpretation", key="view_ai_generate_" + _pa_ai_key):
                     with st.spinner("Generating interpretation…"):
                         try:
                             st.session_state[_pa_ai_key] = interpret_predictive_results(
@@ -1157,7 +1161,7 @@ def render_analyze(raw, _show_feedback):
             plt.close("all")
 
             with st.expander("🤖 AI Interpretation"):
-                if _pa_ai_key not in st.session_state:
+                if st.button("Refresh interpretation" if st.session_state.get(_pa_ai_key) else "Generate interpretation", key="view_ai_generate_" + _pa_ai_key):
                     with st.spinner("Generating interpretation…"):
                         try:
                             st.session_state[_pa_ai_key] = interpret_predictive_results(

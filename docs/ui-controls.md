@@ -4,7 +4,7 @@ Status: current implementation inventory and decision register, 2026-09-28. See 
 
 ## Scope and terminology
 
-Reviewed the active route from `app.py` through `utils/dataset_workspace.py`, `utils/dataset_views.py`, and their UI helpers, including Enterprise. Versioned snapshots (`appV*.py`, `*V*.py`) are excluded from the current UI inventory. Predictive Analytics in `dataset_views.py` is active and included. This is a source-code audit, not a browser/accessibility certification; conditional controls appear only for eligible data, selections, or results.
+Reviewed the active route from `app.py` through `utils/dataset_workspace.py`, `utils/dataset_views.py`, and their UI helpers, including Enterprise. Versioned snapshots (`appV*.py`, `*V*.py`) are excluded from the current UI inventory. Predictive Analytics in `dataset_views.py` is active and included below the exploratory panels within Analyze. This is a source-code audit, not a browser/accessibility certification; conditional controls appear only for eligible data, selections, or results.
 
 | Term | Meaning |
 | --- | --- |
@@ -142,3 +142,9 @@ Inspect Column Overview now uses the native table, including missing-percentage 
 Visual Analysis's existing chart-selection button grid is the standard **for Visual Analysis**. It is currently the only chart-selection button grid in the active app. Relationship's chart-type radio buttons and other analyses' chart-content dropdowns/multiselects are unchanged; applying buttons there requires a separate decision.
 
 Relationship's plain, side-by-side **Select all / Clear all** buttons are the reference for bulk selection. Predictive Analytics now uses the same wording and per-variable-group layout, replacing its global icon-prefixed Select All / Deselect All controls. Existing matching controls elsewhere are retained. Relationship's current Temporal group remains unchanged.
+
+## Analyze loading behavior (2026-09-28)
+
+Analyze has five exploratory tabs: Descriptive Statistics, Group Statistics, Visual Analysis, Relationship and Comparison. Only the open exploratory tab renders its analysis. Predictive Analytics remains below these tabs in Analyze; it is not a separate tab. Existing dataset-specific variable selections and results remain available when switching panels.
+
+AI Interpretation requires **Generate interpretation** or **Refresh interpretation**. Opening a panel or a collapsed interpretation section does not initiate a request. Cached interpretations display without another request. Predictive configuration uses the lightweight `utils/modelling_config.py`; model-fitting dependencies load on Run, and SHAP chart imports load when prediction results are displayed. Training calculations and model grids are unchanged. The first training run may still spend time loading libraries.

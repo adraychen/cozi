@@ -24,7 +24,7 @@ def dataset_state_key(key):
     trigger = (key in _TRIGGERS or key.endswith(('_download', '_all', '_clear'))
                or key.startswith(('va_graph_button_', 'mc_all_', 'mc_clear_',
                                   'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_',
-                                  'pa_select_all_', 'pa_clear_all_')))
+                                  'pa_select_all_', 'pa_clear_all_', 'view_ai_generate_')))
     return owned and not trigger
 
 
