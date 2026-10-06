@@ -41,7 +41,7 @@ Five **side-by-side dropdowns**, wrapping on narrow screens, select one active o
 | Group | Dropdown operations |
 | --- | --- |
 | Combine datasets | Join, Append |
-| Restructure data | Aggregate, Pivot, Unpivot (clickable ⓘ explanations below the dropdown) |
+| Restructure data | Aggregate, Pivot, Unpivot (explanations in the Help tab) |
 | Manage columns | Rename column, Remove column, Add column |
 | Clean values | Fill missing values, Replace Values, Trim Spaces, Remove Characters |
 | Convert values | Convert Currency to Numeric |
@@ -129,7 +129,7 @@ Useful source search: `rg -n 'selectbox|multiselect|checkbox|radio|variable_chec
 
 The product owner considers the current Transform control pattern consistent; retain its grouped dropdowns and operation settings. Cross-screen decisions above do not imply that Transform needs redesign.
 
-Restructure data uses short operation names. Below its dropdown, Aggregate, Pivot and Unpivot each have a clickable, keyboard-accessible ⓘ disclosure. Clicking expands respectively “Group rows and calculate summaries”, “Turn values into columns”, and “Turn columns into values”; clicking again closes it. Native dropdown options cannot contain separate clickable controls, so these disclosures sit immediately below the menu. Opening help does not select an operation.
+Restructure data uses short operation names. The Help tab next to Analyze contains explanations for Aggregate (“Group rows and calculate summaries”), Pivot (“Turn values into columns”), and Unpivot (“Turn columns into values”). Explanations no longer appear below the Transform dropdown. Help uses native expandable sections and provides a home for future explanations and how-to guides.
 
 ## Approved table standard (2026-09-28)
 

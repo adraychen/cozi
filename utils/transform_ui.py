@@ -18,11 +18,6 @@ OPERATION_GROUPS = {
     'Clean values': ['Fill missing values', 'Replace Values', 'Trim Spaces', 'Remove Characters'],
     'Convert values': ['Convert Currency to Numeric'],
 }
-OPERATION_HELP = {
-    'Aggregate': 'Group rows and calculate summaries',
-    'Pivot': 'Turn values into columns',
-    'Unpivot': 'Turn columns into values',
-}
 
 
 def operation_menu_key(group):
@@ -51,16 +46,6 @@ def render_operation_selector():
                 st.selectbox(group, [None] + options, key=key,
                              format_func=lambda value: 'Choose operation…' if value is None else value,
                              on_change=_choose_group_operation, args=(key,))
-                if group == 'Restructure data':
-                    st.html('<style>.tf-operation-help summary {list-style:none; cursor:pointer; width:fit-content; font-size:0.875rem;}'
-                            '.tf-operation-help summary::-webkit-details-marker {display:none;}'
-                            '.tf-operation-help summary:focus-visible {outline:2px solid #4c72b0; outline-offset:3px;}'
-                            '.tf-operation-help .info {color:#4c72b0; margin-left:0.3rem;}'
-                            '.tf-operation-help p {margin:0.25rem 0 0.65rem; font-size:0.875rem;}'
-                            '</style>' + ''.join(
-                                f'<details class="tf-operation-help"><summary aria-label="About {name}">{name}'
-                                f'<span class="info" aria-hidden="true">ⓘ</span></summary><p>{description}</p></details>'
-                                for name, description in OPERATION_HELP.items()))
     if operation:
         st.markdown(f'**{operation}**')
     return operation

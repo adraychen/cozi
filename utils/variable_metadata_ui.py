@@ -8,9 +8,8 @@ from utils.variable_metadata import ALLOWED, ensure_metadata, infer_variable_sub
 
 def render_column_overview(raw, dataset_id):
     metadata=ensure_metadata(st.session_state,raw,dataset_id)
-    st.caption('Variable Type defines whether a variable is treated analytically as numerical, categorical, or temporal. Variable Subtype provides its statistical classification. Edit a column below; changes apply throughout the app.')
+    st.caption('(A) denotes automatic classification by the app; (M) denotes a manual override by the user. Manual overrides apply throughout the app.')
     render_overview(raw, metadata)
-    st.caption('A = Automatic classification  M = Manual Override')
     with st.expander('Edit variable classification',expanded=False):
         col=st.selectbox('Column to edit',list(raw),key='vm_column')
         m=metadata[col]

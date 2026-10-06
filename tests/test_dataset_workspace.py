@@ -71,7 +71,7 @@ class WorkspaceTests(unittest.TestCase):
         for key, value in state.items():
             app.session_state[key] = value
         app.run(timeout=60)
-        for selected in ['Transform', 'Inspect', 'Transform']:
+        for selected in ['Transform', 'Help', 'Inspect', 'Transform']:
             event = WidgetStates()
             widget = event.widgets.add()
             widget.id = app._session_state._state._key_id_mapper.get_id_from_key('ws_workflow_' + app.session_state['ws_active'])
@@ -81,6 +81,10 @@ class WorkspaceTests(unittest.TestCase):
             self.assertEqual(app.session_state['ws_workflow'], selected)
             if selected == 'Transform':
                 self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
+            elif selected == 'Help':
+                self.assertEqual([t.label for t in app.tabs][1:5], ['Inspect', 'Transform', 'Analyze', 'Help'])
+                self.assertEqual([e.label for e in app.expander], ['Aggregate', 'Pivot', 'Unpivot'])
+                self.assertTrue(any(m.value == 'Group rows and calculate summaries.' for m in app.markdown))
 
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):
         script = "import streamlit as st\n" + FIXTURE.replace('utils.ai_interpreter.interpret_dataset_overview', 'utils.dataset_views.interpret_dataset_overview').replace(
