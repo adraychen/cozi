@@ -668,7 +668,16 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
     # Select Target Column
     st.markdown("#### Select Target Column")
     st.caption("The target column is what you want to predict — for example, price, sales, or temperature.")
-    pa_target = st.selectbox("Select target column", options=df.columns.tolist(), key="pa_target_select")
+    from utils.predictive_controls import render_target_selector
+    pa_target = render_target_selector(df.columns.tolist(), col_types)
+    if pa_target is None:
+        st.info('Choose a target column.')
+        return
+    from utils.predictive_routing import is_temporal_target
+    if is_temporal_target(df[pa_target], variable_metadata[pa_target]['variable_type']):
+        from utils.temporal_target_guidance import render_temporal_guidance
+        render_temporal_guidance(df, pa_target, variable_metadata)
+        return
 
     # Predictor Columns
     st.markdown("#### Predictor Columns")

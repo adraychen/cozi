@@ -1,0 +1,504 @@
+2026-10-07 04:22:32.048 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-07 04:22:32.115 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+test_lightweight_configuration_does_not_import_training_libraries (test_analyze_loading.AnalyzeLoadingTests.test_lightweight_configuration_does_not_import_training_libraries) ... ok
+test_only_open_panel_runs_and_ai_requires_explicit_action (test_analyze_loading.AnalyzeLoadingTests.test_only_open_panel_runs_and_ai_requires_explicit_action) ... 2026-10-07 04:22:33.322 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:33.323 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:38.783 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:38.820 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:39.381 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:39.629 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_classical_known_result (test_anova.AnovaTests.test_classical_known_result) ... ok
+test_cleaning_and_lost_group_report (test_anova.AnovaTests.test_cleaning_and_lost_group_report) ... ok
+test_invalid_data_blocked (test_anova.AnovaTests.test_invalid_data_blocked) ... ok
+test_normality_limits_and_variance_warning (test_anova.AnovaTests.test_normality_limits_and_variance_warning) ... ok
+test_three_group_welch_matches_scipy (test_anova.AnovaTests.test_three_group_welch_matches_scipy) ... ok
+test_unused_categories_and_empty_data (test_anova.AnovaTests.test_unused_categories_and_empty_data) ... ok
+test_welch_matches_two_sample_welch_t (test_anova.AnovaTests.test_welch_matches_two_sample_welch_t) ... ok
+test_zero_variance_welch_blocked (test_anova.AnovaTests.test_zero_variance_welch_blocked) ... ok
+test_invalid_groups_keep_summary (test_anova.AnovaUITests.test_invalid_groups_keep_summary) ... 2026-10-07 04:22:40.044 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_result_guard_method_and_dataset_change (test_anova.AnovaUITests.test_result_guard_method_and_dataset_change) ... 2026-10-07 04:22:40.771 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_degenerate_and_empty (test_categorical_statistics.CategoricalStatisticsTests.test_degenerate_and_empty) ... ok
+test_known_pearson_result (test_categorical_statistics.CategoricalStatisticsTests.test_known_pearson_result) ... ok
+test_missing_and_unused_categories (test_categorical_statistics.CategoricalStatisticsTests.test_missing_and_unused_categories) ... ok
+test_optional_numeric_counts (test_categorical_statistics.CategoricalStatisticsTests.test_optional_numeric_counts) ... ok
+test_sparse_and_time_counts (test_categorical_statistics.CategoricalStatisticsTests.test_sparse_and_time_counts) ... ok
+test_column_overview_with_legacy_effective_data (test_column_group_compatibility.ColumnGroupCompatibilityTests.test_column_overview_with_legacy_effective_data) ... 2026-10-07 04:22:42.754 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_full_app_with_legacy_column_overview (test_column_group_compatibility.ColumnGroupCompatibilityTests.test_full_app_with_legacy_column_overview) ... 2026-10-07 04:22:43.578 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:43.578 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:43.578 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:44.311 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:44.312 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:22:44.313 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_excess_selection_guidance_and_recovery (test_comparison_ui.ComparisonUITests.test_excess_selection_guidance_and_recovery) ... 2026-10-07 04:22:45.275 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_missing_required_types_and_stale_group_selection (test_comparison_ui.ComparisonUITests.test_missing_required_types_and_stale_group_selection) ... 2026-10-07 04:22:46.369 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_selection_drives_eligibility (test_comparison_ui.ComparisonUITests.test_selection_drives_eligibility) ... ok
+test_three_analyses_and_independent_controls (test_comparison_ui.ComparisonUITests.test_three_analyses_and_independent_controls) ... 2026-10-07 04:22:47.339 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_pairwise_missing_and_constant (test_correlation.CorrelationTests.test_pairwise_missing_and_constant) ... ok
+test_spearman_and_insufficient_pairs (test_correlation.CorrelationTests.test_spearman_and_insufficient_pairs) ... ok
+test_ui_separation_and_matrix (test_correlation.CorrelationTests.test_ui_separation_and_matrix) ... 2026-10-07 04:23:00.508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_accounting_parentheses (test_currency_conversion.CurrencyConversionTests.test_accounting_parentheses) ... ok
+test_all_columns_conversion_and_atomic_failure (test_currency_conversion.CurrencyConversionTests.test_all_columns_conversion_and_atomic_failure) ... 2026-10-07 04:23:02.304 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:02.305 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:02.306 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:03.650 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:03.871 The widget with key "tf_currency_targets" was created with a default value but also had its value set via the Session State API.
+Stack (most recent call last):
+  File "C:\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\testing\v1\local_script_runner.py", line 144, in _run_script_thread
+    super()._run_script_thread()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 423, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 934, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 909, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\chung\AppData\Local\Temp\tmpzqhjlqa9\0949dcf074003b48cd6cb4f9f0361613", line 5, in <module>
+    runpy.run_path('C:\\Users\\chung\\GitHub Repositories\\DataAnalytics\\app.py', run_name='__main__')
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\app.py", line 150, in <module>
+    render_workspace(_SAMPLE_DATASETS, _show_feedback)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\fragment.py", line 749, in wrap
+    return wrapped_fragment()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\fragment.py", line 717, in wrapped_fragment
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\utils\dataset_workspace.py", line 246, in render_workspace
+    render_transform(dataset_id, registry)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\utils\transform_ui.py", line 276, in render_transform
+    selected_columns = st.multiselect('Columns to convert', text_columns, default=detected, key='tf_currency_targets')
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 725, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\widgets\multiselect.py", line 646, in multiselect
+    return self._multiselect(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\widgets\multiselect.py", line 702, in _multiselect
+    check_widget_policies(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 146, in check_widget_policies
+    check_session_state_rules(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 90, in check_session_state_rules
+    _LOGGER.warning(
+2026-10-07 04:23:04.299 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:04.301 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:04.302 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:05.165 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_atomic_failure_and_counts (test_currency_conversion.CurrencyConversionTests.test_atomic_failure_and_counts) ... ok
+test_malformed_and_out_of_range_values_rejected (test_currency_conversion.CurrencyConversionTests.test_malformed_and_out_of_range_values_rejected) ... ok
+test_nullable_whole_numbers_and_existing_numeric (test_currency_conversion.CurrencyConversionTests.test_nullable_whole_numbers_and_existing_numeric) ... ok
+test_smart_detection_does_not_guess_plain_text_or_modify_data (test_currency_conversion.CurrencyConversionTests.test_smart_detection_does_not_guess_plain_text_or_modify_data) ... ok
+test_supported_values_decimals_and_missing (test_currency_conversion.CurrencyConversionTests.test_supported_values_decimals_and_missing) ... ok
+test_ui_failure_preserves_metadata_and_blocks_apply (test_currency_conversion.CurrencyConversionTests.test_ui_failure_preserves_metadata_and_blocks_apply) ... 2026-10-07 04:23:05.466 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:05.468 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:05.468 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:06.346 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_ui_preview_create_and_metadata (test_currency_conversion.CurrencyConversionTests.test_ui_preview_create_and_metadata) ... 2026-10-07 04:23:06.493 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:06.494 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:06.495 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:07.159 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit (test_dataset_workspace.WorkspaceTests.test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit) ... 2026-10-07 04:23:07.528 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:07.530 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:07.530 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:08.932 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:08.933 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_analyze_and_preview_invalidation (test_dataset_workspace.WorkspaceTests.test_analyze_and_preview_invalidation) ... 2026-10-07 04:23:09.097 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:09.675 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:09.749 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-07 04:23:10.057 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:10.221 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_append_pivot_unpivot_forms_and_empty_result (test_dataset_workspace.WorkspaceTests.test_append_pivot_unpivot_forms_and_empty_result) ... 2026-10-07 04:23:10.432 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:11.003 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:11.063 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-07 04:23:11.367 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:11.838 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:12.300 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_created_dataset_ignores_previous_workflow_browser_state (test_dataset_workspace.WorkspaceTests.test_created_dataset_ignores_previous_workflow_browser_state) ... 2026-10-07 04:23:13.028 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:13.032 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:13.032 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:13.851 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:13.895 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:14.300 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:14.345 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_csv_download_contains_full_raw_dataset (test_dataset_workspace.WorkspaceTests.test_csv_download_contains_full_raw_dataset) ... ok
+test_excel_sheet_discovery_cached_by_content (test_dataset_workspace.WorkspaceTests.test_excel_sheet_discovery_cached_by_content) ... 2026-10-07 04:23:14.573 No runtime found, using MemoryCacheStorageManager
+ok
+test_failed_import_and_sample_add_preserve_existing (test_dataset_workspace.WorkspaceTests.test_failed_import_and_sample_add_preserve_existing) ... 2026-10-07 04:23:14.579 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:15.270 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:15.337 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-07 04:23:15.610 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_join_validation_readable_counts (test_dataset_workspace.WorkspaceTests.test_join_validation_readable_counts) ... 2026-10-07 04:23:15.948 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_manual_add_switch_inspect_and_transform_creation (test_dataset_workspace.WorkspaceTests.test_manual_add_switch_inspect_and_transform_creation) ... 2026-10-07 04:23:16.620 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:17.257 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:17.308 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-07 04:23:18.258 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:18.320 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-07 04:23:18.646 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:18.829 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_multi_upload_excel_sheets_and_same_name (test_dataset_workspace.WorkspaceTests.test_multi_upload_excel_sheets_and_same_name) ... 2026-10-07 04:23:19.275 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:20.470 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_old_saved_predictor_button_values_are_not_restored (test_dataset_workspace.WorkspaceTests.test_old_saved_predictor_button_values_are_not_restored) ... ok
+test_predictor_bulk_buttons_survive_reruns_without_state_assignment (test_dataset_workspace.WorkspaceTests.test_predictor_bulk_buttons_survive_reruns_without_state_assignment) ... 2026-10-07 04:23:20.509 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_registry_and_isolated_state (test_dataset_workspace.WorkspaceTests.test_registry_and_isolated_state) ... ok
+test_transform_switch_from_browser_widget_event (test_dataset_workspace.WorkspaceTests.test_transform_switch_from_browser_widget_event) ... 2026-10-07 04:23:21.214 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:21.216 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:21.216 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_uploaded_text_and_dates_render_inspect_without_tab_roundtrip (test_dataset_workspace.WorkspaceTests.test_uploaded_text_and_dates_render_inspect_without_tab_roundtrip) ... 2026-10-07 04:23:22.194 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:23.342 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:23.379 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_callback_after_widget_state_is_cleared (test_descriptive_controls.DescriptiveControlsTests.test_callback_after_widget_state_is_cleared) ... ok
+test_selection_across_groups_and_deselection (test_descriptive_controls.DescriptiveControlsTests.test_selection_across_groups_and_deselection) ... 2026-10-07 04:23:23.757 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_all_reported_statistics_have_closed_clickable_help (test_descriptive_statistics_display.DescriptiveDisplayTests.test_all_reported_statistics_have_closed_clickable_help) ... ok
+test_kurtosis_help_matches_excess_calculation (test_descriptive_statistics_display.DescriptiveDisplayTests.test_kurtosis_help_matches_excess_calculation) ... ok
+test_untrusted_names_and_values_are_escaped (test_descriptive_statistics_display.DescriptiveDisplayTests.test_untrusted_names_and_values_are_escaped) ... ok
+test_bedrooms_reject_count_families (test_distribution_fit.DistributionTests.test_bedrooms_reject_count_families) ... ok
+test_binomial_only_when_known (test_distribution_fit.DistributionTests.test_binomial_only_when_known) ... ok
+test_degenerate_and_support (test_distribution_fit.DistributionTests.test_degenerate_and_support) ... ok
+test_discrete_distance (test_distribution_fit.DistributionTests.test_discrete_distance) ... ok
+test_lognormal (test_distribution_fit.DistributionTests.test_lognormal) ... ok
+test_chart_availability (test_eda_layout.EDALayoutTests.test_chart_availability) ... ok
+test_group_exclusivity_and_multiple_dimensions (test_eda_layout.EDALayoutTests.test_group_exclusivity_and_multiple_dimensions) ... 2026-10-07 04:23:28.107 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_pie_counts_sums_and_negative_validation (test_eda_layout.EDALayoutTests.test_pie_counts_sums_and_negative_validation) ... 2026-10-07 04:23:29.564 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_requested_chart_rendering_and_role_changes (test_eda_layout.EDALayoutTests.test_requested_chart_rendering_and_role_changes) ... 2026-10-07 04:23:30.487 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_accumulate_changes_across_columns (test_editing_workspace.EditingWorkspaceTests.test_accumulate_changes_across_columns) ... 2026-10-07 04:23:34.196 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:34.198 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:34.198 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:35.354 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:35.573 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:35.771 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:36.332 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:36.437 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_clean_all_columns (test_editing_workspace.EditingWorkspaceTests.test_clean_all_columns) ... 2026-10-07 04:23:36.702 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:36.703 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:36.703 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:37.744 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_duplicate_checks_use_raw_values_before_temporal_conversion (test_editing_workspace.EditingWorkspaceTests.test_duplicate_checks_use_raw_values_before_temporal_conversion) ... 2026-10-07 04:23:38.445 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:38.447 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:38.447 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_inspect_cleanup_locations_results_and_switching (test_editing_workspace.EditingWorkspaceTests.test_inspect_cleanup_locations_results_and_switching) ... 2026-10-07 04:23:39.788 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:39.789 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:39.789 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:41.172 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_transform_column_operations_preview_validation_and_save (test_editing_workspace.EditingWorkspaceTests.test_transform_column_operations_preview_validation_and_save) ... 2026-10-07 04:23:41.459 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:41.460 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:41.460 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:42.415 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:43.003 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:43.672 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_trim_spaces_preview_and_create (test_editing_workspace.EditingWorkspaceTests.test_trim_spaces_preview_and_create) ... 2026-10-07 04:23:44.117 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:44.118 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:44.118 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:44.986 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_value_cleaning_preview_and_create (test_editing_workspace.EditingWorkspaceTests.test_value_cleaning_preview_and_create) ... 2026-10-07 04:23:45.512 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:45.514 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:45.514 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:46.307 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:46.698 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_failed_or_uncertain_save_retains_retry_id_and_hides_details (test_enterprise.EnquiryTests.test_failed_or_uncertain_save_retains_retry_id_and_hides_details) ... Enterprise submission failed: type=RuntimeError
+Enterprise submission failed: type=ValueError
+ok
+test_options_limits_and_normalization (test_enterprise.EnquiryTests.test_options_limits_and_normalization) ... ok
+test_pending_store_does_not_report_success (test_enterprise.EnquiryTests.test_pending_store_does_not_report_success) ... Enterprise persistence configuration is missing
+ok
+test_required_fields_and_basic_email_validation (test_enterprise.EnquiryTests.test_required_fields_and_basic_email_validation) ... ok
+test_success_deduplication_and_changed_enquiry (test_enterprise.EnquiryTests.test_success_deduplication_and_changed_enquiry) ... ok
+test_footer_navigation_and_analytics_state_roundtrip (test_enterprise.EnterpriseUITests.test_footer_navigation_and_analytics_state_roundtrip) ... 2026-10-07 04:23:47.183 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:47.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:47.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:48.002 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:48.076 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:48.077 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_form_validation_preserves_values_and_unconfigured_message (test_enterprise.EnterpriseUITests.test_form_validation_preserves_values_and_unconfigured_message) ... 2026-10-07 04:23:48.154 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Enterprise persistence configuration is missing
+ok
+test_ui_confirmed_success_duplicate_and_safe_failure (test_enterprise.EnterpriseUITests.test_ui_confirmed_success_duplicate_and_safe_failure) ... 2026-10-07 04:23:48.919 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:23:49.529 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Enterprise submission failed: type=RuntimeError
+2026-10-07 04:23:49.546 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_commit_failure_is_not_success_and_logs_no_sensitive_details (test_enterprise_store.PostgresStoreTests.test_commit_failure_is_not_success_and_logs_no_sensitive_details) ... ok
+test_parameterized_save_receipt_and_closed_connection (test_enterprise_store.PostgresStoreTests.test_parameterized_save_receipt_and_closed_connection) ... ok
+test_server_configuration_prefers_secrets_and_falls_back_to_environment (test_enterprise_store.PostgresStoreTests.test_server_configuration_prefers_secrets_and_falls_back_to_environment) ... ok
+test_stricter_tls_preserved_and_no_notification_dependency (test_enterprise_store.PostgresStoreTests.test_stricter_tls_preserved_and_no_notification_dependency) ... ok
+test_empty_cells_and_singular_models (test_factorial_anova.FactorialTests.test_empty_cells_and_singular_models) ... ok
+test_missing_labels_and_plot (test_factorial_anova.FactorialTests.test_missing_labels_and_plot) ... ok
+test_multiple_selected_interactions_and_complexity_guard (test_factorial_anova.FactorialTests.test_multiple_selected_interactions_and_complexity_guard) ... ok
+test_posthoc_model_contrasts_and_interaction_guard (test_factorial_anova.FactorialTests.test_posthoc_model_contrasts_and_interaction_guard) ... ok
+test_reference_balanced_unbalanced_main_and_interactions (test_factorial_anova.FactorialTests.test_reference_balanced_unbalanced_main_and_interactions) ... ok
+test_sparse_insufficient_constant_and_single_level (test_factorial_anova.FactorialTests.test_sparse_insufficient_constant_and_single_level) ... ok
+test_all_significant_terms_have_plots (test_factorial_anova.FactorialUITests.test_all_significant_terms_have_plots) ... 2026-10-07 04:23:51.527 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_controls_results_and_stale_selections (test_factorial_anova.FactorialUITests.test_controls_results_and_stale_selections) ... 2026-10-07 04:23:53.788 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_metadata_filter_and_numeric_categorical_codes (test_factorial_anova.FactorialUITests.test_metadata_filter_and_numeric_categorical_codes) ... 2026-10-07 04:23:58.421 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_no_significant_terms_and_optional_exploration (test_factorial_anova.FactorialUITests.test_no_significant_terms_and_optional_exploration) ... 2026-10-07 04:23:59.536 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_balanced_unbalanced_emms_intervals_against_reference (test_factorial_guidance.AdjustedMeansTests.test_balanced_unbalanced_emms_intervals_against_reference) ... ok
+test_multiple_partners_require_conditioning_and_missing_strata_withheld (test_factorial_guidance.AdjustedMeansTests.test_multiple_partners_require_conditioning_and_missing_strata_withheld) ... ok
+test_nonsignificant_interaction_allows_global_pairs_two_levels (test_factorial_guidance.AdjustedMeansTests.test_nonsignificant_interaction_allows_global_pairs_two_levels) ... ok
+test_reference_grid_size_guard (test_factorial_guidance.AdjustedMeansTests.test_reference_grid_size_guard) ... ok
+test_simple_effects_reference_and_familywise_adjustment (test_factorial_guidance.AdjustedMeansTests.test_simple_effects_reference_and_familywise_adjustment) ... ok
+test_sparse_estimable_additive_and_unestimable_interactions (test_factorial_guidance.AdjustedMeansTests.test_sparse_estimable_additive_and_unestimable_interactions) ... C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_guidance.py:85: SingularMatrixWarning: The design matrix is rank-deficient. The model parameters are not uniquely determined.
+  singular = ols('Y ~ C(A)*C(B)',df).fit()
+ok
+test_decreasing_spread_curvature_and_extreme_residual_screens (test_factorial_guidance.DiagnosticsTests.test_decreasing_spread_curvature_and_extreme_residual_screens) ... ok
+test_hc3_rejects_unit_leverage (test_factorial_guidance.DiagnosticsTests.test_hc3_rejects_unit_leverage) ... ok
+test_heteroskedasticity_spread_and_hc3_reference (test_factorial_guidance.DiagnosticsTests.test_heteroskedasticity_spread_and_hc3_reference) ... ok
+test_normality_variance_independence_and_replication_language (test_factorial_guidance.DiagnosticsTests.test_normality_variance_independence_and_replication_language) ... ok
+test_skew_transform_domain_safeguards_no_mutation (test_factorial_guidance.DiagnosticsTests.test_skew_transform_domain_safeguards_no_mutation) ... ok
+test_complete_guided_workflow_hc3_simple_effects_swaps_and_alpha (test_factorial_guidance.GuidedUITests.test_complete_guided_workflow_hc3_simple_effects_swaps_and_alpha) ... 2026-10-07 04:24:05.151 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_factorial_controls_are_dataset_scoped (test_factorial_guidance.GuidedUITests.test_factorial_controls_are_dataset_scoped) ... ok
+test_fill_only_missing_and_preserve_source_and_types (test_fill_missing.FillMissingTests.test_fill_only_missing_and_preserve_source_and_types) ... ok
+test_invalid_values_and_noop (test_fill_missing.FillMissingTests.test_invalid_values_and_noop) ... ok
+test_timezone_and_nullable_storage (test_fill_missing.FillMissingTests.test_timezone_and_nullable_storage) ... ok
+test_group_navigation_preview_apply_and_create (test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create) ... 2026-10-07 04:24:15.182 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:15.183 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:15.183 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:16.176 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_calendar_gap (test_group_statistics.GroupStatisticsTests.test_calendar_gap) ... ok
+test_contributions (test_group_statistics.GroupStatisticsTests.test_contributions) ... ok
+test_missing_and_collision (test_group_statistics.GroupStatisticsTests.test_missing_and_collision) ... ok
+test_rolling_and_running (test_group_statistics.GroupStatisticsTests.test_rolling_and_running) ... ok
+test_summary_and_reference (test_group_statistics.GroupStatisticsTests.test_summary_and_reference) ... ok
+test_year_comparison (test_group_statistics.GroupStatisticsTests.test_year_comparison) ... ok
+test_alphabetical_list_and_feature_search (test_help_ui.HelpTests.test_alphabetical_list_and_feature_search) ... 2026-10-07 04:24:17.158 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_anova (test_input_relationship.InputRelationshipTests.test_anova) ... ok
+test_csv (test_input_relationship.InputRelationshipTests.test_csv) ... ok
+test_limits_and_validation (test_input_relationship.InputRelationshipTests.test_limits_and_validation) ... ok
+test_regression (test_input_relationship.InputRelationshipTests.test_regression) ... ok
+test_categories_references_interactions_polynomials (test_logistic.LogisticTests.test_categories_references_interactions_polynomials) ... ok
+test_event_direction_and_probability_intervals (test_logistic.LogisticTests.test_event_direction_and_probability_intervals) ... ok
+test_hierarchy_aic_and_fixed_sample (test_logistic.LogisticTests.test_hierarchy_aic_and_fixed_sample) ... ok
+test_invalid_and_nonconvergence (test_logistic.LogisticTests.test_invalid_and_nonconvergence) ... ok
+test_nonlinearity_and_influence (test_logistic.LogisticTests.test_nonlinearity_and_influence) ... ok
+test_numeric_fit_matches_logit (test_logistic.LogisticTests.test_numeric_fit_matches_logit) ... ok
+test_ordinal_and_missing (test_logistic.LogisticTests.test_ordinal_and_missing) ... ok
+test_probability_plots (test_logistic.LogisticTests.test_probability_plots) ... ok
+test_rare_levels_imbalance_and_vif (test_logistic.LogisticTests.test_rare_levels_imbalance_and_vif) ... ok
+test_separation_complete_and_quasi (test_logistic.LogisticTests.test_separation_complete_and_quasi) ... ok
+test_unsupported_inputs_and_influential_row (test_logistic.LogisticTests.test_unsupported_inputs_and_influential_row) ... ok
+test_categorical_only_and_separation_message (test_logistic_ui.LogisticUI.test_categorical_only_and_separation_message) ... 2026-10-07 04:24:19.623 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_full_logistic_ui_and_switch_to_linear (test_logistic_ui.LogisticUI.test_full_logistic_ui_and_switch_to_linear) ... 2026-10-07 04:24:20.394 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_metadata_routing_candidates (test_logistic_ui.LogisticUI.test_metadata_routing_candidates) ... ok
+test_categorical_only_with_missing (test_mixed_regression.MixedRegressionTests.test_categorical_only_with_missing) ... ok
+test_invalid_encoding (test_mixed_regression.MixedRegressionTests.test_invalid_encoding) ... ok
+test_mixed_ui (test_mixed_regression.MixedRegressionTests.test_mixed_ui) ... 2026-10-07 04:24:27.400 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_numeric_and_categorical_coefficients (test_mixed_regression.MixedRegressionTests.test_numeric_and_categorical_coefficients) ... ok
+test_numeric_category_override (test_mixed_regression.MixedRegressionTests.test_numeric_category_override) ... ok
+test_existing_target_is_preserved (test_predictive_controls.TargetCheckboxTests.test_existing_target_is_preserved) ... 2026-10-07 04:24:30.641 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:30.641 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_groups_and_single_target_switching (test_predictive_controls.TargetCheckboxTests.test_groups_and_single_target_switching) ... 2026-10-07 04:24:31.243 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_charts_size_by_structure_not_scatter_sample_count (test_presentation.PresentationTests.test_charts_size_by_structure_not_scatter_sample_count) ... ok
+test_rendering_preserves_data_styles_keys_and_figures (test_presentation.PresentationTests.test_rendering_preserves_data_styles_keys_and_figures) ... ok
+test_tables_fit_content_without_fixed_width_caps_or_column_squeezing (test_presentation.PresentationTests.test_tables_fit_content_without_fixed_width_caps_or_column_squeezing) ... ok
+test_cleaning_preserves_original_row_positions (test_regression.RegressionTests.test_cleaning_preserves_original_row_positions) ... ok
+test_invalid_inputs (test_regression.RegressionTests.test_invalid_inputs) ... ok
+test_multiple_predictors_and_dw (test_regression.RegressionTests.test_multiple_predictors_and_dw) ... ok
+test_perfect_fit_suppresses_inference (test_regression.RegressionTests.test_perfect_fit_suppresses_inference) ... ok
+test_simple_fit_matches_independent_scipy (test_regression.RegressionTests.test_simple_fit_matches_independent_scipy) ... ok
+test_small_sample_omnibus_unavailable (test_regression.RegressionTests.test_small_sample_omnibus_unavailable) ... ok
+test_unequal_variance_flagged (test_regression.RegressionTests.test_unequal_variance_flagged) ... ok
+test_controls_and_order_guard (test_regression.RegressionUITests.test_controls_and_order_guard) ... 2026-10-07 04:24:32.465 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_perfect_fit_and_invalid_ui (test_regression.RegressionUITests.test_perfect_fit_and_invalid_ui) ... 2026-10-07 04:24:35.997 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_classification_override_with_regression_controls (test_regression_controls.CheckboxControls.test_classification_override_with_regression_controls) ... 2026-10-07 04:24:37.474 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_missing_widget_callback_preserves_state (test_regression_controls.CheckboxControls.test_missing_widget_callback_preserves_state) ... ok
+test_target_hierarchy_and_pruning (test_regression_controls.CheckboxControls.test_target_hierarchy_and_pruning) ... 2026-10-07 04:24:38.627 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_retained_controls_and_cached_display (test_regression_effect_plots.EffectPlotUI.test_retained_controls_and_cached_display) ... 2026-10-07 04:24:39.639 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_category_interaction_and_polynomial (test_regression_effect_plots.EffectPlots.test_category_interaction_and_polynomial) ... ok
+test_eliminated_terms_hidden (test_regression_effect_plots.EffectPlots.test_eliminated_terms_hidden) ... ok
+test_multiple_predictor_polynomial (test_regression_effect_plots.EffectPlots.test_multiple_predictor_polynomial) ... ok
+test_numeric_interaction (test_regression_effect_plots.EffectPlots.test_numeric_interaction) ... ok
+test_perfect_fit_and_invalid_selection (test_regression_effect_plots.EffectPlots.test_perfect_fit_and_invalid_selection) ... ok
+test_two_categories (test_regression_effect_plots.EffectPlots.test_two_categories) ... ok
+test_binary_polynomial_and_scaling_only (test_regression_estimability.EstimabilityTests.test_binary_polynomial_and_scaling_only) ... ok
+test_empty_interaction_cells_named_and_suggestion_repairs_rank (test_regression_estimability.EstimabilityTests.test_empty_interaction_cells_named_and_suggestion_repairs_rank) ... ok
+test_overlap_and_hierarchy (test_regression_estimability.EstimabilityTests.test_overlap_and_hierarchy) ... ok
+test_ui_shows_term_guidance_without_changing_selections (test_regression_estimability.EstimabilityTests.test_ui_shows_term_guidance_without_changing_selections) ... 2026-10-07 04:24:45.773 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_findings_format_and_no_claimed_visual_pattern (test_regression_extended.ExtendedRegressionTests.test_findings_format_and_no_claimed_visual_pattern) ... ok
+test_grouped_categorical_removal (test_regression_extended.ExtendedRegressionTests.test_grouped_categorical_removal) ... ok
+test_interaction_types_and_category_prediction (test_regression_extended.ExtendedRegressionTests.test_interaction_types_and_category_prediction) ... ok
+test_invalid_specs_prediction_and_missing (test_regression_extended.ExtendedRegressionTests.test_invalid_specs_prediction_and_missing) ... ok
+test_multiple_diagnostics_vif_influence (test_regression_extended.ExtendedRegressionTests.test_multiple_diagnostics_vif_influence) ... ok
+test_polynomial_hierarchy_and_prediction (test_regression_extended.ExtendedRegressionTests.test_polynomial_hierarchy_and_prediction) ... ok
+test_selection_protects_cubic_hierarchy (test_regression_extended.ExtendedRegressionTests.test_selection_protects_cubic_hierarchy) ... ok
+test_selection_removes_noise_and_protects_interaction (test_regression_extended.ExtendedRegressionTests.test_selection_removes_noise_and_protects_interaction) ... ok
+test_simple_statistics_and_prediction (test_regression_extended.ExtendedRegressionTests.test_simple_statistics_and_prediction) ... ok
+test_vif_and_artificial_influence (test_regression_extended.ExtendedRegressionTests.test_vif_and_artificial_influence) ... ok
+test_controls_prediction_and_cache (test_regression_extended.ExtendedRegressionUITests.test_controls_prediction_and_cache) ... 2026-10-07 04:24:47.234 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_add_column_methods_and_index_alignment (test_table_editing.TableEditingTests.test_add_column_methods_and_index_alignment) ... ok
+test_add_validation (test_table_editing.TableEditingTests.test_add_validation) ... ok
+test_duplicate_columns_compare_all_rows_and_keep_first (test_table_editing.TableEditingTests.test_duplicate_columns_compare_all_rows_and_keep_first) ... ok
+test_duplicate_rows_count_extra_copies_include_missing_and_ignore_index (test_table_editing.TableEditingTests.test_duplicate_rows_count_extra_copies_include_missing_and_ignore_index) ... ok
+test_rename_remove_validation_and_source_preservation (test_table_editing.TableEditingTests.test_rename_remove_validation_and_source_preservation) ... ok
+test_aggregate_count_semantics_and_missing_groups (test_table_transforms.TableTransformTests.test_aggregate_count_semantics_and_missing_groups) ... ok
+test_append_alignment_and_source (test_table_transforms.TableTransformTests.test_append_alignment_and_source) ... ok
+test_explosive_join_blocked_before_materialization (test_table_transforms.TableTransformTests.test_explosive_join_blocked_before_materialization) ... ok
+test_join_composite_different_names_and_empty (test_table_transforms.TableTransformTests.test_join_composite_different_names_and_empty) ... ok
+test_join_missing_keys_duplicates_and_reports (test_table_transforms.TableTransformTests.test_join_missing_keys_duplicates_and_reports) ... ok
+test_pivot_repeated_pairs_and_unpivot_roundtrip (test_table_transforms.TableTransformTests.test_pivot_repeated_pairs_and_unpivot_roundtrip) ... ok
+test_unpivot_names_missing_and_overlapping_roles (test_table_transforms.TableTransformTests.test_unpivot_names_missing_and_overlapping_roles) ... ok
+test_editor_and_component_views (test_temporal_components.TemporalComponentTests.test_editor_and_component_views) ... 2026-10-07 04:24:53.184 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_metadata_and_calendar_routing_preserve_original (test_temporal_components.TemporalComponentTests.test_metadata_and_calendar_routing_preserve_original) ... ok
+test_year_and_month_parsing (test_temporal_components.TemporalComponentTests.test_year_and_month_parsing) ... ok
+test_year_month_and_no_silent_truncation (test_temporal_components.TemporalComponentTests.test_year_month_and_no_silent_truncation) ... ok
+test_year_month_period_controls (test_temporal_components.TemporalComponentTests.test_year_month_period_controls) ... 2026-10-07 04:24:56.667 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_metadata_matches_existing_rules (test_temporal_performance.TemporalPerformanceTests.test_metadata_matches_existing_rules) ... ok
+test_repeated_text_parsed_once_with_full_row_weighting (test_temporal_performance.TemporalPerformanceTests.test_repeated_text_parsed_once_with_full_row_weighting) ... ok
+test_inference (test_temporal_subtypes.TemporalSubtypeTests.test_inference) ... ok
+test_legacy_metadata_and_timezone (test_temporal_subtypes.TemporalSubtypeTests.test_legacy_metadata_and_timezone) ... ok
+test_overrides_and_validation (test_temporal_subtypes.TemporalSubtypeTests.test_overrides_and_validation) ... ok
+test_parsing_and_routing (test_temporal_subtypes.TemporalSubtypeTests.test_parsing_and_routing) ... ok
+test_editor_and_manual_override (test_temporal_subtypes.TemporalSubtypeUITests.test_editor_and_manual_override) ... 2026-10-07 04:24:57.840 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_ai_failure_and_invalid_ai_response_fallback (test_temporal_target_guidance.GuidanceUITests.test_ai_failure_and_invalid_ai_response_fallback) ... 2026-10-07 04:24:59.197 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:59.198 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:59.891 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:24:59.892 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_ai_guidance_and_only_available_actions (test_temporal_target_guidance.GuidanceUITests.test_ai_guidance_and_only_available_actions) ... 2026-10-07 04:25:00.720 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:25:00.720 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_workspace_preserves_controls_without_persisting_action (test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action) ... 2026-10-07 04:25:01.537 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:25:01.538 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:25:01.538 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_all_training_entry_points_reject_raw_datetime (test_temporal_target_guidance.TemporalRoutingTests.test_all_training_entry_points_reject_raw_datetime) ... C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:47: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+  red_blue.set_bad(gray_rgb.tolist(), 1.0)
+C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:48: PendingDeprecationWarning: The set_over function will be deprecated in a future version. Use cmap.with_extremes(over=...) or Colormap(over=...) instead.
+  red_blue.set_over(gray_rgb.tolist(), 1.0)
+C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:49: PendingDeprecationWarning: The set_under function will be deprecated in a future version. Use cmap.with_extremes(under=...) or Colormap(under=...) instead.
+  red_blue.set_under(gray_rgb.tolist(), 1.0)  # "under" is incorrectly used instead of "bad" in the scatter plot
+ok
+test_delivery_references_without_mutation (test_temporal_target_guidance.TemporalRoutingTests.test_delivery_references_without_mutation) ... ok
+test_failure_status (test_temporal_target_guidance.TemporalRoutingTests.test_failure_status) ... ok
+test_forecast_requires_explicit_numerical_goal (test_temporal_target_guidance.TemporalRoutingTests.test_forecast_requires_explicit_numerical_goal) ... ok
+test_standard_routes (test_temporal_target_guidance.TemporalRoutingTests.test_standard_routes) ... ok
+test_temporal_routes_and_raw_validation (test_temporal_target_guidance.TemporalRoutingTests.test_temporal_routes_and_raw_validation) ... ok
+test_degenerate_independent_and_paired (test_ttest.TTestNumericalTests.test_degenerate_independent_and_paired) ... ok
+test_export_and_directional_interpretation (test_ttest.TTestNumericalTests.test_export_and_directional_interpretation) ... ok
+test_independent_columns_not_pairwise_dropped (test_ttest.TTestNumericalTests.test_independent_columns_not_pairwise_dropped) ... ok
+test_independent_methods_alternatives_unequal_sizes_variances (test_ttest.TTestNumericalTests.test_independent_methods_alternatives_unequal_sizes_variances) ... ok
+test_invalid_roles_and_options (test_ttest.TTestNumericalTests.test_invalid_roles_and_options) ... ok
+test_no_formal_normality_gate_and_no_outlier_removal (test_ttest.TTestNumericalTests.test_no_formal_normality_gate_and_no_outlier_removal) ... ok
+test_one_all_alternatives_and_confidence (test_ttest.TTestNumericalTests.test_one_all_alternatives_and_confidence) ... ok
+test_one_missing_constant_and_small (test_ttest.TTestNumericalTests.test_one_missing_constant_and_small) ... ok
+test_pairwise_missing_all_alternatives (test_ttest.TTestNumericalTests.test_pairwise_missing_all_alternatives) ... ok
+test_semantic_types_overrides_and_identifiers (test_ttest.TTestNumericalTests.test_semantic_types_overrides_and_identifiers) ... ok
+test_stacked_multicategory_missing_and_direction (test_ttest.TTestNumericalTests.test_stacked_multicategory_missing_and_direction) ... ok
+test_binary_and_identifier_alone_do_not_enable_ttest (test_ttest_ui.TTestUITests.test_binary_and_identifier_alone_do_not_enable_ttest) ... 2026-10-07 04:25:06.839 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_constant_and_missing_selection_no_raw_errors (test_ttest_ui.TTestUITests.test_constant_and_missing_selection_no_raw_errors) ... 2026-10-07 04:25:08.121 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_modes_charts_and_changing_inputs (test_ttest_ui.TTestUITests.test_modes_charts_and_changing_inputs) ... 2026-10-07 04:25:09.759 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_stacked_groups_and_semantic_exclusions (test_ttest_ui.TTestUITests.test_stacked_groups_and_semantic_exclusions) ... 2026-10-07 04:25:12.852 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_categorical_and_large_integer (test_value_cleaning.ValueCleaningTests.test_categorical_and_large_integer) ... ok
+test_exact_replacement_and_missing (test_value_cleaning.ValueCleaningTests.test_exact_replacement_and_missing) ... ok
+test_invalid_inputs (test_value_cleaning.ValueCleaningTests.test_invalid_inputs) ... ok
+test_literal_characters_and_nontext (test_value_cleaning.ValueCleaningTests.test_literal_characters_and_nontext) ... ok
+test_optional_surrounding_whitespace_matching (test_value_cleaning.ValueCleaningTests.test_optional_surrounding_whitespace_matching) ... ok
+test_sales_examples_and_source_preserved (test_value_cleaning.ValueCleaningTests.test_sales_examples_and_source_preserved) ... ok
+test_trim_edges_preserves_internal_spaces (test_value_cleaning.ValueCleaningTests.test_trim_edges_preserves_internal_spaces) ... ok
+test_typed_matches (test_value_cleaning.ValueCleaningTests.test_typed_matches) ... ok
+test_defaults (test_variable_metadata.MetadataTests.test_defaults) ... ok
+test_effective_regression_and_targets (test_variable_metadata.MetadataTests.test_effective_regression_and_targets) ... ok
+test_logistic_labels_and_categorical_predictors (test_variable_metadata.MetadataTests.test_logistic_labels_and_categorical_predictors) ... ok
+test_ordinal_frequency (test_variable_metadata.MetadataTests.test_ordinal_frequency) ... ok
+test_persistence_replacement_and_pruning (test_variable_metadata.MetadataTests.test_persistence_replacement_and_pruning) ... ok
+test_temporal_and_numeric_conversion (test_variable_metadata.MetadataTests.test_temporal_and_numeric_conversion) ... ok
+test_validation (test_variable_metadata.MetadataTests.test_validation) ... ok
+test_editor_and_session (test_variable_metadata.MetadataUI.test_editor_and_session) ... 2026-10-07 04:25:15.917 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_badges_details_and_escaping (test_variable_overview_display.ValueDetailsTests.test_badges_details_and_escaping) ... ok
+test_categories_missing_and_order (test_variable_overview_display.ValueDetailsTests.test_categories_missing_and_order) ... ok
+test_ranges_and_discrete_boundary (test_variable_overview_display.ValueDetailsTests.test_ranges_and_discrete_boundary) ... ok
+test_example_and_supported_string_storage (test_whitespace_inspection.WhitespaceInspectionTests.test_example_and_supported_string_storage) ... ok
+test_inspect_order_format_special_characters_and_source_preservation (test_whitespace_inspection.WhitespaceInspectionTests.test_inspect_order_format_special_characters_and_source_preservation) ... 2026-10-07 04:25:17.124 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:25:17.125 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-07 04:25:17.125 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_representative_values_and_text_only_denominator (test_whitespace_inspection.WhitespaceInspectionTests.test_representative_values_and_text_only_denominator) ... ok
+test_zero_and_other_whitespace (test_whitespace_inspection.WhitespaceInspectionTests.test_zero_and_other_whitespace) ... ok
+
+----------------------------------------------------------------------
+Ran 250 tests in 165.255s
+
+OK

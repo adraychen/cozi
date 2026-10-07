@@ -311,10 +311,14 @@ Select columns using checkboxes grouped by type. Available chart types appear au
 
 ### Flow
 
-1. **Select Target Column** — the column to predict
+1. **Select Target Column** — choose the column to predict using checkboxes grouped by Numerical, Categorical, and Temporal. Checking another column switches the single selected target.
+
 2. **Predictor Columns** — checkboxes grouped by variable type; **✅ Select All** and **☐ Deselect All** buttons for quick selection; columns suspected of being identifiers are flagged with a warning
 3. **Model** — the app detects the problem type, explains the model choice, and shows a hyperparameter configuration table with an estimated training time
 4. **▶ Run** — trains models, displays results, and generates an AI interpretation
+
+
+Temporal targets open guided recommendations instead of standard model controls. Numerical targets remain regression outcomes; binary and other categorical targets use classification. Dates and durations are blocked at every predictive training entry point. Guidance sends column names, types, subtypes, and the selected goal to the existing AI service, without raw records. A validated reference date can suggest Time-to-Event Analysis; an event-status column can suggest Survival Analysis. Forecasting is considered only when the user explicitly chooses a numerical measurement over time. AI responses are restricted to deterministic candidates and cached; service errors, timeouts, or invalid recommendations use deterministic guidance. No durations are created automatically. Reliability and forecasting pages are not yet implemented, so only Choose Another Target is actionable.
 
 ### Target Type Detection
 
@@ -323,6 +327,7 @@ Select columns using checkboxes grouped by type. Available chart types appear au
 | Categorical → Binary | Binary | Logistic Regression vs RF Classifier |
 | Numerical → Discrete or Continuous | Numerical regression | Lasso vs RF Regressor |
 | Categorical → Nominal or Ordinal | Classification | Multinomial LR vs RF Classifier |
+| Temporal → any subtype | Guided recommendations | No standard model training |
 
 > For binary classification of numeric 0/1 values, set Categorical → Binary. Two-label targets are encoded internally for logistic F1/ROC scoring; results preserve the original class labels. Ordinal predictors currently use categorical encoding, not an ordinal-specific regression model.
 

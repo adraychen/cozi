@@ -19,25 +19,19 @@ TOTAL_FITS        = TOTAL_COMBOS * CV_FOLDS   # 40
 _TARGET_DISCRETE_THRESHOLD = 15
 
 def detect_target_type(series: pd.Series, col_type: str, subtype=None) -> str:
+    """Route typed targets: numerical regression, categorical classification,
+    or temporal guidance. Numeric class codes require a categorical override.
     """
-    Return one of four target types:
-    - 'binary'              : exactly 2 unique values (any dtype)
-    - 'discrete_numerical'  : numerical, 3–14 unique values → treat as multi-class
-    - 'continuous_numerical': numerical, 15+ unique values → treat as regression
-    - 'multiclass'          : categorical, 3+ unique values
-    """
+    from utils.predictive_routing import is_temporal_target
+    if is_temporal_target(series, col_type):
+        return 'temporal'
     if subtype is not None:
         from utils.variable_metadata import metadata_target_type
         return metadata_target_type(series, col_type, subtype)
-    unique_vals = series.dropna().nunique()
-    if unique_vals == 2:
-        return "binary"
     if col_type == "Numerical":
-        return (
-            "discrete_numerical"
-            if unique_vals < _TARGET_DISCRETE_THRESHOLD
-            else "continuous_numerical"
-        )
+        return "continuous_numerical"
+    if series.dropna().nunique() == 2:
+        return "binary"
     return "multiclass"
 
 _ID_KEYWORDS = {"id", "key", "index", "code", "uuid", "ref", "pk"}

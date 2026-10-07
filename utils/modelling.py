@@ -93,6 +93,8 @@ def run_random_forest_regressor(
     7. Learning curve (4 training-size checkpoints)
     8. SHAP summary (up to 1,000 test rows)
     """
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
 
@@ -219,6 +221,8 @@ def run_random_forest_classifier(
         roc_auc_score, confusion_matrix, roc_curve,
     )
 
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
 
@@ -358,6 +362,8 @@ def run_random_forest_multiclass_classifier(
     )
     from sklearn.preprocessing import label_binarize
 
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
 
@@ -535,6 +541,8 @@ def run_regression_comparison(
     Determines winner by Test R².
     Returns comparison table + winner's learning curve, importance, and SHAP.
     """
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
     mask = y.notna()
@@ -671,6 +679,8 @@ def run_binary_classification_comparison(
         roc_auc_score, confusion_matrix, roc_curve,
     )
 
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
     mask = y.notna()
@@ -866,6 +876,8 @@ def run_multiclass_classification_comparison(
     )
     from sklearn.preprocessing import label_binarize
 
+    from utils.predictive_routing import validate_standard_target
+    validate_standard_target(df[target])
     X = df[predictors].copy()
     y = df[target].copy()
     mask = y.notna()

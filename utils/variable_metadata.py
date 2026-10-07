@@ -126,6 +126,9 @@ def effective_data(df, metadata):
     return data,groups
 
 def metadata_target_type(series, variable_type, subtype):
+    from utils.predictive_routing import is_temporal_target
+    if is_temporal_target(series, variable_type):
+        return 'temporal'
     if variable_type=='Numerical':
         return 'continuous_numerical'  # Numerical counts remain regression targets, not class codes.
     if subtype=='Binary' and series.nunique(dropna=True)==2:
