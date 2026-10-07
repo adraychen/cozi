@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 import pandas as pd
 import re
 import streamlit as st
@@ -279,7 +280,9 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
 
 
 
+@reportable
 def render_analyze(raw, _show_feedback):
+    st.session_state.pop('report_latest', None)
     from utils.variable_metadata import ensure_metadata, effective_data
     variable_metadata = ensure_metadata(st.session_state, raw, st.session_state["file_id"])
     df, col_types = effective_data(raw, variable_metadata)
@@ -304,6 +307,7 @@ def render_analyze(raw, _show_feedback):
                 st.info("Select one variable above to display its descriptive statistics.")
 
             if selected_col is not None:
+                stats, ai_key = {}, None
                 col_type = col_to_type.get(selected_col, "Unknown")
                 st.markdown(f"**Column:** {selected_col} &nbsp;|&nbsp; **Type:** {'Temporal' if col_type == 'Date / Time' else col_type}")
                 st.divider()
@@ -486,8 +490,13 @@ def render_analyze(raw, _show_feedback):
                         if st.session_state.get(ai_key):
                             st.info(st.session_state[ai_key])
 
-            st.divider()
+                if stats:
+                    offer_result('Descriptive Statistics', 'Descriptive statistics of '+str(selected_col),
+                                 {'variable': selected_col}, variable_metadata[selected_col], stats,
+                                 warnings=['These summaries describe the supplied observations. Inference requires an appropriate study design.'],
+                                 interpretation=st.session_state.get(ai_key, '') if ai_key else '', key='descriptive')
 
+            st.divider()
 
     with group_tab:
         if group_tab.open:
@@ -646,6 +655,7 @@ def render_analyze(raw, _show_feedback):
     render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback)
 
 
+@reportable
 def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback):
     st.subheader("Predictive Analytics")
 
@@ -1224,4 +1234,10 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
 
         st.divider()
 
+    if st.session_state.get('pa_results') and pa_predictors:
+        offer_result('Predictive Analytics', 'Predictive model for '+str(pa_target),
+                     {'target': pa_target, 'predictors': pa_predictors},
+                     {'target_type': pa_target_type, 'validation': 'Existing train/test split and cross-validation'},
+                     results, None, ['Predictive accuracy is estimated from the reported validation sample; future performance can differ.'],
+                     key='predictive')
     _show_feedback("Predictive Analytics", "pa")

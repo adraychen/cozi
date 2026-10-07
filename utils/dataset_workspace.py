@@ -233,8 +233,8 @@ def render_workspace(samples, show_feedback):
                 # when the next classification input triggers a rerun.
                 workflow_key = f'ws_workflow_{dataset_id}'
                 st.session_state[workflow_key] = st.session_state.get('ws_workflow', 'Inspect')
-                inspect, transform, analyze, help_tab = st.tabs(
-                    ['Inspect', 'Transform', 'Analyze', 'Help'], key=workflow_key,
+                inspect, transform, analyze, report_tab, help_tab = st.tabs(
+                    ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'], key=workflow_key,
                     on_change=_workflow_changed, args=(dataset_id, workflow_key))
                 if inspect.open:
                     from utils.dataset_views import render_inspect
@@ -251,6 +251,10 @@ def render_workspace(samples, show_feedback):
                             st.info('This dataset has no rows. Choose another dataset or adjust the transformation.')
                         else:
                             render_analyze(entry['frame'], show_feedback)
+                elif report_tab.open:
+                    from utils.report_ui import render_report
+                    with report_tab:
+                        render_report(entry, registry, dataset_id)
                 elif help_tab.open:
                     from utils.help_ui import render_help
                     with help_tab:

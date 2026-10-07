@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -7,6 +8,7 @@ from scipy import stats
 from utils.anova_analysis import prepare_anova, run_anova
 
 
+@reportable
 def render_anova(df, category, outcome):
     prepared = prepare_anova(df, category, outcome)
     st.caption('Compare the mean of a numerical response across independent groups. Identifiers are not meaningful outcomes. Ordered ratings assume equally spaced scores.')
@@ -93,3 +95,8 @@ def render_anova(df, category, outcome):
         else:
             st.write('At α = 0.05, there is insufficient evidence of different population means. This does not establish that the means are equal.')
         st.caption('Association is not causation. Repeated exploratory testing increases false-positive risk. No post-hoc pairwise tests are run automatically.')
+    if result is not None:
+        offer_result('One-way ANOVA', str(outcome)+' by '+str(category),
+                     {'response': outcome, 'factor': category}, {'method': method, 'independent': independent},
+                     result, prepared['summary'], prepared['warnings'] +
+                     ['Independence relies on study design. Association is not causation.'], key='anova')

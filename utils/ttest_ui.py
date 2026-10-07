@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Comparison t-test configuration and tabbed statistical reporting."""
 import logging
 import numpy as np
@@ -32,6 +33,7 @@ def render_ttest(df, numerical, categorical, guided=False):
         st.error('Unable to calculate this t-test. Review the selected variables, usable sample sizes, and measurement scale.')
 
 
+@reportable
 def _render_ttest(df, numerical, categorical, guided=False):
     numbers = numerical_candidates(df, numerical, st.session_state.get('variable_metadata', {}))
     if not numbers:
@@ -158,3 +160,10 @@ def _render_ttest(df, numerical, categorical, guided=False):
             st.caption('No causal conclusion follows from the test alone. Repeated exploratory comparisons increase false-positive risk. No automatic multiplicity adjustment is applied.')
         else:
             st.info('Interpretation is available when the selected data support the test. Review the validation message in t-Test Results.')
+    if result is not None:
+        offer_result('t-Test', mode_label+' of '+str(first),
+                     {'first': first, 'second': second, 'group': group, 'levels': levels},
+                     {'method': mode_label, 'confidence': confidence, 'alternative': alt_label,
+                      'equal_variances': equal_var, 'null_mean': null_mean}, result,
+                     prepared.get('diagnostics'), prepared.get('warnings', []) +
+                     ['Independence and the chosen study design must be justified.'], key='ttest')

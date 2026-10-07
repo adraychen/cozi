@@ -28,6 +28,8 @@ def _table_options(data, options, static=False):
 
 
 def dataframe(data=None, **kwargs):
+    from utils.report_capture import record_table
+    record_table(data)
     options = _table_options(data, kwargs)
     frame = data.data if isinstance(getattr(data, 'data', None), pd.DataFrame) else data
     if isinstance(options.get('height'), int) and hasattr(frame, '__len__'):
@@ -106,10 +108,14 @@ def plotly_chart(figure_or_data, **kwargs):
         kwargs['width'] = width
     # Apply height to the figure so Plotly lays out axes rather than cropping it.
     figure.update_layout(height=height, autosize=True, width=None)
+    from utils.report_capture import record_chart
+    record_chart(figure)
     return st.plotly_chart(figure, **kwargs)
 
 
 def pyplot(fig=None, **kwargs):
+    from utils.report_capture import record_pyplot
+    record_pyplot(fig)
     kwargs.pop('use_container_width', None)
     if kwargs.get('width') in (None, 'stretch', 'content'):
         native = fig.get_size_inches()[0]*100 if fig is not None else 720

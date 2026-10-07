@@ -82,7 +82,7 @@ class WorkspaceTests(unittest.TestCase):
             if selected == 'Transform':
                 self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
             elif selected == 'Help':
-                self.assertEqual([t.label for t in app.tabs][1:5], ['Inspect', 'Transform', 'Analyze', 'Help'])
+                self.assertEqual([t.label for t in app.tabs][1:6], ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'])
                 self.assertEqual([e.label for e in app.expander], ['Aggregate', 'Pivot', 'Unpivot'])
                 self.assertTrue(any(m.value == 'Group rows and calculate summaries.' for m in app.markdown))
 

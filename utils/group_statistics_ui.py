@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Streamlit controls and results for grouped exploratory analysis."""
 import pandas as pd
 import plotly.express as px
@@ -13,6 +14,7 @@ ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Compariso
 GROUP_ANALYSES = ["Group Summary", "Running & Cumulative Statistics", "Rolling Averages", "Contribution to Total"]
 
 
+@reportable
 def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_heading=True):
     if show_heading:
         st.markdown("#### Group Statistics")
@@ -111,5 +113,8 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
         presentation.dataframe(display.style.format(precision=2, na_rep="N/A"), use_container_width=True)
         st.download_button("Download statistics (CSV)", display.to_csv(index=False).encode("utf-8-sig"),
                            file_name="comparison.csv" if key_prefix != "gs" else "group_statistics.csv", mime="text/csv", key=key_prefix + "_download")
+        offer_result(analysis, analysis, {'measure': measure, 'dimensions': dimensions},
+                     {'statistic': statistic, 'time_based': time_based}, {'Summary rows': len(result)},
+                     warnings=['Descriptive group and period comparisons do not establish causation. Missing values and zero denominators follow the configured analysis rules.'], key=key_prefix)
     except (ValueError, TypeError) as exc:
         st.warning(f"Unable to calculate these statistics: {exc}")

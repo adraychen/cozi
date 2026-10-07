@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Seven-tab classical logistic regression interface."""
 import hashlib
 import numpy as np
@@ -76,6 +77,7 @@ def render_logistic(df,target,predictors,cats,metadata):
         st.warning('Model Adequacy: Significant model concerns. Revise the specification or review the data. No alternative model is fitted automatically.')
 
 
+@reportable
 def render_results(r,key):
     spec=r['spec'];confidence=100*r['confidence'];model=r['model'];event=f'{spec["target"]} = {r["event"]!r}'
     if r['adequacy']=='Significant model concerns':
@@ -142,6 +144,14 @@ def render_results(r,key):
         render_prediction(r,key)
     with tabs[6]:
         render_findings(r,key)
+
+
+    offer_result('Binary logistic regression', 'Logistic regression of '+str(spec['target']),
+                 {'response': spec['target'], 'predictors': spec['predictors']},
+                 {**spec, 'event': r['event'], 'confidence': r['confidence']},
+                 r, r['issues'], ['Model adequacy: '+r['adequacy'],
+                 'Associations do not establish causation. Review model diagnostics and the study design.'],
+                 key='logistic')
 
 
 def draw_effect(r,xvar,moderator,title,key):

@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Factorial ANOVA configuration and readable model reporting."""
 from itertools import combinations
 import numpy as np
@@ -199,6 +200,7 @@ def render_findings(prepared, result, diagnostics, comparisons):
     st.caption('No transformation, model reduction, or method switch is performed automatically. Findings refer to the classical Type II model; HC3, when requested, is a separate sensitivity comparison.')
 
 
+@reportable
 def render_factorial_anova(df, numerical, categorical):
     st.markdown('##### Factorial ANOVA')
     st.caption('One numerical response and two or more categorical factors, with optional two-way interactions. All selected main effects remain in the model.')
@@ -303,3 +305,7 @@ def render_factorial_anova(df, numerical, categorical):
         comparisons = render_comparisons(prepared, result)
     with tabs[4]:
         render_findings(prepared, result, diagnostics, comparisons)
+    offer_result('Factorial ANOVA', str(outcome)+' by '+', '.join(map(str, factors)),
+                 {'response': outcome, 'factors': factors}, {'interactions': interactions, 'alpha': alpha},
+                 result, diagnostics, prepared['warnings'] +
+                 ['Independence relies on study design. Interpret main effects in light of interactions.'], key='factorial')

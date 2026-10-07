@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Interactive specification and reporting for exploratory OLS regression."""
 import hashlib
 import numpy as np
@@ -57,6 +58,7 @@ def render_regression(df, numerical, categorical, selection=None):
         st.error(f'Cannot fit this regression: {exc}')
 
 
+@reportable
 def render_results(r,key):
     spec = r['spec']
     tabs = st.tabs(['Model Overview','Predictor Analysis','Diagnostics',
@@ -162,6 +164,11 @@ def render_results(r,key):
         for text in lines:
             st.write(text)
         st.download_button('Download Regression Findings', '\n\n'.join(lines),file_name='regression_findings.txt',key='reg_find_download')
+
+
+    offer_result('Regression', 'Regression of '+str(spec['target']),
+                 {'response': spec['target'], 'predictors': spec['predictors']}, spec,
+                 r, r['diagnostics'], r['warnings'], '\n\n'.join(lines), key='regression')
 
 
 def prediction_ui(r,key):

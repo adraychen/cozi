@@ -1,3 +1,4 @@
+from utils.report_capture import reportable, offer_result
 """Cross-tabulation and chi-square interface for Relationship."""
 import pandas as pd
 import streamlit as st
@@ -5,6 +6,7 @@ from utils.contingency_table import contingency_table_html
 from utils.group_statistics import contingency
 
 
+@reportable
 def render_contingency(df, dimensions, key_prefix="rel_ct"):
     st.caption("Counts rows for two categorical variables; the numerical selection is not used.")
     if len(dimensions) < 2:
@@ -49,5 +51,13 @@ def render_contingency(df, dimensions, key_prefix="rel_ct"):
         st.write(f"At α = {alpha}, the test does not provide sufficient evidence of an association. This does not prove independence.")
     st.caption("Repeatedly testing different pairs increases the chance of false positives; these p-values are unadjusted.")
     st.markdown("[Chi-square method documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html)")
+    from utils.report_capture import record_table
+    record_table(result['observed'])
+    record_table(result['expected'])
+    record_table(result['residual'])
+    offer_result('Chi-square association', str(row)+' and '+str(column),
+                 {'row': row, 'column': column}, {'alpha': alpha}, result,
+                 warnings=[f"{result['low_expected']} cells have expected counts below 5.",
+                           'P-values are unadjusted for repeated testing. Review the independence assumption.'], key=key_prefix)
 
 

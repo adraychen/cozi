@@ -853,3 +853,11 @@ See [UI controls and pending standardization decisions](docs/ui-controls.md) for
 ### Analyze loading performance
 
 Analyze renders only its open exploratory tab, with Predictive Analytics remaining below the five exploratory tabs in the original layout. AI interpretations are generated/refreshed explicitly by button, not automatically on page load. Prediction configuration is separated from training dependencies so sklearn/SHAP do not load merely to display prediction controls. Run still performs the existing model training; displaying saved results loads the necessary plotting libraries. Selections and cached results persist across panel switches.
+
+### Report workspace
+
+Report sits between Analyze and Help. Select **Add to Report** on a supported completed analysis to capture an independent copy of its settings, results, tables, charts, diagnostics, and warnings. Subsequent runs do not update existing report sections. Supported workflows include numerical/categorical descriptive statistics, group statistics, contingency association, regression, logistic regression, t-tests, ANOVA, factorial ANOVA, and predictive analytics.
+
+Compose and edit an ordered report with dataset overview, quality, actual preparation history, analytical sections, narrative sections, tables, captured charts, and page breaks. Section options control inclusion, order, headings, and removal. AI drafts are generated only by an explicit button using included report evidence; manual edits persist and can be restored after regeneration. Reports remain in the active session; export a DOCX or PDF to retain a copy. Editing a report invalidates prepared downloads until they are regenerated.
+
+Install requirements for DOCX/PDF export. Plotly chart export additionally needs a compatible Chrome/Chromium browser available to Kaleido on the server. Export failures are shown explicitly rather than omitting charts. DOCX and PDF share the same content and order, though pagination can differ between Word and PDF viewers. AI drafting uses the existing configured AI provider and can be unavailable; manual composition and export remain available.
