@@ -856,6 +856,8 @@ Analyze renders only its open exploratory tab, with Predictive Analytics remaini
 
 ### Report workspace
 
+Analysis snapshots preserve the analysis's own headings, findings, tables, charts, and their display order. Report does not add generic Variables, Method/settings, Key results, Warnings/assumptions, or Interpretation sections. Optional notes can be edited below a snapshot. The same ordered snapshot content is used for DOCX and PDF exports.
+
 Report sits between Analyze and Help. Select **Add to Report** on a supported completed analysis to capture an independent copy of its settings, results, tables, charts, diagnostics, and warnings. Subsequent runs do not update existing report sections. Supported workflows include numerical/categorical descriptive statistics, group statistics, contingency association, regression, logistic regression, t-tests, ANOVA, factorial ANOVA, and predictive analytics.
 
 Compose and edit an ordered report with dataset overview, quality, actual preparation history, analytical sections, narrative sections, tables, captured charts, and page breaks. Section options control inclusion, order, headings, and removal. AI drafts are generated only by an explicit button using included report evidence; manual edits persist and can be restored after regeneration. Reports remain in the active session; export a DOCX or PDF to retain a copy. Editing a report invalidates prepared downloads until they are regenerated.

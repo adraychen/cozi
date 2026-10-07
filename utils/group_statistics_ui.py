@@ -17,9 +17,9 @@ GROUP_ANALYSES = ["Group Summary", "Running & Cumulative Statistics", "Rolling A
 @reportable
 def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_heading=True):
     if show_heading:
-        st.markdown("#### Group Statistics")
+        presentation.markdown("#### Group Statistics")
     if key_prefix == 'gs':
-        st.caption('View summary statistics for your data by group.')
+        presentation.caption('View summary statistics for your data by group.')
         measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True, hide_empty=True)
         measure = measures[0] if measures else None
         dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions', hide_empty=True)
@@ -37,15 +37,15 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
     time_based = analysis in ANALYSES[2:5]
     allowed = ["Row count"] if measure is None else (["Sum", "Non-missing count", "Row count"] if analysis == ANALYSES[5] else list(STATISTICS))
     statistic = st.selectbox("Statistic", allowed, key=key_prefix + "_stat_" + analysis + ("_counts" if measure is None else "_numeric"))
-    st.caption("Missing categories are included. Row count counts all rows, including missing measures. Non-missing count counts valid numerical values. Standard deviation uses the sample definition.")
+    presentation.caption("Missing categories are included. Row count counts all rows, including missing measures. Non-missing count counts valid numerical values. Standard deviation uses the sample definition.")
     try:
         if time_based:
             if not col_types["datetime"]:
-                st.info("Select a Temporal override in Column Overview to enable time-based analysis.")
+                presentation.info("Select a Temporal override in Column Overview to enable time-based analysis.")
                 return
             if key_prefix == 'gs':
                 if not dates:
-                    st.info('Select one Date or DateTime variable above for time-based analysis.')
+                    presentation.info('Select one Date or DateTime variable above for time-based analysis.')
                     return
                 date = dates[0]
             else:
@@ -53,7 +53,7 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
             frequencies = list(FREQUENCIES)
             if st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype') == 'Year-Month':
                 frequencies = ['Monthly', 'Quarterly', 'Yearly']
-                st.caption('Year-Month values represent whole months; daily and weekly comparisons are unavailable.')
+                presentation.caption('Year-Month values represent whole months; daily and weekly comparisons are unavailable.')
             frequency_key = key_prefix + '_frequency'
             if st.session_state.get(frequency_key) not in frequencies:
                 st.session_state.pop(frequency_key, None)
@@ -69,34 +69,34 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                 lag = {"Monthly": 12, "Quarterly": 4, "Yearly": 1}.get(frequency, 1) if mode == "Same period last year" else 1
             if analysis == ANALYSES[4]:
                 window = int(st.number_input("Window size (calendar periods)", min_value=2, max_value=365, value=3, key=key_prefix + "_window"))
-                st.caption("A rolling average requires a complete window of non-missing period values.")
+                presentation.caption("A rolling average requires a complete window of non-missing period values.")
             result, keys = temporal(df, measure, dimensions, date, frequency, statistic, analysis, window, lag, zero)
             invalid = pd.to_datetime(df[date], errors="coerce").isna().sum()
             if invalid:
-                st.caption(f"Excluded {invalid:,} rows with missing or invalid dates.")
-            st.caption("Weekly periods run Monday–Sunday. Running and rolling statistics operate on the selected period statistic; expanding mean weights periods equally. Missing periods remain gaps unless zero filling is selected.")
+                presentation.caption(f"Excluded {invalid:,} rows with missing or invalid dates.")
+            presentation.caption("Weekly periods run Monday–Sunday. Running and rolling statistics operate on the selected period statistic; expanding mean weights periods equally. Missing periods remain gaps unless zero filling is selected.")
             latest = pd.to_datetime(df[date], errors="coerce").max()
             current = pd.Timestamp.now().to_period(FREQUENCIES[frequency])
             if latest.to_period(FREQUENCIES[frequency]) >= current:
-                st.warning("The data includes the current or a future period. The current period may be incomplete.")
-            st.caption("First and last periods may also be partial depending on dataset coverage.")
+                presentation.warning("The data includes the current or a future period. The current period may be incomplete.")
+            presentation.caption("First and last periods may also be partial depending on dataset coverage.")
             plotted = ["Value", "Previous"] if analysis == ANALYSES[2] else (["Value", "Rolling average"] if analysis == ANALYSES[4] else [st.selectbox("Running statistic", ["Cumulative sum", "Expanding mean", "Observed periods"], key=key_prefix + "_running")])
         else:
             result, keys = summary(df, measure, dimensions, statistic)
             if result.empty:
-                st.info("No data available.")
+                presentation.info("No data available.")
                 return
             if analysis == ANALYSES[1]:
                 baseline = st.selectbox("Reference segment", list(result.index),
                     format_func=lambda i: "; ".join(f"{dimensions[j] if dimensions else 'Dataset'}: {result.loc[i, key]}" for j, key in enumerate(keys)), key=key_prefix + "_reference")
                 result = compare(result, result.loc[baseline, "Value"])
-                st.caption("Percentage difference uses the absolute reference value; zero or missing references show N/A.")
+                presentation.caption("Percentage difference uses the absolute reference value; zero or missing references show N/A.")
             if analysis == ANALYSES[5]:
                 parent = st.checkbox("Share within parent group", key=key_prefix + "_parent", disabled=len(keys) < 2)
                 result = contribution(result, keys, parent)
-                st.caption("Denominator: " + ("each combination of dimensions except the last." if parent and len(keys) > 1 else "the whole dataset."))
+                presentation.caption("Denominator: " + ("each combination of dimensions except the last." if parent and len(keys) > 1 else "the whole dataset."))
                 if (result["Value"] < 0).any():
-                    st.warning("Negative values produce signed contributions, which can fall outside 0–100%.")
+                    presentation.warning("Negative values produce signed contributions, which can fall outside 0–100%.")
             plotted = ["Contribution %"] if analysis == ANALYSES[5] else ["Value"]
         result["Segment"] = result[keys].apply(lambda row: "; ".join(f"{dimensions[i] if dimensions else 'Dataset'}: {v}" for i, v in enumerate(row)), axis=1)
         labels = result["Segment"].unique().tolist()
@@ -117,4 +117,4 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                      {'statistic': statistic, 'time_based': time_based}, {'Summary rows': len(result)},
                      warnings=['Descriptive group and period comparisons do not establish causation. Missing values and zero denominators follow the configured analysis rules.'], key=key_prefix)
     except (ValueError, TypeError) as exc:
-        st.warning(f"Unable to calculate these statistics: {exc}")
+        presentation.warning(f"Unable to calculate these statistics: {exc}")

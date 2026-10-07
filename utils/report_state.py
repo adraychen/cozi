@@ -81,7 +81,7 @@ def add_snapshot(report, payload):
     snapshot['id'] = uuid.uuid4().hex
     snapshot['timestamp'] = now()
     block = new_block('Analysis Result', payload['title'], snapshot)
-    block['text'] = payload.get('interpretation', '')
+    block['text'] = '' if snapshot.get('content') else payload.get('interpretation', '')
     report['blocks'].append(block)
     return block
 
@@ -113,6 +113,14 @@ def block_parts(block):
     snapshot = block.get('snapshot') or {}
     parts = []
     included = block['included']
+    if block['kind'] == 'Analysis Result' and snapshot.get('content'):
+        for kind, value in snapshot['content']:
+            component = {'Table': 'Tables', 'Chart': 'Charts'}.get(kind)
+            if component is None or component in included:
+                parts.append((kind, value))
+        if 'Interpretation' in included and block['text']:
+            parts.append(('Text', block['text']))
+        return parts
     for component, key in [('Variables', 'variables'), ('Method/settings', 'settings'),
                            ('Key results', 'results'), ('Diagnostics', 'diagnostics'),
                            ('Warnings/assumptions', 'warnings')]:

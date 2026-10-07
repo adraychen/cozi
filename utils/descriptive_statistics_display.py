@@ -59,14 +59,8 @@ def statistics_html(statistics):
 def render_statistics(statistics):
     """Use the same interactive table renderer as Group Statistics."""
     import pandas as pd
-    import streamlit as st
     from utils import presentation
 
     frame = pd.DataFrame([(str(label), str(value)) for label, value in statistics.items()],
                          columns=['Statistic', 'Value'])
     presentation.dataframe(frame, hide_index=True, use_container_width=True)
-    with st.expander('How to interpret the statistics'):
-        for label in statistics:
-            if label in STATISTIC_HELP:
-                st.markdown(f'**{label}**')
-                st.write(STATISTIC_HELP[label])

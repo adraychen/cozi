@@ -1,4 +1,4 @@
-"""Capture rendered data/configuration, never UI text or live analysis objects."""
+"""Copy authored analysis output and data, without scraping UI or fitted objects."""
 from contextvars import ContextVar
 from functools import wraps
 from copy import deepcopy
@@ -10,10 +10,17 @@ from utils.report_state import structured, key_results, ensure_report, add_snaps
 _capture = ContextVar('report_capture', default=None)
 
 
+def begin_result():
+    """Start at completed result output, leaving configuration controls out."""
+    capture = _capture.get()
+    if capture is not None:
+        capture.update(tables=[], charts=[], content=[])
+
+
 def reportable(function):
     @wraps(function)
     def wrapped(*args, **kwargs):
-        token = _capture.set({'tables': [], 'charts': []})
+        token = _capture.set({'tables': [], 'charts': [], 'content': []})
         try:
             return function(*args, **kwargs)
         finally:
@@ -21,16 +28,18 @@ def reportable(function):
     return wrapped
 
 
-def record_table(data):
+def record_table(data, title=None):
     capture = _capture.get()
     if capture is not None:
         frame = data.data if isinstance(getattr(data, 'data', None), pd.DataFrame) else data
         if isinstance(frame, pd.DataFrame):
             table = structured(frame.copy(deep=True))
-            table['title'] = f'Table {len(capture["tables"])+1}'
+            table['title'] = title or f'Table {len(capture["tables"])+1}'
+            table['source_output'] = title is None
             if not isinstance(frame.index, pd.RangeIndex):
-                table = structured(frame.reset_index()) | {'title': table['title']}
+                table = structured(frame.reset_index()) | {'title': table['title'], 'source_output': title is None}
             capture['tables'].append(table)
+            capture['content'].append(('Table', deepcopy(table)))
 
 
 def record_chart(figure):
@@ -38,6 +47,7 @@ def record_chart(figure):
     if capture is not None:
         capture['charts'].append({'title': figure.layout.title.text or f'Chart {len(capture["charts"])+1}',
                                   'plotly': figure.to_json()})
+        capture['content'].append(('Chart', deepcopy(capture['charts'][-1])))
 
 
 def record_pyplot(figure):
@@ -46,6 +56,19 @@ def record_pyplot(figure):
         output = io.BytesIO()
         figure.savefig(output, format='png', dpi=180, bbox_inches='tight')
         capture['charts'].append({'title': f'Chart {len(capture["charts"])+1}', 'png': output.getvalue()})
+        capture['content'].append(('Chart', deepcopy(capture['charts'][-1])))
+
+
+def record_text(value, heading=False):
+    capture = _capture.get()
+    if capture is not None and isinstance(value, str) and value.strip():
+        text = value.strip()
+        if heading or (text.startswith('**') and text.endswith('**') and text.count('**') == 2):
+            capture['content'].append(('Subheading', text.strip('#* ')))
+        elif text.startswith('#'):
+            capture['content'].append(('Subheading', text.lstrip('# ')))
+        else:
+            capture['content'].append(('Text', value))
 
 
 def _add(payload):

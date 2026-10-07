@@ -96,7 +96,8 @@ def _chart_choices():
 def render_part(kind, value, chart_key=None):
     from utils.report_export import text_value
     if kind == 'Table':
-        st.caption(value.get('title', 'Table'))
+        if not value.get('source_output'):
+            st.caption(value.get('title', 'Table'))
         presentation.dataframe(pd.DataFrame(value['rows'], columns=value['columns']), hide_index=True)
     elif kind == 'Chart':
         st.caption(value['title'])
@@ -107,8 +108,9 @@ def render_part(kind, value, chart_key=None):
             presentation.plotly_chart(pio.from_json(value['plotly']), key=chart_key)
     elif kind == 'Text':
         st.write(value)
+    elif kind == 'Subheading':
+        st.markdown('**'+value+'**')
     else:
-        st.markdown('**'+kind+'**')
         st.text(text_value(value))
 
 
@@ -148,7 +150,9 @@ def render_report(entry, registry, dataset_id):
             st.text_input('Section heading', value=block['title'], key=title_key, on_change=_edit_block, args=(block_id, 'title', title_key))
             if snapshot:
                 key = 'report_parts_'+block_id
-                st.multiselect('Include in report', COMPONENTS, default=block['included'], key=key,
+                options = ['Tables', 'Charts', 'Interpretation'] if snapshot.get('content') else COMPONENTS
+                st.multiselect('Include in report', options, default=[c for c in block['included'] if c in options], key=key,
+                               format_func=lambda c: 'Notes' if c == 'Interpretation' else c,
                                on_change=_edit_block, args=(block_id, 'included', key))
             with st.container(horizontal=True):
                 st.button('Move up', key='report_up_'+block_id, disabled=index == 0,
@@ -166,13 +170,13 @@ def render_report(entry, registry, dataset_id):
             if block.get('table_error'):
                 st.error(block['table_error'])
         for part_index, (kind, value) in enumerate(block_parts(block)):
-            if kind != 'Text':
+            if kind != 'Text' or value != block['text']:
                 render_part(kind, value, 'report_chart_'+block_id+'_'+str(part_index))
         if block['kind'] != 'Heading' and 'Interpretation' in block['included']:
             key = 'report_text_'+block_id
             if key not in st.session_state:
                 st.session_state[key] = block['text']
-            st.text_area('Interpretation' if block['kind'] == 'Analysis Result' else 'Section text',
+            st.text_area('Notes' if block['kind'] == 'Analysis Result' else 'Section text',
                          key=key, height=150, on_change=_edit_block, args=(block_id, 'text', key))
         if block['kind'] in ('Analysis Result', 'Executive Summary', 'AI Interpretation'):
             st.caption('AI drafts are editable. Review them before sharing your report.')

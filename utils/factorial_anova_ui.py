@@ -29,8 +29,8 @@ def display_name(value):
 
 def render_effect_plots(prepared, result):
     include_all = st.checkbox('Include non-significant selected terms', key='fac_plot_all')
-    st.caption(f"Showing {'all selected terms' if include_all else 'all significant terms'} using Type II ANOVA at α = {result['alpha']:.3g}. Each main effect and interaction has its own plot.")
-    st.caption(EMM_NOTE)
+    presentation.caption(f"Showing {'all selected terms' if include_all else 'all significant terms'} using Type II ANOVA at α = {result['alpha']:.3g}. Each main effect and interaction has its own plot.")
+    presentation.caption(EMM_NOTE)
     shown = 0
     # Interactions precede marginal main effects in the guided review.
     ordered = sorted(enumerate(prepared['terms'].items()), key=lambda entry: entry[1][1][1] != 'Interaction effect')
@@ -39,8 +39,8 @@ def render_effect_plots(prepared, result):
         if not include_all and p >= result['alpha']:
             continue
         shown += 1
-        st.subheader(f'{kind}: {display_name(name)}')
-        st.caption(f"p = {p:.4g} · {'Significant' if p < result['alpha'] else 'Insufficient evidence at this α'}")
+        presentation.subheader(f'{kind}: {display_name(name)}')
+        presentation.caption(f"p = {p:.4g} · {'Significant' if p < result['alpha'] else 'Insufficient evidence at this α'}")
         try:
             if kind == 'Interaction effect':
                 if st.checkbox('Swap factors on this plot', key=f'fac_swap_{index}'):
@@ -54,7 +54,7 @@ def render_effect_plots(prepared, result):
                               error_y='CI half-width', labels={'Factor 1 level': display_name(members[0]),
                               'Factor 2 level': display_name(members[1]), MEAN: f'{display_name(prepared["outcome"])} — adjusted mean (EMM)'})
                 if p < result['alpha']:
-                    st.info(interaction_interpretation(members, prepared['outcome']))
+                    presentation.info(interaction_interpretation(members, prepared['outcome']))
             else:
                 factor = members[0]
                 summary = estimated_marginal_means(prepared, result, [factor])
@@ -64,12 +64,12 @@ def render_effect_plots(prepared, result):
                 fig = px.scatter(plot, x='Level', y=MEAN, error_y='CI half-width',
                                  labels={'Level': display_name(factor), MEAN: f'{display_name(prepared["outcome"])} — adjusted mean (EMM)'})
                 if factor in result['significant_interaction_factors']:
-                    st.warning('This factor participates in a significant interaction. Interpret this marginal main-effect plot together with the interaction/simple effects, not in isolation.')
+                    presentation.warning('This factor participates in a significant interaction. Interpret this marginal main-effect plot together with the interaction/simple effects, not in isolation.')
             fig.update_xaxes(type='category')
             presentation.plotly_chart(fig, width='stretch', key=f'fac_effect_plot_{index}')
             with st.expander(f'Adjusted means and 95% confidence intervals: {display_name(name)}'):
                 presentation.dataframe(summary, hide_index=True)
-                st.caption('For context: raw arithmetic means and observed counts below pool over other factors. These are descriptive summaries, not the adjusted means plotted above.')
+                presentation.caption('For context: raw arithmetic means and observed counts below pool over other factors. These are descriptive summaries, not the adjusted means plotted above.')
                 if len(members) == 2:
                     observed = interaction_summary(prepared, members)
                 else:
@@ -78,9 +78,9 @@ def render_effect_plots(prepared, result):
                     observed = raw.groupby('Level', observed=True, sort=False).Response.agg(Mean='mean', N='size').reset_index()
                 presentation.dataframe(observed, hide_index=True)
         except (ValueError, np.linalg.LinAlgError) as exc:
-            st.warning(str(exc))
+            presentation.warning(str(exc))
     if not shown:
-        st.info('No selected terms are statistically significant at the current significance level. Enable the option above to inspect all selected terms.')
+        presentation.info('No selected terms are statistically significant at the current significance level. Enable the option above to inspect all selected terms.')
 
 
 EMM_NOTE = ('Adjusted mean (Estimated Marginal Mean): fitted-model predictions averaged equally over all levels of the other factors, not raw arithmetic means. '
@@ -97,119 +97,119 @@ def interaction_interpretation(pair, outcome):
 
 
 def render_comparisons(prepared, result):
-    st.caption(EMM_NOTE)
+    presentation.caption(EMM_NOTE)
     reported = []
     eligible = [f for f in prepared['factors'] if f not in result['significant_interaction_factors']
                 and 2 <= len(prepared['levels'][f]) <= 30]
     if eligible:
         _prune('fac_posthoc', eligible)
         factor = st.selectbox('Factor for model-adjusted comparisons', eligible, key='fac_posthoc')
-        st.caption('Global comparisons are available when no selected interaction involving this factor is significant. A non-significant interaction is not proof of a constant effect; retain domain-relevant interactions in your interpretation.')
+        presentation.caption('Global comparisons are available when no selected interaction involving this factor is significant. A non-significant interaction is not proof of a constant effect; retain domain-relevant interactions in your interpretation.')
         if st.checkbox('Show pairwise comparisons for this factor', key='fac_posthoc_show'):
             try:
                 presentation.dataframe(estimated_marginal_means(prepared, result, [factor]), hide_index=True)
                 comparisons = posthoc(prepared, result, factor)
                 presentation.dataframe(comparisons, hide_index=True, width='stretch')
                 reported.append((display_name(factor), comparisons))
-                st.caption('Comparison family: all pairs within this factor. ' + COMPARISON_NOTE)
+                presentation.caption('Comparison family: all pairs within this factor. ' + COMPARISON_NOTE)
             except (ValueError, np.linalg.LinAlgError) as exc:
-                st.warning(str(exc))
+                presentation.warning(str(exc))
     else:
-        st.info('No factor is eligible for global pairwise comparisons (2–30 levels and no significant interaction involving it).')
+        presentation.info('No factor is eligible for global pairwise comparisons (2–30 levels and no significant interaction involving it).')
     interacting = [f for f in prepared['factors'] if f in result['significant_interaction_factors']]
     if interacting:
-        st.subheader('Simple effects for significant interactions')
-        st.write('Compare one factor within the levels of its interaction partners. Select either factor to change the direction. All significant partners are held fixed when a factor has multiple interactions.')
+        presentation.subheader('Simple effects for significant interactions')
+        presentation.write('Compare one factor within the levels of its interaction partners. Select either factor to change the direction. All significant partners are held fixed when a factor has multiple interactions.')
         _prune('fac_simple_factor', interacting)
         factor = st.selectbox('Factor to compare within interaction partners', interacting, key='fac_simple_factor')
         if st.checkbox('Show simple-effects comparisons', key='fac_simple_show'):
             try:
                 family = simple_effects_family(prepared, result, factor)
-                st.caption('Comparison family: all displayed pairs across all supported strata in this direction. ' + COMPARISON_NOTE)
+                presentation.caption('Comparison family: all displayed pairs across all supported strata in this direction. ' + COMPARISON_NOTE)
                 for item in family:
                     context = ', '.join(f'{display_name(f)} = {display_name(v)}' for f, v in item['fixed'].items())
                     title = f'Simple effect: {display_name(factor)} within {context}'
                     with st.expander(title, expanded=True):
                         if 'error' in item:
-                            st.warning(item['error'])
+                            presentation.warning(item['error'])
                         else:
                             presentation.dataframe(item['means'], hide_index=True)
                             presentation.dataframe(item['comparisons'], hide_index=True, width='stretch')
                             reported.append((title, item['comparisons']))
             except (ValueError, np.linalg.LinAlgError) as exc:
-                st.warning(str(exc))
+                presentation.warning(str(exc))
     return reported
 
 
 def render_findings(prepared, result, diagnostics, comparisons):
-    st.subheader('A. Model reliability')
-    st.write(f"{diagnostics['overall']}: {diagnostics['reliability']}")
-    st.subheader('B. Main effects')
+    presentation.subheader('A. Model reliability')
+    presentation.write(f"{diagnostics['overall']}: {diagnostics['reliability']}")
+    presentation.subheader('B. Main effects')
     table = result['table']
     effects = table[table.Effect != 'Residual']
     maximum = effects['Partial η²'].max()
     for factor in prepared['factors']:
         row = effects[(effects.Source == str(factor)) & (effects.Effect == 'Main effect')].iloc[0]
-        st.write(f"{display_name(factor)}: p = {row['p-value']:.4g}; partial η² = {row['Partial η²']:.3g}.")
+        presentation.write(f"{display_name(factor)}: p = {row['p-value']:.4g}; partial η² = {row['Partial η²']:.3g}.")
         if row.Significant == 'Yes':
-            st.write(f'There is evidence that {display_name(prepared["outcome"])} differs among levels under the Type II test. This test adjusts for other terms except interactions containing this factor.')
+            presentation.write(f'There is evidence that {display_name(prepared["outcome"])} differs among levels under the Type II test. This test adjusts for other terms except interactions containing this factor.')
         else:
-            st.write('Insufficient evidence of a difference under this Type II test; this does not establish equal means.')
+            presentation.write('Insufficient evidence of a difference under this Type II test; this does not establish equal means.')
         if np.isclose(row['Partial η²'], maximum):
-            st.write('This factor has the largest partial η² among the tested effects; assess its practical importance in context.')
+            presentation.write('This factor has the largest partial η² among the tested effects; assess its practical importance in context.')
         if factor in result['significant_interaction_factors']:
-            st.warning('A significant interaction contains this factor. Its main effect is marginal and does not apply universally across the interacting factor. Prioritize the interaction and simple effects below.')
+            presentation.warning('A significant interaction contains this factor. Its main effect is marginal and does not apply universally across the interacting factor. Prioritize the interaction and simple effects below.')
         else:
             try:
                 means = estimated_marginal_means(prepared, result, [factor])
                 high, low = means.loc[means[MEAN].idxmax()], means.loc[means[MEAN].idxmin()]
-                st.write(f"The highest adjusted estimate is {display_name(high['Level'])} ({high[MEAN]:.4g}); the lowest is {display_name(low['Level'])} ({low[MEAN]:.4g}). This ranking alone does not establish a pairwise difference; review confidence intervals and adjusted comparisons.")
+                presentation.write(f"The highest adjusted estimate is {display_name(high['Level'])} ({high[MEAN]:.4g}); the lowest is {display_name(low['Level'])} ({low[MEAN]:.4g}). This ranking alone does not establish a pairwise difference; review confidence intervals and adjusted comparisons.")
             except (ValueError, np.linalg.LinAlgError) as exc:
-                st.info(str(exc))
-    st.subheader('C. Interaction effects')
+                presentation.info(str(exc))
+    presentation.subheader('C. Interaction effects')
     interaction_rows = effects[effects.Effect == 'Interaction effect']
     if interaction_rows.empty:
-        st.write('No interactions were selected. The current model assumes additive factor effects; consider domain-relevant interactions when that assumption is questionable.')
+        presentation.write('No interactions were selected. The current model assumes additive factor effects; consider domain-relevant interactions when that assumption is questionable.')
     for term, (name, kind, members) in prepared['terms'].items():
         if kind != 'Interaction effect':
             continue
         row = interaction_rows[interaction_rows.Source == name].iloc[0]
-        st.write(f"{display_name(name)}: p = {row['p-value']:.4g}; partial η² = {row['Partial η²']:.3g}.")
+        presentation.write(f"{display_name(name)}: p = {row['p-value']:.4g}; partial η² = {row['Partial η²']:.3g}.")
         if row.Significant == 'Yes':
-            st.write(interaction_interpretation(members, prepared['outcome']))
+            presentation.write(interaction_interpretation(members, prepared['outcome']))
         else:
-            st.write(f'The analysis provides insufficient evidence that the relationship between {display_name(members[1])} and the response differs across {display_name(members[0])} levels. This does not show that the factors are independent.')
-    st.subheader('D. Important comparisons')
+            presentation.write(f'The analysis provides insufficient evidence that the relationship between {display_name(members[1])} and the response differs across {display_name(members[0])} levels. This does not show that the factors are independent.')
+    presentation.subheader('D. Important comparisons')
     if not comparisons:
-        st.write('Open Post-hoc comparisons and request adjusted pairs or simple effects. No pairwise conclusions have been generated yet.')
+        presentation.write('Open Post-hoc comparisons and request adjusted pairs or simple effects. No pairwise conclusions have been generated yet.')
     for context, comparison in comparisons:
-        st.write(context)
+        presentation.write(context)
         significant = comparison[comparison.Significant == 'Yes']
         if significant.empty:
-            st.write('No requested pairwise difference has sufficient evidence after multiplicity adjustment.')
+            presentation.write('No requested pairwise difference has sufficient evidence after multiplicity adjustment.')
         else:
             presentation.dataframe(significant.drop(columns=['p-value', 'SE']), hide_index=True)
-            st.caption('Difference = first level minus second level: positive means the first adjusted estimate is higher. Intervals and adjusted p-values describe magnitude and uncertainty together.')
-    st.subheader('E. Suggested next steps')
+            presentation.caption('Difference = first level minus second level: positive means the first adjusted estimate is higher. Intervals and adjusted p-values describe magnitude and uncertainty together.')
+    presentation.subheader('E. Suggested next steps')
     if not interaction_rows.empty and not (interaction_rows.Significant == 'Yes').any():
-        st.write(f"No selected interaction shows sufficient evidence at α = {result['alpha']:.3g}. You may retain the interactions based on the analysis plan or explicitly fit a reduced main-effects model for simpler interpretation. No terms are removed automatically; main effects must remain whenever their interaction remains.")
+        presentation.write(f"No selected interaction shows sufficient evidence at α = {result['alpha']:.3g}. You may retain the interactions based on the analysis plan or explicitly fit a reduced main-effects model for simpler interpretation. No terms are removed automatically; main effects must remain whenever their interaction remains.")
     if prepared['empty_cells'] or prepared['singleton_cells']:
-        st.write('Prioritize additional replication or missing factor combinations. Review unnecessary interactions/factors using domain knowledge; sparse designs can make effects unstable or comparisons unsupported.')
+        presentation.write('Prioritize additional replication or missing factor combinations. Review unnecessary interactions/factors using domain knowledge; sparse designs can make effects unstable or comparisons unsupported.')
     for note in diagnostics['recommendations']:
-        st.write(note)
-    st.caption('No transformation, model reduction, or method switch is performed automatically. Findings refer to the classical Type II model; HC3, when requested, is a separate sensitivity comparison.')
+        presentation.write(note)
+    presentation.caption('No transformation, model reduction, or method switch is performed automatically. Findings refer to the classical Type II model; HC3, when requested, is a separate sensitivity comparison.')
 
 
 @reportable
 def render_factorial_anova(df, numerical, categorical):
-    st.markdown('##### Factorial ANOVA')
-    st.caption('One numerical response and two or more categorical factors, with optional two-way interactions. All selected main effects remain in the model.')
+    presentation.markdown('##### Factorial ANOVA')
+    presentation.caption('One numerical response and two or more categorical factors, with optional two-way interactions. All selected main effects remain in the model.')
     metadata = st.session_state.get('variable_metadata', {})
     numerical = numerical_candidates(df, numerical, metadata)
     categorical = [c for c in categorical if metadata.get(c, {}).get('variable_type', 'Categorical') == 'Categorical'
                    and metadata.get(c, {}).get('variable_subtype', 'Nominal') in ('Binary', 'Nominal', 'Ordinal')]
     if not numerical or len(categorical) < 2:
-        st.info('Select one Numerical response and at least two Categorical variables in Comparison. Review Variable Type / Subtype in Column Overview; numerical codes must be explicitly classified as categorical to be factors.')
+        presentation.info('Select one Numerical response and at least two Categorical variables in Comparison. Review Variable Type / Subtype in Column Overview; numerical codes must be explicitly classified as categorical to be factors.')
         return
     _prune('fac_y', numerical)
     _prune('fac_x', categorical, True)
@@ -218,87 +218,89 @@ def render_factorial_anova(df, numerical, categorical):
         st.session_state['fac_x'] = categorical[:]
     factors = st.multiselect('Factors (X)', categorical, key='fac_x')
     if len(factors) < 2:
-        st.info('Choose at least two categorical factors.')
+        presentation.info('Choose at least two categorical factors.')
         return
     alpha = st.number_input('Significance level (α)', min_value=.001, max_value=.20,
                             value=.05, step=.01, format='%.3f', key='fac_alpha')
-    st.caption('Select an interaction when the effect of one factor may depend on the level of another factor. Choose interactions using business/domain knowledge, not every possible pair.')
-    st.caption('For example, Segment × Discount Band asks: Does the relationship between Discount Band and the response differ across Segments?')
+    presentation.caption('Select an interaction when the effect of one factor may depend on the level of another factor. Choose interactions using business/domain knowledge, not every possible pair.')
+    presentation.caption('For example, Segment × Discount Band asks: Does the relationship between Discount Band and the response differ across Segments?')
     options = list(combinations(factors, 2))
     _prune('fac_interactions', options, True)
     interactions = st.multiselect('Interaction effects (optional)', options,
                                  format_func=lambda pair: ' × '.join(map(str, pair)), key='fac_interactions')
-    st.write('Main effects: ' + ', '.join(map(str, factors)))
-    st.write('Interaction effects: ' + (', '.join(' × '.join(map(str, p)) for p in interactions) or 'None'))
-    st.caption(f'Type II Sum of Squares · α = {alpha:.3g}. Type II tests respect marginality: a main-effect test does not adjust for interactions containing that factor. Review interactions before interpreting main effects. The method never switches automatically.')
+    presentation.write('Main effects: ' + ', '.join(map(str, factors)))
+    presentation.write('Interaction effects: ' + (', '.join(' × '.join(map(str, p)) for p in interactions) or 'None'))
+    presentation.caption(f'Type II Sum of Squares · α = {alpha:.3g}. Type II tests respect marginality: a main-effect test does not adjust for interactions containing that factor. Review interactions before interpreting main effects. The method never switches automatically.')
     try:
         prepared = prepare_factorial(df, outcome, factors, interactions)
     except (ValueError, TypeError) as exc:
-        st.warning(str(exc))
+        presentation.warning(str(exc))
         return
-    st.write(f"Original observations: {prepared['original']} · Used: {prepared['n']} · Excluded: {prepared['excluded']} (missing: {prepared['missing']}; additional nonfinite responses: {prepared['nonfinite']})")
+    presentation.write(f"Original observations: {prepared['original']} · Used: {prepared['n']} · Excluded: {prepared['excluded']} (missing: {prepared['missing']}; additional nonfinite responses: {prepared['nonfinite']})")
     for note in prepared['warnings']:
-        st.warning(note)
+        presentation.warning(note)
     if prepared['errors']:
         for error in prepared['errors']:
-            st.warning(error)
+            presentation.warning(error)
         return
     try:
         result = run_factorial(prepared, alpha)
     except (ValueError, np.linalg.LinAlgError) as exc:
-        st.warning('Cannot report Factorial ANOVA: ' + str(exc))
+        presentation.warning('Cannot report Factorial ANOVA: ' + str(exc))
         return
-    st.write('Independence depends on study and data-collection design; it cannot be verified from these data. Repeated or clustered observations require an appropriate repeated-measures or mixed model.')
+    from utils.report_capture import begin_result
+    begin_result()
+    presentation.write('Independence depends on study and data-collection design; it cannot be verified from these data. Repeated or clustered observations require an appropriate repeated-measures or mixed model.')
     table = result['table']
     if result['significant_interaction_factors']:
-        st.warning('A significant interaction means the effect of one factor depends on the level of another. Do not interpret these main effects in isolation: ' +
+        presentation.warning('A significant interaction means the effect of one factor depends on the level of another. Do not interpret these main effects in isolation: ' +
                    ', '.join(str(f) for f in factors if f in result['significant_interaction_factors']))
     diagnostics = diagnostic_summary(prepared, result)
-    st.caption('Review model validity in Diagnostics, then Effect plots, Post-hoc comparisons, and Findings. Review significant interactions before associated main effects.')
+    presentation.caption('Review model validity in Diagnostics, then Effect plots, Post-hoc comparisons, and Findings. Review significant interactions before associated main effects.')
     tabs = st.tabs(['ANOVA table', 'Diagnostics', 'Effect plots', 'Post-hoc comparisons', 'Findings'])
     with tabs[0]:
         presentation.dataframe(table, hide_index=True, width='stretch')
-        st.caption('Partial η² = effect SS / (effect SS + residual SS). Effect sizes are conditional on this model and do not sum to 1. Statistical significance does not establish practical importance or causation.')
+        presentation.caption('Partial η² = effect SS / (effect SS + residual SS). Effect sizes are conditional on this model and do not sum to 1. Statistical significance does not establish practical importance or causation.')
         if st.checkbox('Show HC3 robust inference for comparison', key='fac_hc3'):
-            st.write('HC3 heteroskedasticity-robust inference — equivalent OLS model, Type II hypotheses')
+            presentation.write('HC3 heteroskedasticity-robust inference — equivalent OLS model, Type II hypotheses')
             try:
                 presentation.dataframe(robust_type2(prepared, result), hide_index=True, width='stretch')
             except (ValueError, np.linalg.LinAlgError) as exc:
-                st.warning(str(exc))
-            st.caption('The classical ANOVA and partial η² above remain unchanged. HC3 changes covariance-based inference, not the fitted response or selected terms. It does not resolve dependence, missing cells, or an incorrect mean model. Robust F tests are an approximate sensitivity analysis, especially with small samples or high leverage.')
+                presentation.warning(str(exc))
+            presentation.caption('The classical ANOVA and partial η² above remain unchanged. HC3 changes covariance-based inference, not the fitted response or selected terms. It does not resolve dependence, missing cells, or an incorrect mean model. Robust F tests are an approximate sensitivity analysis, especially with small samples or high leverage.')
     with tabs[1]:
-        st.subheader('Model validity')
+        presentation.subheader('Model validity')
         presentation.table(diagnostics['table'].iloc[:-1], hide_index=True)
-        st.write(f"Overall — {diagnostics['overall']}: {diagnostics['reliability']}")
-        st.caption('OK means no issue was detected by that check; it does not prove the assumption. Automated pattern flags are exploratory, not definitive hypothesis tests.')
+        presentation.write(f"Overall — {diagnostics['overall']}: {diagnostics['reliability']}")
+        presentation.caption('OK means no issue was detected by that check; it does not prove the assumption. Automated pattern flags are exploratory, not definitive hypothesis tests.')
         residuals = np.asarray(result['model'].resid)
         (x, y), (slope, intercept, _) = stats.probplot(residuals, dist='norm')
         fig = px.scatter(x=x, y=y, labels={'x': 'Theoretical normal quantile', 'y': 'Model residual'})
         fig.add_scatter(x=x, y=intercept+slope*x, mode='lines', name='Normal reference')
         presentation.plotly_chart(fig, width='stretch', key='fac_qq')
-        st.write('In the Q–Q plot, points near the reference line are compatible with normal residuals. Substantial curvature suggests skew or a distribution mismatch; large departures at the ends suggest heavy tails or extreme observations. Inspect the size and pattern of departures rather than relying only on a p-value.')
+        presentation.write('In the Q–Q plot, points near the reference line are compatible with normal residuals. Substantial curvature suggests skew or a distribution mismatch; large departures at the ends suggest heavy tails or extreme observations. Inspect the size and pattern of departures rather than relying only on a p-value.')
         if diagnostics['jb'] is not None:
             jb, normal_p, skew, kurtosis = diagnostics['jb']
-            st.write(f'Residual Jarque–Bera diagnostic: statistic = {jb:.4g}; p = {normal_p:.4g}; skewness = {skew:.3g}; kurtosis = {kurtosis:.3g} (normal reference: 3).')
-            st.caption('The asymptotic p-value can be unreliable in small samples. A non-significant result does not establish normality.')
+            presentation.write(f'Residual Jarque–Bera diagnostic: statistic = {jb:.4g}; p = {normal_p:.4g}; skewness = {skew:.3g}; kurtosis = {kurtosis:.3g} (normal reference: 3).')
+            presentation.caption('The asymptotic p-value can be unreliable in small samples. A non-significant result does not establish normality.')
         presentation.plotly_chart(px.scatter(x=result['model'].fittedvalues, y=residuals,
                                   labels={'x': 'Fitted response', 'y': 'Model residual'}),
                         width='stretch', key='fac_residuals')
-        st.write('Look for residuals scattered around zero with roughly similar spread. A widening or narrowing funnel can indicate changing variance; curves can indicate an incomplete mean model. Extreme points warrant investigation in context.')
+        presentation.write('Look for residuals scattered around zero with roughly similar spread. A widening or narrowing funnel can indicate changing variance; curves can indicate an incomplete mean model. Extreme points warrant investigation in context.')
         for pattern in diagnostics['patterns']:
-            st.write(pattern)
+            presentation.write(pattern)
         with st.expander('How the exploratory pattern screens work'):
-            st.write('With at least 24 observations, fitted values are divided into up to four quantile bins with at least six observations each. Spread is flagged when the last/first residual SD ratio exceeds 1.75 (or is below its reciprocal), with an absolute-residual Spearman trend exceeding ±0.25 in the same direction. A binned mean beyond half a residual SD with at least three bins flags a possible mean pattern. Internally studentized residuals beyond ±3 are flagged. These heuristics can miss patterns, especially with few distinct fitted values.')
+            presentation.write('With at least 24 observations, fitted values are divided into up to four quantile bins with at least six observations each. Spread is flagged when the last/first residual SD ratio exceeds 1.75 (or is below its reciprocal), with an absolute-residual Spearman trend exceeding ±0.25 in the same direction. A binned mean beyond half a residual SD with at least three bins flags a possible mean pattern. Internally studentized residuals beyond ±3 are flagged. These heuristics can miss patterns, especially with few distinct fitted values.')
         if result['levene'] is None:
-            st.info('Median-centered Levene test unavailable: every observed factor combination needs replication and a finite test statistic. Equal variances could not be formally assessed using the selected factor-cell structure.')
+            presentation.info('Median-centered Levene test unavailable: every observed factor combination needs replication and a finite test statistic. Equal variances could not be formally assessed using the selected factor-cell structure.')
         else:
             statistic, p = result['levene']
-            st.write(f'Median-centered Levene across observed factor combinations: statistic = {statistic:.4g}; p = {p:.4g}.')
-            st.caption('A non-significant test does not prove equal variances. Interpret this alongside the residual-vs-fitted plot.')
-        st.subheader('Possible next steps')
+            presentation.write(f'Median-centered Levene across observed factor combinations: statistic = {statistic:.4g}; p = {p:.4g}.')
+            presentation.caption('A non-significant test does not prove equal variances. Interpret this alongside the residual-vs-fitted plot.')
+        presentation.subheader('Possible next steps')
         for note in diagnostics['recommendations']:
-            st.write(note)
-        st.caption('These are suggestions only. Perform any transformation explicitly and refit; compare diagnostics and the changed response-scale interpretation.')
+            presentation.write(note)
+        presentation.caption('These are suggestions only. Perform any transformation explicitly and refit; compare diagnostics and the changed response-scale interpretation.')
     with tabs[2]:
         render_effect_plots(prepared, result)
     with tabs[3]:

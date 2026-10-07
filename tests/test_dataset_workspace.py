@@ -83,7 +83,10 @@ class WorkspaceTests(unittest.TestCase):
                 self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
             elif selected == 'Help':
                 self.assertEqual([t.label for t in app.tabs][1:6], ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'])
-                self.assertEqual([e.label for e in app.expander], ['Aggregate', 'Pivot', 'Unpivot'])
+                self.assertEqual(len(app.expander), 0)
+                from utils.help_ui import FEATURE_HELP
+                self.assertEqual([m.value.strip('*') for m in app.markdown if m.value.startswith('**')],
+                                 sorted(FEATURE_HELP, key=str.casefold))
                 self.assertTrue(any(m.value == 'Group rows and calculate summaries.' for m in app.markdown))
 
     def test_add_dataset_does_not_wait_for_ai_and_generation_is_explicit(self):

@@ -4,11 +4,59 @@ Native content widths stop at the parent container, including on mobile. Tables
 keep their native scrolling, sorting, formatting, and download behavior.
 """
 import math
+import base64
+from collections.abc import Mapping
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+
+def _narrative(name, *args, **kwargs):
+    from utils.report_capture import record_text
+    if not kwargs.get('unsafe_allow_html'):
+        for value in args:
+            record_text(value, heading=name in ('header', 'subheader'))
+    return getattr(st, name)(*args, **kwargs)
+
+
+def markdown(*args, **kwargs):
+    return _narrative('markdown', *args, **kwargs)
+
+
+def write(*args, **kwargs):
+    return _narrative('write', *args, **kwargs)
+
+
+def caption(*args, **kwargs):
+    return _narrative('caption', *args, **kwargs)
+
+
+def subheader(*args, **kwargs):
+    return _narrative('subheader', *args, **kwargs)
+
+
+def info(*args, **kwargs):
+    return _narrative('info', *args, **kwargs)
+
+
+def warning(*args, **kwargs):
+    return _narrative('warning', *args, **kwargs)
+
+
+def success(*args, **kwargs):
+    return _narrative('success', *args, **kwargs)
+
+
+def error(*args, **kwargs):
+    return _narrative('error', *args, **kwargs)
+
+
+def metric(target, label, value, *args, **kwargs):
+    from utils.report_capture import record_text
+    record_text(f'{label}: {value}')
+    return target.metric(label, value, *args, **kwargs)
 
 
 def _table_options(data, options, static=False):
@@ -41,6 +89,19 @@ def table(data=None, **kwargs):
     return dataframe(data, **_table_options(data, kwargs, static=True))
 
 
+def _sizing_values(values):
+    """Decode Plotly's JSON typed arrays for sizing without changing chart data."""
+    if isinstance(values, Mapping):
+        if 'bdata' not in values or 'dtype' not in values:
+            return None
+        array = np.frombuffer(base64.b64decode(values['bdata']), dtype=values['dtype'])
+        if values.get('shape'):
+            shape = tuple(int(n.strip()) for n in str(values['shape']).split(','))
+            array = array.reshape(shape)
+        return array
+    return values
+
+
 def _labels(values):
     if values is None:
         return []
@@ -58,7 +119,7 @@ def chart_size(figure):
         horizontal = getattr(trace, 'orientation', None) == 'h'
         axis_name = (getattr(trace, 'yaxis', None) if horizontal else getattr(trace, 'xaxis', None)) or ('y' if horizontal else 'x')
         axis = getattr(layout, axis_name[0]+'axis'+axis_name[1:], None)
-        values = getattr(trace, 'y' if horizontal else 'x', None)
+        values = _sizing_values(getattr(trace, 'y' if horizontal else 'x', None))
         labels = _labels(values)
         categorical = (axis is not None and axis.type == 'category') or trace.type == 'bar'
         if values is not None and len(values):
@@ -74,13 +135,13 @@ def chart_size(figure):
                 if longest > 15:
                     height = max(height, 420)
         if trace.type in ('heatmap', 'surface'):
-            z = getattr(trace, 'z', None)
+            z = _sizing_values(getattr(trace, 'z', None))
             shape = np.shape(z)
             if len(shape) == 2:
                 width = max(width, 200 + 42*shape[1])
                 height = max(height, 140 + 32*shape[0])
         if trace.type in ('pie', 'sunburst', 'treemap'):
-            labels = getattr(trace, 'labels', None)
+            labels = _sizing_values(getattr(trace, 'labels', None))
             count = len(labels) if labels is not None else 0
             width = max(width, 560 + min(400, count*20))
             height = max(height, 420)

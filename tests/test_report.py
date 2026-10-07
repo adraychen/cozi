@@ -37,6 +37,28 @@ else:
 
 
 class ReportStateTests(unittest.TestCase):
+    def test_source_snapshot_order_and_exports_without_report_categories(self):
+        from utils.report_state import block_parts
+        payload = deepcopy(PAYLOAD)
+        payload['content'] = [('Subheading', 'Model summary'), ('Table', payload['tables'][0]),
+                              ('Text', 'Original finding'), ('Chart', {'title':'Trend','png':b'image'})]
+        report = ensure_report({}); block = add_snapshot(report, payload)
+        self.assertEqual([kind for kind, _ in block_parts(block)], ['Subheading','Table','Text','Chart'])
+        self.assertEqual(block['text'], '')
+        nodes = report_nodes(report)
+        self.assertFalse(any(kind == 'Subheading' and value in ('Variables','Method/settings','Key results','Warnings/assumptions','Interpretation') for kind, value in nodes))
+        payload['content'][2] = ('Text', 'Rerun finding')
+        self.assertIn(('Text','Original finding'), block_parts(block))
+        block['included'].remove('Charts')
+        self.assertNotIn('Chart', [kind for kind, _ in block_parts(block)])
+        document = Document(io.BytesIO(export_docx(report)))
+        paragraphs = [p.text for p in document.paragraphs]
+        self.assertIn('Model summary', paragraphs)
+        self.assertIn('Original finding', paragraphs)
+        self.assertNotIn('Variables', paragraphs)
+        self.assertNotIn('Method/settings', paragraphs)
+        self.assertTrue(export_pdf(report).startswith(b'%PDF'))
+
     def test_dataset_blocks_reuse_metadata_quality_and_actual_pending_steps(self):
         import pandas as pd
         from utils.variable_metadata import infer_metadata
@@ -108,6 +130,36 @@ class ReportStateTests(unittest.TestCase):
 
 
 class ReportUITests(unittest.TestCase):
+    def test_source_output_is_copied_in_order_and_shown_without_generic_sections(self):
+        script = SCRIPT.replace("offer_result('Regression'", "from utils import presentation\n        presentation.markdown('**Model summary**')\n        presentation.dataframe(entry['frame'], hide_index=True)\n        presentation.write('Saved finding')\n        offer_result('Regression'")
+        app = AppTest.from_string(script).run()
+        app.button(key='report_add_test').click().run()
+        snapshot = app.session_state['cozy_report']['blocks'][0]['snapshot']
+        self.assertEqual([kind for kind, _ in snapshot['content']], ['Subheading','Table','Text'])
+        app.radio(key='screen').set_value('Report').run()
+        self.assertFalse(app.exception)
+        markdown = [m.value for m in app.markdown]
+        self.assertIn('**Model summary**', markdown)
+        self.assertIn('Saved finding', markdown)
+        self.assertNotIn('**Variables**', markdown)
+        self.assertNotIn('**Method/settings**', markdown)
+        self.assertNotIn('**Key results**', markdown)
+
+    def test_report_renders_saved_chart_with_encoded_numerical_arrays(self):
+        import numpy as np
+        import plotly.graph_objects as go
+        report = ensure_report({})
+        payload = deepcopy(PAYLOAD)
+        payload['charts'] = [{'title': 'Saved scatter', 'plotly':
+            go.Figure(go.Scatter(x=np.arange(10), y=np.arange(10))).to_json()}]
+        add_snapshot(report, payload)
+        app = AppTest.from_string(SCRIPT)
+        app.session_state['screen'] = 'Report'
+        app.session_state['cozy_report'] = report
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.get('plotly_chart')), 1)
+
     def test_add_reorder_remove_blocks_and_edit_metadata(self):
         app = AppTest.from_string(SCRIPT).run()
         app.radio(key='screen').set_value('Report').run()

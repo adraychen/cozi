@@ -11,6 +11,24 @@ from utils import presentation
 
 
 class PresentationTests(unittest.TestCase):
+    def test_saved_charts_with_plotly_typed_arrays_render_and_keep_dimensions(self):
+        import plotly.io as pio
+        figures = [
+            go.Figure(go.Scatter(x=np.arange(20), y=np.arange(20))),
+            go.Figure(go.Bar(x=np.arange(20), y=np.arange(20))),
+            go.Figure(go.Bar(x=np.arange(20), y=np.arange(20), orientation='h')),
+            go.Figure(go.Heatmap(z=np.eye(20))),
+        ]
+        for figure in figures:
+            with self.subTest(trace=figure.data[0].type):
+                restored = pio.from_json(figure.to_json())
+                self.assertEqual(presentation.chart_size(restored), presentation.chart_size(figure))
+                original = restored.to_json()
+                with patch.object(presentation.st, 'plotly_chart') as renderer:
+                    presentation.plotly_chart(restored, key='report_chart')
+                    self.assertEqual(renderer.call_args.kwargs['key'], 'report_chart')
+                self.assertEqual(restored.to_json(), original)
+
     def test_tables_fit_content_without_fixed_width_caps_or_column_squeezing(self):
         for count in (2, 16, 200):
             frame = pd.DataFrame({f'Column {i}': ['Long content ' * 20] for i in range(count)})

@@ -43,10 +43,10 @@ def report_nodes(report):
         if snapshot.get('dataset'):
             nodes.append(('Text', f"{snapshot.get('analysis_type', block['kind'])} · Dataset: {snapshot['dataset']['name']} · Captured: {snapshot.get('timestamp','')}"))
         for kind, value in block_parts(block):
-            if kind in ('Text', 'Table', 'Chart'):
+            if kind in ('Text', 'Table', 'Chart', 'Subheading'):
                 nodes.append((kind, value))
             else:
-                nodes.extend([('Subheading', kind), ('Text', text_value(value))])
+                nodes.append(('Text', text_value(value)))
     return nodes
 
 
@@ -113,7 +113,8 @@ def export_docx(report):
                 width = min(6.9, 6.5*image.width/image.height)
             document.add_picture(io.BytesIO(png), width=Inches(width))
         elif kind == 'Table':
-            document.add_paragraph(value.get('title', 'Table'), style='Caption')
+            if not value.get('source_output'):
+                document.add_paragraph(value.get('title', 'Table'), style='Caption')
             for columns, rows in table_groups(value):
                 if not columns:
                     continue
@@ -196,7 +197,8 @@ def export_pdf(report):
             image.drawWidth, image.drawHeight = image.imageWidth*scale, image.imageHeight*scale
             story.extend([KeepTogether([caption, image]), Spacer(1, 10)])
         elif kind == 'Table':
-            story.append(paragraph(value.get('title', 'Table'), 'Caption'))
+            if not value.get('source_output'):
+                story.append(paragraph(value.get('title', 'Table'), 'Caption'))
             for columns, rows in table_groups(value):
                 if not columns:
                     continue
