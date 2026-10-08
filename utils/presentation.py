@@ -164,6 +164,9 @@ def chart_size(figure):
 def plotly_chart(figure_or_data, **kwargs):
     figure = go.Figure(figure_or_data)
     width, height = chart_size(figure)
+    panel_rows = kwargs.pop('panel_rows', None)
+    if panel_rows is not None:
+        height = max(height, 330*panel_rows)
     kwargs.pop('use_container_width', None)
     if kwargs.get('width') in (None, 'stretch', 'content'):
         kwargs['width'] = width

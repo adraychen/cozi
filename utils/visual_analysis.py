@@ -12,7 +12,7 @@ from utils.variable_selection import variable_checkboxes
 
 def available_charts(numeric, categorical, dates):
     if len(numeric) == 1 and len(categorical) == 1 and not dates:
-        return ['Box plot', 'Bar chart', 'Pie chart', 'Pareto chart']
+        return ['Box plot', 'Histogram', 'Dot plot', 'Bar chart', 'Pie chart', 'Pareto chart']
     if not dates:
         combination = (len(numeric), len(categorical))
         if combination == (2, 1):
@@ -39,6 +39,21 @@ def available_charts(numeric, categorical, dates):
     if len(numeric) >= 3:
         charts += ['Bubble plot']
     return charts
+
+
+def dot_points(frame, value, category=None):
+    columns = [value]+([category] if category is not None else [])
+    clean = frame[columns].dropna()
+    sampled = len(clean) > 2000
+    if sampled:
+        clean = clean.sample(2000, random_state=42)
+    names = {value: 'Value'}
+    if category is not None:
+        names[category] = 'Category'
+    dots = clean.rename(columns=names).copy()
+    # Stack across categories so repeated values remain individually visible.
+    dots['Stack'] = dots.groupby('Value').cumcount()+1
+    return dots, sampled
 
 
 def choose(label, options, key):
@@ -96,8 +111,38 @@ def render_visual_analysis(df, col_types):
             data[key[c]]=pd.Categorical(data[key[c]],categories=[str(v) for v in df[c].cat.categories],ordered=True)
     try:
         fig = None
-        if len(nums) > 1 and chart in ['Histogram', 'Dot plot', 'Box plot']:
-            bins = st.slider('Number of bins', 5, 100, 30, key='va_bins') if chart == 'Histogram' else None
+        panel_rows = None
+        if len(nums) > 1 and chart in ['Histogram', 'Dot plot']:
+            panel_rows = (len(nums)+1)//2
+            fig = make_subplots(rows=panel_rows, cols=2, subplot_titles=[str(c) for c in nums],
+                                horizontal_spacing=.12, vertical_spacing=min(.12, .3/panel_rows))
+            for index, col in enumerate(nums):
+                bins = st.slider('Number of bins — '+str(col), 5, 100, 30, key='va_hist_bins_'+str(col)) if chart == 'Histogram' else None
+                row, column = index//2+1, index%2+1
+                values = data[key[col]].dropna()
+                if values.empty:
+                    st.info(str(col)+': No finite numerical values to plot for this variable.')
+                    fig.add_annotation(text='No finite numerical values', x=.5, y=.5,
+                                       xref='x'+(str(index+1) if index else '')+' domain',
+                                       yref='y'+(str(index+1) if index else '')+' domain', showarrow=False)
+                elif chart == 'Histogram':
+                    edges = np.histogram_bin_edges(values.to_numpy(), bins=bins)
+                    fig.add_trace(go.Histogram(x=values, nbinsx=bins,
+                        xbins={'start':float(edges[0]), 'end':float(edges[-1]), 'size':float(edges[1]-edges[0])},
+                        name=str(col), showlegend=False), row=row, col=column)
+                else:
+                    dots, sampled = dot_points(data, key[col])
+                    if sampled:
+                        st.caption(str(col)+': Dot plot uses a reproducible sample of 2,000 observations.')
+                    fig.add_trace(go.Scatter(x=dots['Value'], y=dots['Stack'], mode='markers',
+                                            name=str(col), showlegend=False), row=row, col=column)
+                fig.update_xaxes(title_text=str(col), row=row, col=column)
+                fig.update_yaxes(title_text='Count' if chart == 'Histogram' else 'Stacked observations', row=row, col=column)
+            fig.update_layout(bargap=.05)
+            if len(nums) % 2:
+                fig.update_xaxes(visible=False, row=panel_rows, col=2)
+                fig.update_yaxes(visible=False, row=panel_rows, col=2)
+        elif len(nums) > 1 and chart == 'Box plot':
             group = choose('Group by', cats if cats else [None], 'box_group') if chart == 'Box plot' else None
             for index, col in enumerate(nums):
                 with st.container(border=True):
@@ -106,17 +151,7 @@ def render_visual_analysis(df, col_types):
                     if values.empty:
                         st.info('No finite numerical values to plot for this variable.')
                         continue
-                    if chart == 'Histogram':
-                        panel = px.histogram(data, x=key[col], nbins=bins, labels=labels)
-                    elif chart == 'Box plot':
-                        panel = px.box(data, x=key[group] if group else None, y=key[col], labels=labels)
-                    else:
-                        if len(values) > 2000:
-                            values = values.sample(2000, random_state=42)
-                            st.caption('Dot plot uses a reproducible sample of 2,000 observations for this variable.')
-                        dots = pd.DataFrame({'Value': values.to_numpy()})
-                        dots['Stack'] = dots.groupby('Value').cumcount()+1
-                        panel = px.scatter(dots, x='Value', y='Stack', labels={'Value':str(col), 'Stack':'Stacked observations'})
+                    panel = px.box(data, x=key[group] if group else None, y=key[col], labels=labels)
                     presentation.plotly_chart(panel, key='va_result_panel_'+str(index))
         elif chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
             col = choose('Numerical variable', nums, 'univariate')
@@ -125,7 +160,19 @@ def render_visual_analysis(df, col_types):
                 raise ValueError('No finite numerical values to plot.')
             if chart == 'Histogram':
                 bins = st.slider('Number of bins',5,100,30,key='va_bins')
-                fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
+                if len(cats) == 1:
+                    group = cats[0]
+                    clean = data.dropna(subset=[key[col],key[group]])
+                    if clean.empty:
+                        raise ValueError('No complete numerical values and categories to plot.')
+                    edges = np.histogram_bin_edges(clean[key[col]].to_numpy(), bins=bins)
+                    fig = px.histogram(clean,x=key[col],color=key[group],nbins=bins,
+                                       barmode='overlay',opacity=.6,labels=labels)
+                    fig.update_traces(bingroup='category_comparison',
+                        xbins={'start':float(edges[0]), 'end':float(edges[-1]), 'size':float(edges[1]-edges[0])})
+                    st.caption('Each color represents a category. Groups share the same bins. Bar heights show counts, so larger groups can have taller bars. Missing categories and nonfinite values are excluded.')
+                else:
+                    fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
             elif chart in ['Box plot', 'Grouped box plot']:
                 group = choose('Group by', cats if cats else [None], 'box_group')
                 color_group = choose('Subgroup', [c for c in cats if c != group], 'box_subgroup') if chart == 'Grouped box plot' else None
@@ -133,12 +180,16 @@ def render_visual_analysis(df, col_types):
                 if color_group:
                     fig.update_layout(boxmode='group')
             elif chart == 'Dot plot':
-                if len(x)>2000:
-                    x=x.sample(2000,random_state=42)
+                group = cats[0] if len(cats) == 1 else None
+                dots, sampled = dot_points(data, key[col], key[group] if group is not None else None)
+                if dots.empty:
+                    raise ValueError('No complete numerical values and categories to plot.')
+                if sampled:
                     st.caption('Dot plot uses a reproducible sample of 2,000 observations.')
-                dots=pd.DataFrame({'Value':x.to_numpy()})
-                dots['Stack']=dots.groupby('Value').cumcount()+1
-                fig=px.scatter(dots,x='Value',y='Stack',labels={'Value':str(col),'Stack':'Stacked observations'})
+                fig=px.scatter(dots,x='Value',y='Stack', color='Category' if group is not None else None,
+                    labels={'Value':str(col),'Stack':'Stacked observations', 'Category':str(group)})
+                if group is not None:
+                    st.caption('Each dot represents one observation, colored by category. Repeated values are stacked without overlap. Missing categories and nonfinite values are excluded.')
             elif chart == 'Density plot':
                 if x.nunique()<2:
                     raise ValueError('Density estimation requires variation in the selected column.')
@@ -276,7 +327,7 @@ def render_visual_analysis(df, col_types):
                         for axis in fig.select_yaxes():
                             if axis.title.text in (str(col),key[col]):
                                 axis.update(categoryorder='array',categoryarray=order)
-            presentation.plotly_chart(fig,use_container_width=True,key='va_result_chart')
+            presentation.plotly_chart(fig,use_container_width=True,key='va_result_chart', panel_rows=panel_rows)
         st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
     except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
         st.info(str(exc))
