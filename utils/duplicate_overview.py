@@ -42,8 +42,15 @@ def render_row_overview(frame, dataset_name):
     if not count:
         st.write('No duplicated rows found.')
         return
-    st.caption('Rows to remove — showing the first 100 duplicates. Original row indices are shown.')
-    presentation.dataframe(frame.loc[duplicate_mask].head(100), width='stretch')
+    preview = frame.loc[duplicate_mask].head(100)
+    first_occurrences = frame.loc[~duplicate_mask]
+    # Compare against the complete source, since matches may lie outside the preview.
+    combined = pd.concat([first_occurrences, preview], ignore_index=True)
+    matching_firsts = combined.duplicated(keep=False).iloc[:len(first_occurrences)].to_numpy()
+    st.caption('Earlier matching rows — these first occurrences will be kept. Original row indices are shown.')
+    presentation.dataframe(first_occurrences.iloc[matching_firsts], width='stretch')
+    st.caption('Rows to remove — showing the first 100 extra copies of the earlier rows above. These rows need not match one another.')
+    presentation.dataframe(preview, width='stretch')
     name = st.text_input('Output dataset name', dataset_name + ' · Unique rows', key='view_unique_rows_name')
     st.caption(f'Keep the first occurrence of each row: {len(frame) - count:,} rows will remain. Creates a new dataset; the source remains available.')
     if st.button('Remove duplicated rows', key='view_remove_duplicate_rows', disabled=not name.strip()):
