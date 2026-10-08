@@ -17,6 +17,25 @@ render_visual_analysis(frame,types)
 
 
 class EDALayoutTests(unittest.TestCase):
+    def test_multiple_numerical_distributions_have_independent_panels(self):
+        app = AppTest.from_string('''
+import numpy as np
+import pandas as pd
+from utils.visual_analysis import render_visual_analysis
+frame = pd.DataFrame({'a':[1.,2.,None,4.], 'b':[None,5.,6.,np.inf], 'empty':[None,np.inf,None,None]})
+render_visual_analysis(frame, {'numerical':['a','b','empty'], 'categorical':[], 'datetime':[]})
+''').run()
+        app.button(key='va_select_numerical_all').click().run()
+        for chart, trace in [('Histogram','histogram'), ('Dot plot','scatter'), ('Box plot','box')]:
+            with self.subTest(chart=chart):
+                app.button(key='va_graph_button_'+chart).click().run()
+                self.assertFalse(app.exception)
+                plots = app.get('plotly_chart')
+                self.assertEqual(len(plots), 2)
+                self.assertEqual([json.loads(p.proto.spec)['data'][0]['type'] for p in plots], [trace,trace])
+                self.assertTrue(any('No finite numerical values' in i.value for i in app.info))
+                self.assertFalse(any(c.key.startswith('va_univariate_column_') for c in app.checkbox))
+
     def test_group_exclusivity_and_multiple_dimensions(self):
         app=AppTest.from_string(FIXTURE).run(timeout=45)
         app.checkbox(key='gs_measure_column_a').check().run(timeout=45)
@@ -73,6 +92,10 @@ render_visual_analysis(pd.DataFrame({'v':[2.,4.,-1.],'g':['A','A','B']}), {'nume
         self.assertEqual(len(app.get('plotly_chart')),0)
 
     def test_chart_availability(self):
+        for cats in ([], ['g']):
+            choices = available_charts(['a','b'], cats, [])
+            for chart in ('Histogram','Dot plot','Box plot'):
+                self.assertIn(chart, choices)
         self.assertIn('Pie chart',available_charts([],['g'],[]))
         self.assertIn('Heatmap',available_charts(['a','b'],[],[]))
         self.assertIn('Bubble plot',available_charts(['a','b','size'],[],[]))

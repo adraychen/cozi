@@ -16,11 +16,11 @@ def available_charts(numeric, categorical, dates):
     if not dates:
         combination = (len(numeric), len(categorical))
         if combination == (2, 1):
-            return ['Scatter plot']
+            return ['Histogram', 'Dot plot', 'Box plot', 'Scatter plot']
         if combination == (1, 2):
             return ['Grouped bar chart', 'Stacked-bar chart', 'Grouped box plot', 'Heatmap']
         if combination == (2, 0):
-            return ['Scatter plot', 'Correlation matrix', 'Pair plot', 'Heatmap', 'Line chart', 'Area chart']
+            return ['Histogram', 'Dot plot', 'Box plot', 'Scatter plot', 'Correlation matrix', 'Pair plot', 'Heatmap', 'Line chart', 'Area chart']
         if combination == (0, 2):
             return ['Grouped bar chart', 'Stacked-bar chart', 'Heatmap']
     charts = []
@@ -74,9 +74,9 @@ def render_visual_analysis(df, col_types):
     st.markdown('**Choose a graph**')
     def select_graph(name):
         st.session_state['va_selected_graph'] = name
-    for start in range(0, len(choices), 4):
-        buttons = st.columns(4)
-        for button, name in zip(buttons, choices[start:start + 4]):
+    for start in range(0, len(choices), 5):
+        buttons = st.columns(5)
+        for button, name in zip(buttons, choices[start:start + 5]):
             button.button(name, key='va_graph_button_' + name,
                           type='primary' if st.session_state['va_selected_graph'] == name else 'secondary',
                           use_container_width=True, on_click=select_graph, args=(name,))
@@ -96,7 +96,29 @@ def render_visual_analysis(df, col_types):
             data[key[c]]=pd.Categorical(data[key[c]],categories=[str(v) for v in df[c].cat.categories],ordered=True)
     try:
         fig = None
-        if chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
+        if len(nums) > 1 and chart in ['Histogram', 'Dot plot', 'Box plot']:
+            bins = st.slider('Number of bins', 5, 100, 30, key='va_bins') if chart == 'Histogram' else None
+            group = choose('Group by', cats if cats else [None], 'box_group') if chart == 'Box plot' else None
+            for index, col in enumerate(nums):
+                with st.container(border=True):
+                    st.markdown('**'+str(col)+'**')
+                    values = data[key[col]].dropna()
+                    if values.empty:
+                        st.info('No finite numerical values to plot for this variable.')
+                        continue
+                    if chart == 'Histogram':
+                        panel = px.histogram(data, x=key[col], nbins=bins, labels=labels)
+                    elif chart == 'Box plot':
+                        panel = px.box(data, x=key[group] if group else None, y=key[col], labels=labels)
+                    else:
+                        if len(values) > 2000:
+                            values = values.sample(2000, random_state=42)
+                            st.caption('Dot plot uses a reproducible sample of 2,000 observations for this variable.')
+                        dots = pd.DataFrame({'Value': values.to_numpy()})
+                        dots['Stack'] = dots.groupby('Value').cumcount()+1
+                        panel = px.scatter(dots, x='Value', y='Stack', labels={'Value':str(col), 'Stack':'Stacked observations'})
+                    presentation.plotly_chart(panel, key='va_result_panel_'+str(index))
+        elif chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
             col = choose('Numerical variable', nums, 'univariate')
             x = data[key[col]].dropna()
             if x.empty:
