@@ -10,9 +10,12 @@ from utils import presentation
 from utils.variable_selection import variable_checkboxes
 
 
-def available_charts(numeric, categorical, dates):
+def available_charts(numeric, categorical, dates, ordinal=()):
     if len(numeric) == 1 and len(categorical) == 1 and not dates:
-        return ['Box plot', 'Histogram', 'Dot plot', 'Bar chart', 'Pie chart', 'Pareto chart']
+        charts = ['Box plot', 'Histogram', 'Dot plot', 'Bar chart', 'Pie chart', 'Pareto chart']
+        if categorical[0] in ordinal:
+            charts.append('Line chart')
+        return charts
     if not dates:
         combination = (len(numeric), len(categorical))
         if combination == (2, 1):
@@ -30,8 +33,10 @@ def available_charts(numeric, categorical, dates):
         charts += ['Bar chart', 'Pie chart', 'Pareto chart']
     if len(categorical) >= 2:
         charts += ['Stacked-bar chart']
+    if len(numeric) == 1 and len(dates) == 1 and not categorical:
+        charts.append('Line chart')
     if (dates and numeric) or len(numeric) >= 2:
-        charts += ['Line chart', 'Area chart']
+        charts.append('Area chart')
     if len(numeric) >= 2:
         charts += ['Scatter plot', 'Correlation matrix', 'Pair plot']
     if len(categorical) >= 2 or len(numeric) >= 2:
@@ -39,6 +44,28 @@ def available_charts(numeric, categorical, dates):
     if len(numeric) >= 3:
         charts += ['Bubble plot']
     return charts
+
+
+def histogram_bins(values, bins):
+    edges = np.histogram_bin_edges(np.asarray(values), bins=bins)
+    # Plotly's rightmost bin edge is exclusive. Pad the range so extrema count.
+    padding = (float(edges[-1])-float(edges[0]))*1e-6
+    start, end = float(edges[0])-padding, float(edges[-1])+padding
+    return {'start':start, 'end':end, 'size':(end-start)/bins}
+
+
+def panel_bin_slider(figure, values, trace_index, panel_index, bins=30):
+    suffix = str(panel_index+1) if panel_index else ''
+    xdomain = figure.layout['xaxis'+suffix].domain
+    ydomain = figure.layout['yaxis'+suffix].domain
+    return dict(active=bins-5, x=xdomain[0]+.15*(xdomain[1]-xdomain[0]),
+        y=ydomain[1]+.015, xanchor='left', yanchor='bottom',
+        len=.7*(xdomain[1]-xdomain[0]), pad={'t':0,'b':0},
+        currentvalue={'prefix':'Bins: ', 'font':{'size':12}}, font={'size':10},
+        ticklen=0, minorticklen=0, transition={'duration':0},
+        steps=[dict(label=str(n), method='restyle',
+                    args=[{'nbinsx':n, 'xbins':histogram_bins(values, n)}, [trace_index]])
+               for n in range(5,101)])
 
 
 def dot_points(frame, value, category=None):
@@ -73,14 +100,19 @@ def choose(label, options, key):
     return st.selectbox(label, options, key='va_' + key)
 
 
-def render_visual_analysis(df, col_types):
+def render_visual_analysis(df, col_types, metadata=None):
     st.markdown('#### Visual Analysis')
     st.caption('Explore patterns and trends in your data through charts.')
     selected = {}
     for label, kind in [('Numerical', 'numerical'), ('Categorical', 'categorical'), ('Temporal', 'datetime')]:
         selected[kind] = variable_checkboxes(label, col_types[kind], 'va_select_' + kind, hide_empty=True)
     nums, cats, dates = selected['numerical'], selected['categorical'], selected['datetime']
-    choices = available_charts(nums, cats, dates)
+    if metadata is None:
+        from utils.variable_metadata import infer_metadata
+        metadata = infer_metadata(df)
+    ordinal = [c for c in cats if metadata.get(c, {}).get('variable_subtype') == 'Ordinal'
+               and len(metadata.get(c, {}).get('order', [])) > 1]
+    choices = available_charts(nums, cats, dates, ordinal)
     if not choices:
         st.info('Select a numeric or categorical column to begin. Time-series charts also need a numeric measure.')
         return
@@ -112,64 +144,72 @@ def render_visual_analysis(df, col_types):
     try:
         fig = None
         panel_rows = None
-        if len(nums) > 1 and chart in ['Histogram', 'Dot plot']:
+        if len(nums) > 1 and chart in ['Histogram', 'Dot plot', 'Box plot']:
+            group = choose('Group by', cats if cats else [None], 'box_group') if chart == 'Box plot' else None
             panel_rows = (len(nums)+1)//2
+            top_margin = 145 if chart == 'Histogram' else 70
+            panel_height = 420*panel_rows
+            row_spacing = 170/(panel_height-top_margin-80) if panel_rows > 1 else 0
             fig = make_subplots(rows=panel_rows, cols=2, subplot_titles=[str(c) for c in nums],
-                                horizontal_spacing=.12, vertical_spacing=min(.12, .3/panel_rows))
+                                horizontal_spacing=.12, vertical_spacing=row_spacing)
+            panel_color = px.colors.qualitative.Plotly[0]
+            bin_sliders = []
             for index, col in enumerate(nums):
-                bins = st.slider('Number of bins — '+str(col), 5, 100, 30, key='va_hist_bins_'+str(col)) if chart == 'Histogram' else None
+                bins = 30
                 row, column = index//2+1, index%2+1
                 values = data[key[col]].dropna()
+                if chart == 'Box plot' and group is not None:
+                    box_data = data.dropna(subset=[key[col],key[group]])
+                    values = box_data[key[col]]
                 if values.empty:
                     st.info(str(col)+': No finite numerical values to plot for this variable.')
                     fig.add_annotation(text='No finite numerical values', x=.5, y=.5,
                                        xref='x'+(str(index+1) if index else '')+' domain',
                                        yref='y'+(str(index+1) if index else '')+' domain', showarrow=False)
                 elif chart == 'Histogram':
-                    edges = np.histogram_bin_edges(values.to_numpy(), bins=bins)
+                    trace_index = len(fig.data)
                     fig.add_trace(go.Histogram(x=values, nbinsx=bins,
-                        xbins={'start':float(edges[0]), 'end':float(edges[-1]), 'size':float(edges[1]-edges[0])},
-                        name=str(col), showlegend=False), row=row, col=column)
+                        xbins=histogram_bins(values.to_numpy(), bins),
+                        name=str(col), marker_color=panel_color, showlegend=False), row=row, col=column)
+                    bin_sliders.append(panel_bin_slider(fig, values.to_numpy(), trace_index, index, bins))
+                elif chart == 'Box plot':
+                    fig.add_trace(go.Box(y=values, x=box_data[key[group]] if group is not None else None,
+                        name=str(col), marker_color=panel_color, line_color=panel_color,
+                        showlegend=False), row=row, col=column)
                 else:
                     dots, sampled = dot_points(data, key[col])
                     if sampled:
                         st.caption(str(col)+': Dot plot uses a reproducible sample of 2,000 observations.')
                     fig.add_trace(go.Scatter(x=dots['Value'], y=dots['Stack'], mode='markers',
-                                            name=str(col), showlegend=False), row=row, col=column)
-                fig.update_xaxes(title_text=str(col), row=row, col=column)
-                fig.update_yaxes(title_text='Count' if chart == 'Histogram' else 'Stacked observations', row=row, col=column)
-            fig.update_layout(bargap=.05)
+                                            name=str(col), marker_color=panel_color, showlegend=False), row=row, col=column)
+                x_title = (str(group) if group is not None else None) if chart == 'Box plot' else str(col)
+                y_title = str(col) if chart == 'Box plot' else 'Count' if chart == 'Histogram' else 'Stacked observations'
+                fig.update_xaxes(title_text=x_title, title_standoff=15, automargin=True,
+                                 visible=chart != 'Box plot' or group is not None, row=row, col=column)
+                fig.update_yaxes(title_text=y_title, row=row, col=column)
+            fig.update_layout(bargap=.05, margin={'t':top_margin, 'b':80, 'l':70, 'r':40}, sliders=bin_sliders)
+            if chart == 'Histogram':
+                for annotation in fig.layout.annotations[:len(nums)]:
+                    annotation.update(yshift=95)
             if len(nums) % 2:
                 fig.update_xaxes(visible=False, row=panel_rows, col=2)
                 fig.update_yaxes(visible=False, row=panel_rows, col=2)
-        elif len(nums) > 1 and chart == 'Box plot':
-            group = choose('Group by', cats if cats else [None], 'box_group') if chart == 'Box plot' else None
-            for index, col in enumerate(nums):
-                with st.container(border=True):
-                    st.markdown('**'+str(col)+'**')
-                    values = data[key[col]].dropna()
-                    if values.empty:
-                        st.info('No finite numerical values to plot for this variable.')
-                        continue
-                    panel = px.box(data, x=key[group] if group else None, y=key[col], labels=labels)
-                    presentation.plotly_chart(panel, key='va_result_panel_'+str(index))
         elif chart in ['Histogram','Dot plot','Density plot','Box plot','Grouped box plot','Q–Q plot']:
             col = choose('Numerical variable', nums, 'univariate')
             x = data[key[col]].dropna()
             if x.empty:
                 raise ValueError('No finite numerical values to plot.')
             if chart == 'Histogram':
-                bins = st.slider('Number of bins',5,100,30,key='va_bins')
+                bins = st.slider('Number of bins',5,100,30,key='va_bins',width=250)
                 if len(cats) == 1:
                     group = cats[0]
                     clean = data.dropna(subset=[key[col],key[group]])
                     if clean.empty:
                         raise ValueError('No complete numerical values and categories to plot.')
-                    edges = np.histogram_bin_edges(clean[key[col]].to_numpy(), bins=bins)
                     fig = px.histogram(clean,x=key[col],color=key[group],nbins=bins,
                                        barmode='overlay',opacity=.6,labels=labels)
                     fig.update_traces(bingroup='category_comparison',
-                        xbins={'start':float(edges[0]), 'end':float(edges[-1]), 'size':float(edges[1]-edges[0])})
+                        xbins=histogram_bins(clean[key[col]].to_numpy(), bins))
                     st.caption('Each color represents a category. Groups share the same bins. Bar heights show counts, so larger groups can have taller bars. Missing categories and nonfinite values are excluded.')
                 else:
                     fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
@@ -253,15 +293,33 @@ def render_visual_analysis(df, col_types):
                 fig=px.bar(table,x=key[category],y='Value',color=key[stack] if stack else None,barmode='group' if chart=='Grouped bar chart' else 'stack',labels=labels)
             presentation.dataframe(table.rename(columns=labels),hide_index=True,use_container_width=True)
         elif chart in ['Line chart','Area chart']:
-            axis=choose('X axis',dates+nums,'line_x')
-            if not dates:
+            axis_options = (dates or ordinal or nums) if chart == 'Line chart' else dates+nums
+            if chart == 'Line chart' and len(axis_options) == 1:
+                axis = axis_options[0]
+                st.caption('X variable: '+str(axis))
+            else:
+                axis=choose('X axis',axis_options,'line_x')
+            if chart == 'Line chart' and axis in nums:
+                confirm_key = 'va_line_order_confirm_'+str(axis)
+                if not st.checkbox('I confirm that '+str(axis)+' has a meaningful progression and connecting successive values makes sense.', key=confirm_key):
+                    st.info('Confirm meaningful order for the numerical X variable to draw a line chart. Otherwise, use a scatter plot.')
+                    return
+            elif chart == 'Line chart':
+                st.caption('X order follows the temporal values.' if axis in dates else 'X order follows the defined ordinal categories.')
+            elif not dates:
                 st.caption('Use line/area charts only when the X variable has a meaningful order; otherwise use a scatter plot.')
-            ys=variable_checkboxes('Measures',[c for c in nums if c!=axis],'va_line_y',default=[c for c in nums if c!=axis][:1])
+            if chart == 'Line chart':
+                ys = [c for c in nums if c != axis]
+                st.caption('Y variable: '+str(ys[0]))
+            else:
+                ys=variable_checkboxes('Measures',[c for c in nums if c!=axis],'va_line_y',default=[c for c in nums if c!=axis][:1])
             if not ys:
                 raise ValueError('Select at least one measure.')
             agg=choose('Aggregate repeated X values',['Mean','Sum'],'line_agg')
             clean=data[[key[axis]]+[key[c] for c in ys]].dropna(subset=[key[axis]])
-            grouped=clean.groupby(key[axis])[[key[c] for c in ys]]
+            if axis in ordinal:
+                clean[key[axis]] = pd.Categorical(clean[key[axis]], categories=[str(v) for v in metadata[axis]['order']], ordered=True)
+            grouped=clean.groupby(key[axis], observed=True)[[key[c] for c in ys]]
             table=(grouped.mean() if agg=='Mean' else grouped.sum(min_count=1)).reset_index().sort_values(key[axis])
             fig=(px.line if chart=='Line chart' else px.area)(table,x=key[axis],y=[key[c] for c in ys],labels=labels)
             st.caption('X values are sorted; repeated X values are aggregated. Area measures are stacked. Missing measures are not replaced by zero.')

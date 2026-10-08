@@ -497,7 +497,7 @@ def render_analyze(raw, _show_feedback):
     with visual_tab:
         if visual_tab.open:
             from utils.visual_analysis import render_visual_analysis
-            render_visual_analysis(df, col_types)
+            render_visual_analysis(df, col_types, variable_metadata)
 
     with comparison_tab:
         if comparison_tab.open:
