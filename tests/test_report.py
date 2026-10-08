@@ -178,8 +178,16 @@ class ReportUITests(unittest.TestCase):
 
     def test_add_rerun_edit_navigation_and_second_run(self):
         app = AppTest.from_string(SCRIPT).run()
-        app.button(key='report_add_test').click().run()
+        self.assertFalse(app.button(key='report_add_test').disabled)
+        with patch('utils.report_capture.st.toast') as toast:
+            app.button(key='report_add_test').click().run()
+            toast.assert_not_called()
+        self.assertTrue(app.button(key='report_add_test').disabled)
+        self.assertEqual(app.button(key='report_add_test').label, '✓ Added to Report')
+        app.run()
+        self.assertTrue(app.button(key='report_add_test').disabled)
         app.number_input(key='run').set_value(2).run()
+        self.assertFalse(app.button(key='report_add_test').disabled)
         self.assertEqual(app.session_state['cozy_report']['blocks'][0]['snapshot']['results']['r_squared'], .1)
         app.button(key='report_add_test').click().run()
         app.radio(key='screen').set_value('Report').run()
@@ -190,6 +198,20 @@ class ReportUITests(unittest.TestCase):
         app.radio(key='screen').set_value('Report').run()
         self.assertFalse(app.exception)
         self.assertEqual(app.text_area(key=key).value, 'Manual conclusion')
+        self.assertEqual(len(app.session_state['cozy_report']['blocks']), 2)
+
+    def test_new_run_identity_reactivates_same_result_and_navigation_keeps_tick(self):
+        script = SCRIPT.replace("key='test')", "key='test', run_id=st.session_state.get('new_run_id'))")
+        app = AppTest.from_string(script).run()
+        app.button(key='report_add_test').click().run()
+        app.radio(key='screen').set_value('Report').run()
+        app.radio(key='screen').set_value('Analyze').run()
+        self.assertTrue(app.button(key='report_add_test').disabled)
+        app.session_state['new_run_id'] = 'second training run'
+        app.run()
+        self.assertFalse(app.button(key='report_add_test').disabled)
+        app.button(key='report_add_test').click().run()
+        self.assertTrue(app.button(key='report_add_test').disabled)
         self.assertEqual(len(app.session_state['cozy_report']['blocks']), 2)
 
     def test_ai_regenerate_restore_clear_and_failure_preserve_edits(self):

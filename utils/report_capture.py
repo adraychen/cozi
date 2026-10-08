@@ -3,6 +3,8 @@ from contextvars import ContextVar
 from functools import wraps
 from copy import deepcopy
 import io
+import hashlib
+import json
 import pandas as pd
 import streamlit as st
 from utils.report_state import structured, key_results, ensure_report, add_snapshot
@@ -71,15 +73,18 @@ def record_text(value, heading=False):
             capture['content'].append(('Text', value))
 
 
-def _add(payload):
+def _add(payload, identity, fingerprint):
     state = st.session_state
+    status = state.setdefault('report_add_status', {})
+    if status.get(identity) == (fingerprint, True):
+        return
     dataset = state.get('ws_datasets', {}).get(state.get('ws_active'))
     add_snapshot(ensure_report(state, dataset), payload)
-    st.toast('✓ Added to Report')
+    status[identity] = (fingerprint, True)
 
 
 def offer_result(analysis_type, title, variables, settings, results, diagnostics=None,
-                 warnings=None, interpretation='', key=None):
+                 warnings=None, interpretation='', key=None, run_id=None):
     capture = _capture.get() or {'tables': [], 'charts': []}
     dataset = st.session_state.get('ws_datasets', {}).get(st.session_state.get('ws_active'), {})
     frame = dataset.get('frame')
@@ -92,5 +97,17 @@ def offer_result(analysis_type, title, variables, settings, results, diagnostics
                    'variables': len(frame.columns) if frame is not None else None},
                **deepcopy(capture)}
     st.session_state['report_latest'] = deepcopy(payload)
-    st.button('Add to Report', key='report_add_'+(key or analysis_type),
-              on_click=_add, args=(payload,))
+    button_key = 'report_add_'+(key or analysis_type)
+    identity = (button_key, st.session_state.get('ws_active'))
+    digest = hashlib.sha256(json.dumps({'type': analysis_type, 'variables': payload['variables'],
+        'settings': payload['settings'], 'results': structured(results), 'run_id': run_id},
+        sort_keys=True, default=str).encode())
+    if frame is not None:
+        digest.update(frame.to_json(date_format='iso', default_handler=str).encode())
+    fingerprint = digest.hexdigest()
+    status = st.session_state.setdefault('report_add_status', {})
+    if status.get(identity, (None, False))[0] != fingerprint:
+        status[identity] = (fingerprint, False)
+    added = status[identity][1]
+    st.button('✓ Added to Report' if added else 'Add to Report', key=button_key,
+              disabled=added, on_click=_add, args=(payload, identity, fingerprint))

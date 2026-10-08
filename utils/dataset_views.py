@@ -803,6 +803,8 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
             with st.spinner(f"Training — estimated {time_est}. Please wait…"):
                 try:
                     st.session_state["pa_results"] = _train_model()
+                    from uuid import uuid4
+                    st.session_state['pa_report_run_id'] = uuid4().hex
                 except Exception as e:
                     st.session_state.pop("pa_results", None)
                     st.session_state["pa_train_error"] = str(e)
@@ -1232,5 +1234,5 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
                      {'target': pa_target, 'predictors': pa_predictors},
                      {'target_type': pa_target_type, 'validation': 'Existing train/test split and cross-validation'},
                      results, None, ['Predictive accuracy is estimated from the reported validation sample; future performance can differ.'],
-                     key='predictive')
+                     key='predictive', run_id=st.session_state.get('pa_report_run_id'))
     _show_feedback("Predictive Analytics", "pa")
