@@ -1,6 +1,7 @@
 """Escaped, accessible overview table with inline classification/value details."""
 from html import escape
 import pandas as pd
+import streamlit as st
 from utils.loader import get_dataframe_info
 from utils.temporal import SUBTYPES, parse_temporal, temporal_value, infer_temporal_subtype
 
@@ -62,9 +63,26 @@ def overview_html(raw, metadata):
 </style><div class="vm-overview"><table aria-label="Column Overview"><thead><tr>'''+''.join('<th scope="col">'+h+'</th>' for h in headers)+'</tr></thead><tbody>'+''.join(rows)+'</tbody></table></div>'
 
 
+@st.fragment
+def _render_value_details(raw, metadata):
+    """Refresh the selected column's details independently of workspace navigation."""
+    from utils import presentation
+
+    column = st.selectbox('Column for value details', list(raw), key='vm_value_details_column')
+    heading, values = value_details(raw[column], metadata[column])
+    # Read-only dataframes ignore widget keys; key the output container so the
+    # browser replaces the previous column's heading and table together.
+    with st.container(key=f"vm_value_details_result_{st.session_state.get('file_id', '')}_{column}"):
+        st.write(heading)
+        if values:
+            presentation.dataframe(
+                pd.DataFrame([(str(label), str(value)) for label, value in values],
+                             columns=['Detail', 'Value']), hide_index=True,
+            )
+
+
 def render_overview(raw, metadata):
     """Native preview-style table; retain classification and value explanations."""
-    import streamlit as st
     from utils import presentation
 
     overview = get_dataframe_info(raw).copy()
@@ -86,10 +104,5 @@ def render_overview(raw, metadata):
         'Variable Subtype': st.column_config.TextColumn(help='A = Automatic classification; M = Manual Override.'),
         'Unique Values': st.column_config.NumberColumn(help='Open Unique value details below for values or ranges.'),
     })
-    with st.expander('ⓘ Unique value details'):
-        column = st.selectbox('Column for value details', list(raw), key='vm_value_details_column')
-        heading, values = value_details(raw[column], metadata[column])
-        st.write(heading)
-        if values:
-            presentation.dataframe(pd.DataFrame([(str(label), str(value)) for label, value in values],
-                                               columns=['Detail', 'Value']), hide_index=True)
+    with st.expander('Unique value details'):
+        _render_value_details(raw, metadata)

@@ -17,6 +17,30 @@ render_visual_analysis(frame,types)
 
 
 class EDALayoutTests(unittest.TestCase):
+    def test_visual_analysis_adds_chart_snapshot_and_reactivates_after_change(self):
+        app = AppTest.from_string(FIXTURE.replace('render_group_statistics(frame,types)', '')).run()
+        self.assertFalse(any(b.key == 'report_add_visual_analysis' for b in app.button))
+        app.button(key='va_select_numerical_all').click().run()
+        self.assertFalse(app.exception)
+        button = app.button(key='report_add_visual_analysis')
+        self.assertFalse(button.disabled)
+        button.click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(app.button(key='report_add_visual_analysis').disabled)
+        self.assertEqual(app.button(key='report_add_visual_analysis').label, '✓ Added to Report')
+        blocks = app.session_state['cozy_report']['blocks']
+        self.assertEqual(len(blocks), 1)
+        snapshot = blocks[0]['snapshot']
+        self.assertEqual(len(snapshot['charts']), 1)
+        self.assertTrue(any(kind == 'Chart' for kind, _ in snapshot['content']))
+        original = snapshot['charts'][0]['plotly']
+        app.button(key='va_graph_button_Box plot').click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(app.button(key='report_add_visual_analysis').disabled)
+        self.assertEqual(app.session_state['cozy_report']['blocks'][0]['snapshot']['charts'][0]['plotly'], original)
+        app.button(key='report_add_visual_analysis').click().run()
+        self.assertEqual(len(app.session_state['cozy_report']['blocks']), 2)
+
     def test_histogram_bins_include_both_extremes(self):
         from utils.visual_analysis import histogram_bins
         for values in ([1.,2.,4.], [2.,2.,2.], [-4.,-2.,-1.]):

@@ -82,7 +82,7 @@ def render_results(r,key):
                  ('Model degrees of freedom',str(r['model_df'])),('Residual degrees of freedom',str(r['residual_df'])),
                  ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
         presentation.dataframe(pd.DataFrame(stats,columns=['Performance measure','Value']))
-        presentation.caption('Fit on the analyzed observations. RMSE = √mean(residual²); MAE = mean(|residual|); residual standard error = √(residual sum of squares / residual df). Error measures use response units. Overall F tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
+        presentation.caption('Fit on the analyzed observations. Error measures use response units. The overall F-test tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
         presentation.markdown('**Selected terms**')
         presentation.dataframe(selected_terms_table(r))
         if not r['active']:

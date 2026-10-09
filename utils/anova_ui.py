@@ -1,104 +1,299 @@
-from utils.report_capture import reportable, offer_result
+"""Guided Welch One-way ANOVA, diagnostics and Games–Howell reporting."""
+import hashlib
+import json
+import math
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from scipy import stats
 import streamlit as st
 from utils import presentation
-from scipy import stats
-from utils.anova_analysis import prepare_anova, run_anova
+from utils.report_capture import reportable, offer_result, begin_result
+from utils.anova_analysis import prepare_anova, run_anova, variation_decomposition, games_howell, EFFECT_SIZE, VARIATION_NOTE
+from utils.anova_independence import assess_independence
+from utils.anova_charts import group_mean_plot, pairwise_plot, residual_plot
+
+
+@st.cache_data(show_spinner=False, max_entries=16)
+def _prepare(df, category, outcome, metadata):
+    prepared = prepare_anova(df, category, outcome)
+    return prepared, assess_independence(df, prepared, metadata)
+
+
+@st.cache_data(show_spinner=False, max_entries=16)
+def _pairwise(prepared, alpha):
+    return games_howell(prepared, alpha)
+
+
+def _json_safe(value):
+    if isinstance(value, pd.DataFrame):
+        return _json_safe(value.to_dict('records'))
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (np.bool_,)):
+        return bool(value)
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        return float(value) if np.isfinite(value) else None
+    return value
+
+
+def guidance_context(prepared, independence, result, pairwise, metadata):
+    """Bounded summaries only: no individual rows, IDs, timestamps or measurements."""
+    pairs = pairwise['table'] if pairwise else pd.DataFrame()
+    selected = pairs[pairs.Significant] if not pairs.empty else pairs
+    return _json_safe({
+        'response': str(prepared['outcome']), 'factor': str(prepared['category']),
+        'n': prepared['n'], 'excluded': prepared['excluded'], 'groups': prepared['summary'].head(30),
+        'group_count': len(prepared['groups']), 'result': result,
+        'pairwise': selected.head(20), 'significant_pair_count': len(selected),
+        'pairwise_status': pairwise['reason'] if pairwise else 'Inference withheld pending study-design clarification.',
+        'independence': {'state': independence['state'], 'evidence': independence['evidence'],
+                         'qualification': independence['qualification']},
+        'warnings': prepared['warnings'], 'errors': prepared['errors'],
+        'metadata': {str(c): {key: metadata[c].get(key) for key in ('variable_type', 'variable_subtype', 'source')}
+                     for c in list(metadata)[:40]},
+    })
+
+
+def _show_pair_plot(pairwise):
+    presentation.markdown('**Games–Howell Pairwise Comparison Plot**')
+    if pairwise is None or pairwise['table'].empty:
+        presentation.info(pairwise['reason'] if pairwise else 'Pairwise inference is withheld until the study-design concern is resolved.')
+        return
+    table = pairwise['table']
+    mode = st.selectbox('Comparisons to plot', ['All comparisons', 'Significant comparisons', 'Nonsignificant comparisons'],
+                        key='rel_anova_pair_filter')
+    if mode != 'All comparisons':
+        table = table[table.Significant.eq(mode == 'Significant comparisons')]
+    if table.empty:
+        presentation.info('No comparisons match this filter.')
+        return
+    pages = math.ceil(len(table)/20)
+    if pages > 1:
+        if st.session_state.get('rel_anova_pair_page', 0) >= pages:
+            st.session_state.pop('rel_anova_pair_page', None)
+        page = st.selectbox('Comparison page', range(pages), format_func=lambda p: f'{p+1} of {pages}',
+                            key='rel_anova_pair_page')
+    else:
+        page = 0
+    shown = table.iloc[page*20:(page+1)*20]
+    presentation.caption(f'Showing {len(shown)} of {len(table)} filtered comparisons. Filtering does not change the full comparison family or its adjustment.')
+    fig = pairwise_plot(pairwise, shown)
+    presentation.plotly_chart(fig, key='rel_anova_pair_plot')
+    presentation.caption(f'{pairwise["confidence"]:.0%} simultaneous Games–Howell intervals. Above zero: A has the higher mean; below zero: B has the higher mean. An interval containing zero does not establish equality. Significance uses the adjusted p-value at α = {pairwise["alpha"]:g}.')
 
 
 @reportable
 def render_anova(df, category, outcome):
-    prepared = prepare_anova(df, category, outcome)
-    presentation.caption('Compare the mean of a numerical response across independent groups. Identifiers are not meaningful outcomes. Ordered ratings assume equally spaced scores.')
-    method = st.selectbox('ANOVA method', ['Welch', 'Classical'], key='rel_anova_method')
-    presentation.caption('Welch is the default to allow unequal variances. Method choice is explicit; diagnostic p-values do not switch the method automatically.')
-    if method == 'Classical' and (not np.isfinite(prepared['levene_p']) or prepared['levene_p'] < .05):
-        presentation.warning('Classical ANOVA selected despite uncertain or unequal variances. Its inference may be unreliable; consider Welch when group variances are positive.')
-    presentation.write('Independence cannot be verified from the CSV. Repeated responses from a person or clustered measurements may require repeated-measures or mixed-effects analysis.')
-    # Scope confirmation to the active dataset and variable pair.
-    context = (st.session_state.get('file_id', id(df)), category, outcome)
+    metadata = st.session_state.get('variable_metadata', {})
+    prepared, independence = _prepare(df, category, outcome, metadata)
+    presentation.caption("Welch's One-way ANOVA compares a numerical response across independent groups and allows unequal variances. Identifiers are not meaningful outcomes; ordered ratings assume equally spaced scores.")
+    alpha = st.number_input('Significance level (α)', min_value=.001, max_value=.20, value=.05,
+                            step=.01, format='%.3f', key='rel_anova_alpha')
+    signature = hashlib.sha256(pd.util.hash_pandas_object(df, index=False).values.tobytes()).hexdigest()
+    context = (st.session_state.get('file_id'), category, outcome, signature)
     if st.session_state.get('rel_anova_context') != context:
-        st.session_state['rel_anova_independent'] = False
+        for key in ('rel_anova_design', 'rel_anova_qq', 'rel_anova_pair_page'):
+            st.session_state.pop(key, None)
         st.session_state['rel_anova_context'] = context
-    independent = False
+    design = None
+    if independence['requires_clarification']:
+        presentation.warning('Potential dependence detected. Ordinary Welch ANOVA may be inappropriate; repeated-measures or mixed-effects analysis may be needed.')
+        presentation.dataframe(independence['evidence'], hide_index=True)
+        clarification = st.selectbox(
+            'What do the repeated identifiers, cluster labels or chronological indicators represent?',
+            ['Unresolved study design', 'Repeated or clustered measurements',
+             'Independent observations; these labels/order do not identify dependent units'],
+            key='rel_anova_design')
+        if clarification.startswith('Independent'):
+            design = 'independent'
+            presentation.warning('Inference proceeds under your study-design clarification. The detected indicators remain limitations; diagnostics have not verified independence.')
+    result, result_error, variation, pairwise = None, None, None, None
     if not prepared['errors']:
-        independent = st.checkbox('I confirm the observations are independent, with no repeated or clustered measurements', key='rel_anova_independent')
-    result = None
-    result_error = None
-    if independent and not prepared['errors']:
         try:
-            result = run_anova(prepared, method, independent=True)
+            result = run_anova(prepared, alpha=alpha, independence=independence, design=design)
+            pairwise = _pairwise(prepared, alpha)
         except ValueError as exc:
             result_error = str(exc)
-    from utils.report_capture import begin_result
+    try:
+        variation = variation_decomposition(prepared)
+    except ValueError as exc:
+        prepared['warnings'].append(str(exc))
     begin_result()
     tabs = st.tabs(['Model Overview', 'Group Analysis', 'Diagnostics', 'Visual Analysis', 'ANOVA Findings'])
     with tabs[0]:
         presentation.markdown('**Model summary**')
         presentation.table(pd.DataFrame([
-            ('Response / Dependent Variable', str(outcome)),
-            ('Grouping / Independent Variable', str(category)),
+            ('Response / Dependent Variable', str(outcome)), ('Grouping / Independent Variable', str(category)),
             ('Original rows', str(len(df))), ('Used rows', str(prepared['n'])),
             ('Excluded missing/nonfinite rows', str(prepared['excluded'])),
-            ('Number of groups', str(len(prepared['groups']))),
-            ('Analysis method', method + ' One-way ANOVA'),
+            ('Number of groups', str(len(prepared['groups']))), ('Analysis method', 'Welch One-way ANOVA'),
+            ('Significance level', str(alpha)), ('Independence assessment', independence['state']),
         ], columns=['Model detail', 'Value']))
         for error in prepared['errors']:
             presentation.error('Cannot run ANOVA: ' + error)
         if result_error:
-            presentation.error('Cannot run ANOVA: ' + result_error)
-        if not independent and not prepared['errors']:
-            presentation.info('Confirm the study design above to display the ANOVA result. Descriptive summaries and diagnostics remain available.')
+            presentation.warning('Inference withheld: ' + result_error)
+        presentation.markdown('**Statistical Results — Welch One-way ANOVA**')
         if result is not None:
-            presentation.markdown(f'**{method} One-way ANOVA**')
-            presentation.dataframe(pd.DataFrame([result]), hide_index=True, use_container_width=True)
+            presentation.dataframe(pd.DataFrame([result]).style.format({
+                'F': '{:.6g}', 'p-value': '{:.4g}', 'df between': '{:.6g}',
+                'df denominator': '{:.6g}', EFFECT_SIZE: '{:.6g}', 'alpha': '{:.3g}',
+            }), hide_index=True)
+            presentation.markdown('**Effect Size**')
+            presentation.write(f'{EFFECT_SIZE}: {result[EFFECT_SIZE]:.4g}. Larger values describe greater variance-weighted separation of group means. Practical importance depends on the response scale and context.')
+            presentation.caption("This unequal-variance plug-in Cohen f² estimate uses group-size/variance weights (statsmodels effectsize_oneway, use_var='unequal', ddof_between=0). It is not bias corrected, is not a percentage of explained variation, and is not computed from the descriptive SS table or Welch-corrected F. No universal small/medium/large thresholds are imposed.")
+        else:
+            presentation.info('Descriptive summaries remain available; validated Welch inference is not available.')
+        presentation.markdown('**Variation Decomposition**')
+        if variation is not None:
+            display = variation.copy()
+            display['Mean Square (MS)'] = display['Mean Square (MS)'].map(lambda v: '—' if pd.isna(v) else f'{v:.6g}')
+            presentation.dataframe(display, hide_index=True)
+            presentation.caption(VARIATION_NOTE)
+        else:
+            presentation.info('No numerically valid variation decomposition is available.')
+        presentation.markdown('**Games–Howell Pairwise Comparisons**')
+        if pairwise is not None and not pairwise['table'].empty:
+            table = pairwise['table']
+            columns = ['Comparison', 'Mean Difference', 'Adjusted p-value', pairwise['lower'], pairwise['upper'], 'Significant']
+            presentation.dataframe(table[columns].style.format({
+                'Mean Difference': '{:.6g}', 'Adjusted p-value': '{:.4g}',
+                pairwise['lower']: '{:.6g}', pairwise['upper']: '{:.6g}',
+            }), hide_index=True, height=420)
+            presentation.caption(f'Mean Difference = Mean(Group A) − Mean(Group B). Studentized-range adjusted p-values and {pairwise["confidence"]:.0%} simultaneous intervals use pair-specific variances and Welch–Satterthwaite degrees of freedom. All {len(table)} pairs form the family; an overall significant ANOVA is not required.')
+            st.download_button('Download Games–Howell comparisons (CSV)', table.to_csv(index=False).encode('utf-8'),
+                               file_name='games_howell_comparisons.csv', mime='text/csv', key='rel_anova_pair_download')
+        else:
+            presentation.info(pairwise['reason'] if pairwise else 'Games–Howell is unavailable while validated Welch inference is withheld.')
     with tabs[1]:
         presentation.markdown('**Group summaries**')
-        presentation.dataframe(prepared['summary'], hide_index=True, use_container_width=True)
+        presentation.dataframe(prepared['summary'], hide_index=True)
+        presentation.caption('Individual group mean intervals use Student-t, mean ± t(0.975, n−1) × SD/√n. These pointwise 95% intervals are not multiplicity-adjusted pairwise intervals.')
     with tabs[2]:
+        presentation.markdown('**Group sizes and variances**')
+        presentation.dataframe(pd.DataFrame([
+            ('Minimum group size', prepared['min_group_size']), ('Maximum group size', prepared['max_group_size']),
+            ('Group-size ratio (maximum/minimum)', prepared['size_ratio']),
+            ('Variance ratio (maximum/minimum; positive finite variances only)', prepared['variance_ratio']),
+            ('Excluded missing/nonfinite rows (union)', prepared['excluded']),
+            ('Missing/nonfinite response rows', prepared['missing_response']), ('Missing factor rows', prepared['missing_factor']),
+        ], columns=['Diagnostic', 'Value']), hide_index=True)
+        presentation.caption('Missing-factor and missing-response counts can overlap. Undefined ratios do not establish equal variances.')
         for note in prepared['warnings']:
             presentation.warning(note)
-        presentation.write('Normality is checked within each group, not on the combined outcome. Shapiro–Wilk p-values below 0.05 flag departures; larger p-values do not prove normality. These exploratory diagnostics are unadjusted for multiple comparisons and should be interpreted with the plots.')
-        presentation.dataframe(prepared['normality'], hide_index=True, use_container_width=True)
+        if np.isfinite(prepared['levene_p']):
+            presentation.write(f"Median-centered Levene (Brown–Forsythe variance screen): statistic = {prepared['levene_stat']:.4g}; p = {prepared['levene_p']:.4g}.")
+        else:
+            presentation.info('Variance screening is unavailable.')
+        presentation.caption('Levene describes variance differences; its p-value never switches the method. A nonsignificant result does not establish equality.')
+        presentation.markdown('**Distribution diagnostics**')
+        presentation.dataframe(prepared['distribution'], hide_index=True)
+        presentation.caption('Skewness, excess kurtosis and 1.5 × IQR outlier flags are descriptive screens. |Skewness| ≥ 2 or |excess kurtosis| ≥ 7 flags severe shape concerns, not a formal normality decision. No Shapiro–Wilk test or automatic Kruskal–Wallis switch is used.')
         if prepared['groups']:
-            index = st.selectbox('Group for normal Q–Q plot', list(range(len(prepared['groups']))),
+            index = st.selectbox('Group for normal Q–Q plot', range(len(prepared['groups'])),
                                  format_func=lambda i: str(prepared['labels'][i]), key='rel_anova_qq')
             g = prepared['groups'][index]
-            if len(g) >= 3 and np.ptp(g) > 0:
+            if len(g) >= 3 and np.ptp(g) > 0 and np.all(np.isfinite(g)) and np.isfinite(np.var(g)):
                 (x, y), (slope, intercept, _) = stats.probplot(g, dist='norm')
-                fig = px.scatter(x=x, y=y, labels={'x': 'Theoretical normal quantile', 'y': outcome})
+                fig = px.scatter(x=x, y=y, labels={'x': 'Theoretical normal quantile', 'y': str(outcome)})
                 fig.add_scatter(x=x, y=intercept+slope*x, mode='lines', name='Normal reference')
-                presentation.plotly_chart(fig, use_container_width=True)
-            else:
-                presentation.info('A useful normal Q–Q plot needs at least three observations and nonconstant values.')
-        if np.isfinite(prepared['levene_p']):
-            presentation.write(f"Median-centered Levene (Brown–Forsythe variance test): statistic = {prepared['levene_stat']:.4g}; p = {prepared['levene_p']:.4g}.")
-        else:
-            presentation.info('Variance test unavailable; equal variances have not been established.')
-        presentation.write('Welch ANOVA permits unequal variances. Classical ANOVA assumes equal population variances. Both require independent observations and warrant caution with severe non-normality and outliers, especially in small groups. A non-significant variance test does not establish equality.')
-        presentation.caption('References: [SciPy Levene](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html), [SciPy Shapiro–Wilk](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.shapiro.html), [statsmodels ANOVA](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.anova_oneway.html).')
-
+                presentation.plotly_chart(fig, key='rel_anova_qq_plot')
+        if prepared['n'] and not prepared['errors']:
+            presentation.markdown('**Within-group residual patterns**')
+            presentation.plotly_chart(residual_plot(prepared), key='rel_anova_residual_plot')
+            residual = np.concatenate([g-np.mean(g) for g in prepared['groups']])
+            presentation.plotly_chart(px.histogram(x=residual, labels={'x': 'Within-group residual'}), key='rel_anova_residual_hist')
+            presentation.caption('Review spread, tails and unusual residuals. Pooling groups with unequal variances can itself produce heavy tails; this is not a test that assumptions hold.')
+        presentation.markdown('**Independence assessment**')
+        presentation.write(independence['state'])
+        presentation.caption(independence['qualification'])
+        if not independence['evidence'].empty:
+            presentation.dataframe(independence['evidence'], hide_index=True)
+        if not independence['serial'].empty:
+            presentation.dataframe(independence['serial'], hide_index=True)
+            presentation.caption('Serial diagnostics require ≥12 observations with distinct, approximately equally spaced chronological times within each group. Ljung–Box screen p-values are Bonferroni-adjusted across tested groups; Durbin–Watson and lag-1 correlation are descriptive. No serial test is run on arbitrary row order.')
+        elif independence['evidence'].empty:
+            presentation.write('No usable entity or chronological structure was supplied. Inference proceeds under the independence assumption, with study-design limitations.')
+        presentation.caption('Methods: [Welch ANOVA](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.anova_oneway.html), [unequal-variance effect size](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.effectsize_oneway.html), [Games–Howell reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukey_hsd.html).')
     with tabs[3]:
-        presentation.markdown('**Outcome distribution by group**')
+        presentation.markdown('**Group Boxplot**')
         if not prepared['summary'].empty:
             plot = prepared['clean'].copy()
             plot[category] = plot[category].astype(str)
-            presentation.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), use_container_width=True, key='rel_anova_box')
+            presentation.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), key='rel_anova_box')
         else:
             presentation.info('No usable observations to plot.')
-    with tabs[4]:
-        if result is None:
-            presentation.info('ANOVA findings are available after validation succeeds and independence is confirmed.')
-            return
-        if result['p-value'] < .05:
-            presentation.write('At α = 0.05, there is evidence that at least one population mean differs, subject to the assumptions above. This does not identify which groups differ; follow-up comparisons with multiplicity correction are needed.')
+        presentation.markdown('**Group Means with 95% Confidence Intervals**')
+        means = group_mean_plot(prepared)
+        if means is not None:
+            presentation.plotly_chart(means, key='rel_anova_means')
+            presentation.caption('Pointwise Student-t intervals for each group mean; these are not Games–Howell or multiplicity-adjusted pairwise intervals.')
+            if len(means.data[0].x) < len(prepared['summary']):
+                presentation.caption('Groups without estimable mean intervals are omitted from this chart only; all groups remain in the summaries and boxplot.')
         else:
-            presentation.write('At α = 0.05, there is insufficient evidence of different population means. This does not establish that the means are equal.')
-        presentation.caption('Association is not causation. Repeated exploratory testing increases false-positive risk. No post-hoc pairwise tests are run automatically.')
+            presentation.info('No estimable group mean confidence intervals are available.')
+        _show_pair_plot(pairwise)
+    with tabs[4]:
+        presentation.markdown('**Overall findings**')
+        if result is None:
+            presentation.info('Inferential findings are withheld until numerical and study-design concerns are resolved.')
+        elif result['p-value'] < alpha:
+            presentation.write(f'At α = {alpha:g}, there is statistical evidence that at least one population group mean differs, under the independence assumption and the limitations below.')
+        else:
+            presentation.write(f'At α = {alpha:g}, there is insufficient evidence that population group means differ. This does not establish that the means are equal.')
+        presentation.write('Between-group variation describes differences between observed group means; within-group variation describes the spread of observations around their own group mean.')
+        if pairwise is not None and not pairwise['table'].empty:
+            table = pairwise['table']
+            significant = table[table.Significant]
+            presentation.markdown('**Pairwise findings**')
+            if significant.empty:
+                presentation.write('No pair shows an adjusted p-value below the selected significance level. This does not establish equal means.')
+            else:
+                presentation.write(f'{len(significant)} of {len(table)} comparisons show evidence of a mean difference after Games–Howell adjustment.')
+                findings = [{'Comparison': row['Comparison'],
+                             'Finding': f"{row['Group A']} has a {'higher' if row['Mean Difference'] > 0 else 'lower'} mean than {row['Group B']} by {abs(row['Mean Difference']):.4g} response units.",
+                             'Adjusted p-value': row['Adjusted p-value']} for _, row in significant.iterrows()]
+                presentation.dataframe(pd.DataFrame(findings), hide_index=True, height=420)
+        if result:
+            presentation.write(f'Variance-weighted effect size f² = {result[EFFECT_SIZE]:.4g}. Statistical significance does not establish practical importance.')
+        presentation.markdown('**Important limitations**')
+        presentation.write(independence['state'] + '. ' + independence['qualification'])
+        if design == 'independent':
+            presentation.warning('Results rely on your clarification that the detected labels/order do not represent dependent units.')
+        for note in prepared['warnings']:
+            presentation.warning(note)
+        presentation.caption('Welch and Games–Howell allow unequal variances; they do not repair dependence, severe skew or outliers in small samples. Association is not causation. Adjustment covers this pairwise family, not later exploration of other outcomes or factors.')
+        ai_context = guidance_context(prepared, independence, result, pairwise, metadata)
+        digest = hashlib.sha256(json.dumps(ai_context, sort_keys=True, default=str).encode()).hexdigest()
+        with st.expander('🤖 AI Interpretation'):
+            saved = st.session_state.get('rel_anova_ai', {})
+            if st.button('Refresh interpretation' if saved.get('context') == digest else 'Generate interpretation',
+                         key='rel_anova_ai_generate'):
+                try:
+                    from utils.ai_interpreter import interpret_anova
+                    with st.spinner('Explaining the validated summaries…'):
+                        text = interpret_anova(ai_context)
+                    st.session_state['rel_anova_ai'] = {'context': digest, 'text': text}
+                except Exception:
+                    st.session_state.pop('rel_anova_ai', None)
+                    presentation.info('AI guidance is unavailable. The statistical results and deterministic explanations remain available.')
+            saved = st.session_state.get('rel_anova_ai', {})
+            if saved.get('context') == digest:
+                presentation.write(saved['text'])
+                presentation.caption('AI explanation is advisory. Eligibility, calculations and limitations are determined by the statistical engine.')
     if result is not None:
+        saved = st.session_state.get('rel_anova_ai', {})
         offer_result('One-way ANOVA', str(outcome)+' by '+str(category),
-                     {'response': outcome, 'factor': category}, {'method': method, 'independent': independent},
-                     result, prepared['summary'], prepared['warnings'] +
-                     ['Independence relies on study design. Association is not causation.'], key='anova')
+                     {'response': outcome, 'factor': category},
+                     {'method': 'Welch', 'alpha': alpha, 'independence_state': independence['state'], 'design_clarification': design},
+                     {**result, 'pairwise comparisons': len(pairwise['table']),
+                      'pairwise status': pairwise['reason']},
+                     {'groups': prepared['summary'], 'distribution': prepared['distribution'],
+                      'independence': independence['evidence'], 'serial': independence['serial']},
+                     prepared['warnings'] + [independence['qualification']],
+                     interpretation=saved.get('text', '') if saved.get('context') == digest else '', key='anova')

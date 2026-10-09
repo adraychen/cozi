@@ -14,7 +14,7 @@ def available_comparisons(df, selected, metadata=None):
     n, c, t = (len(selected[k]) for k in ('numerical', 'categorical', 'datetime'))
     quantitative = numerical_candidates(df, selected['numerical'], metadata)
     methods = []
-    if n == 1 and c == 1 and t == 0:
+    if n == 1 and len(quantitative) == 1 and c == 1 and t == 0:
         methods.append('One-way ANOVA')
     if n == 1 and len(quantitative) == 1 and c >= 2 and t == 0:
         methods.append('Factorial ANOVA')

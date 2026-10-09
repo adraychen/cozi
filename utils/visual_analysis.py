@@ -6,7 +6,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats
 import streamlit as st
+import hashlib
 from utils import presentation
+from utils.report_capture import reportable, begin_result, offer_result
 from utils.variable_selection import variable_checkboxes
 
 
@@ -100,9 +102,10 @@ def choose(label, options, key):
     return st.selectbox(label, options, key='va_' + key)
 
 
+@reportable
 def render_visual_analysis(df, col_types, metadata=None):
     st.markdown('#### Visual Analysis')
-    st.caption('Explore patterns and trends in your data through charts.')
+    presentation.caption('Explore patterns and trends in your data through charts.')
     selected = {}
     for label, kind in [('Numerical', 'numerical'), ('Categorical', 'categorical'), ('Temporal', 'datetime')]:
         selected[kind] = variable_checkboxes(label, col_types[kind], 'va_select_' + kind, hide_empty=True)
@@ -141,6 +144,7 @@ def render_visual_analysis(df, col_types, metadata=None):
         data[key[c]] = data[key[c]].astype('string')
         if isinstance(df[c].dtype,pd.CategoricalDtype) and df[c].cat.ordered:
             data[key[c]]=pd.Categorical(data[key[c]],categories=[str(v) for v in df[c].cat.categories],ordered=True)
+    begin_result()
     try:
         fig = None
         panel_rows = None
@@ -179,7 +183,7 @@ def render_visual_analysis(df, col_types, metadata=None):
                 else:
                     dots, sampled = dot_points(data, key[col])
                     if sampled:
-                        st.caption(str(col)+': Dot plot uses a reproducible sample of 2,000 observations.')
+                        presentation.caption(str(col)+': Dot plot uses a reproducible sample of 2,000 observations.')
                     fig.add_trace(go.Scatter(x=dots['Value'], y=dots['Stack'], mode='markers',
                                             name=str(col), marker_color=panel_color, showlegend=False), row=row, col=column)
                 x_title = (str(group) if group is not None else None) if chart == 'Box plot' else str(col)
@@ -210,7 +214,7 @@ def render_visual_analysis(df, col_types, metadata=None):
                                        barmode='overlay',opacity=.6,labels=labels)
                     fig.update_traces(bingroup='category_comparison',
                         xbins=histogram_bins(clean[key[col]].to_numpy(), bins))
-                    st.caption('Each color represents a category. Groups share the same bins. Bar heights show counts, so larger groups can have taller bars. Missing categories and nonfinite values are excluded.')
+                    presentation.caption('Each color represents a category. Groups share the same bins. Bar heights show counts, so larger groups can have taller bars. Missing categories and nonfinite values are excluded.')
                 else:
                     fig = px.histogram(data,x=key[col],nbins=bins,labels=labels)
             elif chart in ['Box plot', 'Grouped box plot']:
@@ -225,23 +229,23 @@ def render_visual_analysis(df, col_types, metadata=None):
                 if dots.empty:
                     raise ValueError('No complete numerical values and categories to plot.')
                 if sampled:
-                    st.caption('Dot plot uses a reproducible sample of 2,000 observations.')
+                    presentation.caption('Dot plot uses a reproducible sample of 2,000 observations.')
                 fig=px.scatter(dots,x='Value',y='Stack', color='Category' if group is not None else None,
                     labels={'Value':str(col),'Stack':'Stacked observations', 'Category':str(group)})
                 if group is not None:
-                    st.caption('Each dot represents one observation, colored by category. Repeated values are stacked without overlap. Missing categories and nonfinite values are excluded.')
+                    presentation.caption('Each dot represents one observation, colored by category. Repeated values are stacked without overlap. Missing categories and nonfinite values are excluded.')
             elif chart == 'Density plot':
                 if x.nunique()<2:
                     raise ValueError('Density estimation requires variation in the selected column.')
                 if len(x)>10000:
                     x=x.sample(10000,random_state=42)
-                    st.caption('Density estimated from a reproducible sample of 10,000 observations.')
+                    presentation.caption('Density estimated from a reproducible sample of 10,000 observations.')
                 smooth=st.slider('Bandwidth multiplier',0.2,3.0,1.0,0.1,key='va_bandwidth')
                 kde=stats.gaussian_kde(x)
                 kde.set_bandwidth(kde.factor*smooth)
                 grid=np.linspace(x.min(),x.max(),300)
                 fig=px.line(x=grid,y=kde(grid),labels={'x':str(col),'y':'Density'})
-                st.caption('Gaussian kernel density estimate; a smoothed description, not a theoretical distribution fit.')
+                presentation.caption('Gaussian kernel density estimate; a smoothed description, not a theoretical distribution fit.')
             else:
                 if len(x)<3 or x.nunique()<2:
                     raise ValueError('Q–Q plots require at least three values and variation.')
@@ -249,7 +253,7 @@ def render_visual_analysis(df, col_types, metadata=None):
                 fig=go.Figure(go.Scatter(x=theory,y=ordered,mode='markers',name='Observed'))
                 fig.add_scatter(x=theory,y=slope*np.asarray(theory)+intercept,mode='lines',name='Reference line')
                 fig.update_layout(xaxis_title='Theoretical normal quantiles',yaxis_title=str(col))
-                st.caption('Normal Q–Q plot. Departure from the line suggests departure from normality; this is not a significance test.')
+                presentation.caption('Normal Q–Q plot. Departure from the line suggests departure from normality; this is not a significance test.')
         elif chart in ['Bar chart','Grouped bar chart','Stacked-bar chart','Pie chart','Pareto chart']:
             category=choose('Category',cats,'bar_category')
             stack=choose('Stack by',[c for c in cats if c!=category],'stack') if chart in ['Stacked-bar chart','Grouped bar chart'] else None
@@ -260,14 +264,14 @@ def render_visual_analysis(df, col_types, metadata=None):
                 else:
                     measure=None
                 agg='Sum'
-                st.caption('Count intentionally uses category frequencies rather than the selected numeric measure. Count counts rows within each category combination, including rows with missing numeric values. Rows with missing grouping categories are excluded.' if additive=='Count' else 'Sum adds the selected numeric values within each category combination; missing numeric values are excluded.')
+                presentation.caption('Count intentionally uses category frequencies rather than the selected numeric measure. Count counts rows within each category combination, including rows with missing numeric values. Rows with missing grouping categories are excluded.' if additive=='Count' else 'Sum adds the selected numeric values within each category combination; missing numeric values are excluded.')
                 if not nums:
-                    st.caption('Select a numeric column to enable Sum.')
+                    presentation.caption('Select a numeric column to enable Sum.')
             else:
                 measure=choose('Measure',[None]+nums if chart=='Pie chart' else nums if len(nums)==1 and not dates else [None]+nums,'bar_measure')
                 agg=choose('Aggregation',['Sum','Mean'],'bar_agg') if measure and chart not in ['Pareto chart','Pie chart'] else 'Sum'
             if chart=='Pareto chart':
-                st.caption('Pareto uses row counts or sums, ordered from largest to smallest. The cumulative line uses the full total.')
+                presentation.caption('Pareto uses row counts or sums, ordered from largest to smallest. The cumulative line uses the full total.')
             keys=[key[category]]+([key[stack]] if stack else [])
             clean=data.dropna(subset=keys+([key[measure]] if measure else []))
             grouped=clean.groupby(keys,observed=True)
@@ -279,7 +283,7 @@ def render_visual_analysis(df, col_types, metadata=None):
                 if (table.Value<0).any() or table.Value.sum()<=0:
                     raise ValueError('Pie charts require nonnegative category totals and a positive grand total.')
                 fig=px.pie(table,names=key[category],values='Value',labels=labels)
-                st.caption('Slices show row counts when no measure is selected, otherwise sums. Missing categories and missing selected measures are excluded. Negative totals cannot be shown as shares.')
+                presentation.caption('Slices show row counts when no measure is selected, otherwise sums. Missing categories and missing selected measures are excluded. Negative totals cannot be shown as shares.')
             elif chart=='Pareto chart':
                 if (table.Value<0).any() or table.Value.sum()<=0:
                     raise ValueError('Pareto requires nonnegative category totals and a positive grand total.')
@@ -296,7 +300,7 @@ def render_visual_analysis(df, col_types, metadata=None):
             axis_options = (dates or ordinal or nums) if chart == 'Line chart' else dates+nums
             if chart == 'Line chart' and len(axis_options) == 1:
                 axis = axis_options[0]
-                st.caption('X variable: '+str(axis))
+                presentation.caption('X variable: '+str(axis))
             else:
                 axis=choose('X axis',axis_options,'line_x')
             if chart == 'Line chart' and axis in nums:
@@ -305,12 +309,12 @@ def render_visual_analysis(df, col_types, metadata=None):
                     st.info('Confirm meaningful order for the numerical X variable to draw a line chart. Otherwise, use a scatter plot.')
                     return
             elif chart == 'Line chart':
-                st.caption('X order follows the temporal values.' if axis in dates else 'X order follows the defined ordinal categories.')
+                presentation.caption('X order follows the temporal values.' if axis in dates else 'X order follows the defined ordinal categories.')
             elif not dates:
-                st.caption('Use line/area charts only when the X variable has a meaningful order; otherwise use a scatter plot.')
+                presentation.caption('Use line/area charts only when the X variable has a meaningful order; otherwise use a scatter plot.')
             if chart == 'Line chart':
                 ys = [c for c in nums if c != axis]
-                st.caption('Y variable: '+str(ys[0]))
+                presentation.caption('Y variable: '+str(ys[0]))
             else:
                 ys=variable_checkboxes('Measures',[c for c in nums if c!=axis],'va_line_y',default=[c for c in nums if c!=axis][:1])
             if not ys:
@@ -322,7 +326,7 @@ def render_visual_analysis(df, col_types, metadata=None):
             grouped=clean.groupby(key[axis], observed=True)[[key[c] for c in ys]]
             table=(grouped.mean() if agg=='Mean' else grouped.sum(min_count=1)).reset_index().sort_values(key[axis])
             fig=(px.line if chart=='Line chart' else px.area)(table,x=key[axis],y=[key[c] for c in ys],labels=labels)
-            st.caption('X values are sorted; repeated X values are aggregated. Area measures are stacked. Missing measures are not replaced by zero.')
+            presentation.caption('X values are sorted; repeated X values are aggregated. Area measures are stacked. Missing measures are not replaced by zero.')
         elif chart in ['Scatter plot','Bubble plot']:
             x=choose('X axis',nums,'scatter_x')
             y=choose('Y axis',[c for c in nums if c!=x],'scatter_y')
@@ -334,7 +338,7 @@ def render_visual_analysis(df, col_types, metadata=None):
                 raise ValueError('Bubble sizes must be nonnegative, with at least one positive value.')
             if len(clean)>5000:
                 clean=clean.sample(5000,random_state=42)
-                st.caption('Scatter/bubble plot uses a reproducible sample of 5,000 complete rows.')
+                presentation.caption('Scatter/bubble plot uses a reproducible sample of 5,000 complete rows.')
             fig=px.scatter(clean,x=key[x],y=key[y],size=key[size] if size else None,color=key[color] if color else None,labels=labels)
         elif chart=='Pair plot':
             axes=variable_checkboxes('Pair plot variables',nums,'va_pair_axes',default=nums[:4])
@@ -343,14 +347,14 @@ def render_visual_analysis(df, col_types, metadata=None):
             clean=data[[key[c] for c in axes]].dropna()
             if len(clean)>2000:
                 clean=clean.sample(2000,random_state=42)
-                st.caption('Pair plot uses a reproducible sample of 2,000 complete rows.')
+                presentation.caption('Pair plot uses a reproducible sample of 2,000 complete rows.')
             fig=px.scatter_matrix(clean,dimensions=[key[c] for c in axes],labels=labels)
             fig.update_traces(diagonal_visible=False)
         elif chart=='Correlation matrix':
             method=choose('Correlation method',['pearson','spearman'],'correlation')
             matrix=data[[key[c] for c in nums]].corr(method=method).rename(index=labels,columns=labels)
             fig=px.imshow(matrix,zmin=-1,zmax=1,color_continuous_scale='RdBu_r',text_auto='.2f',aspect='auto')
-            st.caption('Pairwise complete observations are used; sample sizes can differ by pair. Constant columns yield missing correlations.')
+            presentation.caption('Pairwise complete observations are used; sample sizes can differ by pair. Constant columns yield missing correlations.')
         else:
             modes=(['Categorical cross-tab'] if len(cats)>=2 else [])+(['Numerical values'] if len(nums)>=2 else [])
             mode=choose('Heatmap type',modes,'heat_mode')
@@ -362,15 +366,15 @@ def render_visual_analysis(df, col_types, metadata=None):
                     raise ValueError('Choose categories producing at most 10,000 heatmap cells.')
                 matrix=clean.pivot_table(index=key[row],columns=key[col],values=key[measure],aggfunc='mean',observed=True) if measure else pd.crosstab(clean[key[row]],clean[key[col]])
                 matrix.index.name=str(row); matrix.columns.name=str(col)
-                st.caption('Cells show mean measure values.' if measure else 'Cells show row counts.')
+                presentation.caption('Cells show mean measure values.' if measure else 'Cells show row counts.')
             else:
                 matrix=data[[key[c] for c in nums]].rename(columns=labels)
                 if len(matrix)>500:
                     matrix=matrix.head(500)
-                    st.caption('Numerical heatmap shows the first 500 rows in original order.')
+                    presentation.caption('Numerical heatmap shows the first 500 rows in original order.')
                 if st.checkbox('Standardize each column',value=True,key='va_heat_scale'):
                     matrix=(matrix-matrix.mean())/matrix.std().replace(0,np.nan)
-                st.caption('Rows are records; columns are numerical variables. Missing values remain blank.')
+                presentation.caption('Rows are records; columns are numerical variables. Missing values remain blank.')
             if matrix.empty:
                 raise ValueError('No values available for the heatmap.')
             fig=px.imshow(matrix,aspect='auto',color_continuous_scale='Blues')
@@ -386,6 +390,10 @@ def render_visual_analysis(df, col_types, metadata=None):
                             if axis.title.text in (str(col),key[col]):
                                 axis.update(categoryorder='array',categoryarray=order)
             presentation.plotly_chart(fig,use_container_width=True,key='va_result_chart', panel_rows=panel_rows)
-        st.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
+        presentation.caption('Blank and invalid values are excluded from the chart calculations where required. Sampling or display limits are stated above.')
+        if fig is not None:
+            offer_result('Visual Analysis', chart, columns, {'chart': chart},
+                         {'chart_signature': hashlib.sha256(fig.to_json().encode()).hexdigest()},
+                         key='visual_analysis')
     except (ValueError,TypeError,np.linalg.LinAlgError) as exc:
         st.info(str(exc))

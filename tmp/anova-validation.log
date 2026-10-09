@@ -1,0 +1,30 @@
+...........2026-10-09 08:46:16.520 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:18.564 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:19.637 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:19.873 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:22.330 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.......2026-10-09 08:46:23.213 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:23.580 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+..2026-10-09 08:46:23.898 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.......2026-10-09 08:46:28.555 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:29.090 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:30.397 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:30.743 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+......C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_guidance.py:85: SingularMatrixWarning: The design matrix is rank-deficient. The model parameters are not uniquely determined.
+  singular = ols('Y ~ C(A)*C(B)',df).fit()
+......2026-10-09 08:46:32.872 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:36.289 No runtime found, using MemoryCacheStorageManager
+........2026-10-09 08:46:36.457 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:36.711 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:36.957 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:37.204 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-09 08:46:37.405 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:37.421 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-09 08:46:37.421 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-09 08:46:37.422 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-09 08:46:37.609 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.
+----------------------------------------------------------------------
+Ran 62 tests in 30.385s
+
+OK

@@ -161,8 +161,45 @@ def chart_size(figure):
     return min(1200, int(width)), min(900, int(height))
 
 
+def _compact_category_marks(figure):
+    """Keep sparse bars and boxes from expanding across the entire plot."""
+    if any(trace.type == 'bar' for trace in figure.data):
+        if figure.layout.bargap is None:
+            figure.update_layout(bargap=.4, bargroupgap=.15)
+    if any(trace.type == 'box' for trace in figure.data):
+        if figure.layout.boxgap is None:
+            figure.update_layout(boxgap=.55, boxgroupgap=.15)
+    categories = {}
+    for trace in figure.data:
+        if trace.type not in ('bar', 'box'):
+            continue
+        horizontal = getattr(trace, 'orientation', None) == 'h'
+        direction = 'y' if horizontal else 'x'
+        reference = getattr(trace, direction+'axis', None) or direction
+        axis_name = direction+'axis'+reference[1:]
+        axis = getattr(figure.layout, axis_name)
+        values = _sizing_values(getattr(trace, direction, None))
+        if values is None and trace.type == 'box':
+            values = [trace.name or '']
+        if values is None or not len(values):
+            continue
+        if axis.type not in (None, 'category'):
+            continue
+        if axis.type != 'category' and not isinstance(values[0], str):
+            continue
+        categories.setdefault(axis_name, set()).update(_labels(values))
+    for axis_name, labels in categories.items():
+        axis = getattr(figure.layout, axis_name)
+        count = len(labels)
+        if count < 5 and axis.range is None:
+            # Center the real categories in at least five category slots.
+            center = (count-1)/2
+            axis.update(type='category', range=[center-2.5, center+2.5])
+
+
 def plotly_chart(figure_or_data, **kwargs):
     figure = go.Figure(figure_or_data)
+    _compact_category_marks(figure)
     width, height = chart_size(figure)
     panel_rows = kwargs.pop('panel_rows', None)
     if panel_rows is not None:

@@ -75,7 +75,7 @@ Preview result, Apply and continue, Create dataset and Discard accumulated chang
 | Cross-tabulation / chi-square | Row and column variables use dropdowns from selected candidates | Significance-level dropdown; include-missing-categories checkbox | `utils/contingency_ui.py` |
 | Trend analysis | Time variable and measure dropdowns | Time period and aggregation dropdowns | `utils/relationship_ui.py` |
 | Comparison | Multiple-choice variable grids by type; available analyses match the complete selection | Analysis method dropdown; selection guidance expander | `utils/comparison_ui.py` |
-| One-way ANOVA | Grouping variable and numerical outcome dropdowns (currently one candidate each under Comparison eligibility) | Welch/Classical dropdown; independence confirmation checkbox; Q–Q group dropdown | `utils/comparison_ui.py`, `utils/anova_ui.py` |
+| One-way ANOVA | One quantitative numerical response and one categorical factor, supplied by Comparison | Welch only; alpha input; conditional study-design clarification; Q–Q group dropdown; pairwise plot filter/pages; optional AI explanation | `utils/comparison_ui.py`, `utils/anova_ui.py` |
 | Factorial ANOVA | Response dropdown; factors multiselect; interaction effects multiselect | Alpha numeric input; follow-up factor dropdowns; show pairwise/simple-effects, include non-significant plots, swap factors and HC3 checkboxes | `utils/factorial_anova_ui.py` |
 | t-Test | Response/sample columns, grouping variable and group levels use dropdowns | Test type, data structure and alternative hypothesis dropdowns; equal-variances checkbox; null mean and confidence (%) numeric inputs | `utils/ttest_ui.py` |
 | Segment / Period-over-Period Comparison | After initial Comparison checkboxes, numerical measure uses dropdown, categorical dimensions multiselect, date dropdown where applicable | Shared Group Statistics settings described above | `utils/comparison_ui.py`, `utils/group_statistics_ui.py` |
@@ -110,7 +110,7 @@ These are inconsistencies or potential ambiguities, **not approved changes**. Di
 | UI-07 | Variable checkbox grids use four columns in most screens, three in regression. Transform uses wrapping fixed-width menus. | Decide a common responsive grid rule, with exceptions for long term labels and grouped operation menus. |
 | UI-08 | Single-choice grids may allow no selection, while many dropdowns automatically choose the first option; Enterprise starts blank; Factorial factors initially include the selected categories. | Specify defaults and whether users must explicitly choose required analytical roles. |
 | UI-09 | Significance is a dropdown in chi-square, decimal alpha input in Factorial ANOVA, and percentage confidence input in t-Test/logistic regression. Allowed confidence ranges also differ. | Decide a consistent presentation and units while preserving each method's statistical meaning and valid ranges. |
-| UI-10 | Model/statistical choices appear as both checkboxes and dropdowns: equal-variances t-test checkbox versus Welch/Classical ANOVA dropdown. | Decide whether binary method choices should use named dropdown/radio alternatives or explanatory Boolean checkboxes. |
+| UI-10 | Model/statistical choices use named alternatives or Boolean controls in other analyses. One-way ANOVA is fixed to Welch and has no method selector. | Decide whether other binary method choices should use named dropdown/radio alternatives or explanatory Boolean checkboxes. |
 
 ## How to maintain this document
 

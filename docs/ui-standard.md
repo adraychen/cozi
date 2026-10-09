@@ -31,7 +31,7 @@ Retain the Dataset Preview, Column Overview, Row Overview and Data Quality Summa
 
 - Display storage data type, analytical variable type/subtype, unique count, total count, missing count and missing percentage.
 - Retain missing-percentage colors and the A/M classification markers. A means Automatic classification; M means Manual Override. Header help explains these markers.
-- Show unique values or ranges in the **ⓘ Unique value details** expander below the table, with a column dropdown.
+- Show unique values or ranges in the **Unique value details** expander below the table, with a column dropdown.
 - Keep **Edit variable classification** collapsed initially. Use dropdowns for Column to edit, Variable Type and Variable Subtype; retain dependent subtype choices.
 - Use **Apply classification** as the explicit action. Disable it when there are no unsaved classification changes.
 - Retain the ordinal-order input and its category reference table where applicable.

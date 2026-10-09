@@ -24,6 +24,58 @@ def select_operation(app, operation):
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_unique_value_details_fragment_rerun(self):
+        from dataclasses import replace
+        from streamlit.testing.v1.local_script_runner import LocalScriptRunner
+        from streamlit.runtime.scriptrunner_utils.script_requests import ScriptRequests
+
+        app = self.app()
+        self.add_manual(app, 'Details', 'first,second,third\n1,East,10\n2,West,20\n1,East,30')
+        widget = app.selectbox(key='vm_value_details_column')
+        fragment_id = app._session_state._state._new_widget_state.widget_metadata[widget.id].fragment_id
+        self.assertIsNotNone(fragment_id)
+        request_rerun = LocalScriptRunner.request_rerun
+
+        def rerun_fragment(runner, data):
+            runner._requests = ScriptRequests()
+            return request_rerun(runner, replace(data, fragment_id=fragment_id))
+
+        result_ids = set()
+        for column, expected in [('second', ['East', 'West']), ('third', ['10', '20', '30']),
+                                 ('first', ['1', '2'])]:
+            with patch.object(LocalScriptRunner, 'request_rerun', rerun_fragment), \
+                    patch('utils.dataset_views.render_inspect', side_effect=AssertionError('Workspace reran')):
+                app.selectbox(key='vm_value_details_column').select(column).run(timeout=60)
+            self.assertFalse(app.exception)
+            # Fragment output excludes the surrounding expander and workspace.
+            self.assertEqual(app.dataframe[0].value['Value'].tolist(), expected)
+            result = next(e for e in app.get('flex_container')
+                          if 'vm_value_details_result_' in e.proto.id)
+            result_ids.add(result.proto.id)
+        self.assertEqual(len(result_ids), 3)
+
+    def test_unique_value_details_follow_selected_column(self):
+        app = self.app()
+        self.add_manual(app, 'Details', 'first,second,third\n1,East,10\n2,West,20\n1,East,30')
+        for column, expected in [('first', ['1', '2']), ('second', ['East', 'West']),
+                                 ('third', ['10', '20', '30']), ('first', ['1', '2'])]:
+            app.selectbox(key='vm_value_details_column').select(column).run(timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.selectbox(key='vm_value_details_column').value, column)
+            details = next(e for e in app.expander if e.label == 'Unique value details')
+            self.assertEqual(details.dataframe[0].value['Value'].tolist(), expected)
+        app.selectbox(key='vm_value_details_column').select('second').run(timeout=60)
+        self.add_manual(app, 'Other details', 'first,second\n3,North\n4,South')
+        app.selectbox(key='vm_value_details_column').select('second').run(timeout=60)
+        details = next(e for e in app.expander if e.label == 'Unique value details')
+        self.assertEqual(details.dataframe[0].value['Value'].tolist(), ['North', 'South'])
+        app.session_state['ws_dataset_tabs'] = 'Details'
+        app.run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key='vm_value_details_column').value, 'second')
+        details = next(e for e in app.expander if e.label == 'Unique value details')
+        self.assertEqual(details.dataframe[0].value['Value'].tolist(), ['East', 'West'])
+
     def test_created_dataset_ignores_previous_workflow_browser_state(self):
         from streamlit.proto.WidgetStates_pb2 import WidgetStates
         app = AppTest.from_string(FIXTURE)
@@ -235,7 +287,7 @@ st.checkbox('x', key='pa_pred_x')
         self.assertTrue(any(t.label == '＋ Add datasets' for t in app.tabs))
         self.add_manual(app, 'Sales', 'id,amount\n1,20\n2,30')
         self.assertEqual(len(app.session_state['ws_datasets']), 1)
-        self.assertEqual([e.label for e in app.expander][:4], ['Dataset Preview', 'Column Overview', 'ⓘ Unique value details', 'Edit variable classification'])
+        self.assertEqual([e.label for e in app.expander][:4], ['Dataset Preview', 'Column Overview', 'Unique value details', 'Edit variable classification'])
         app.selectbox(key='vm_column').select('id').run(timeout=60)
         app.selectbox(key='vm_0_0_type').select('Categorical').run(timeout=60)
         app.button(key='vm_apply').click().run(timeout=60)
