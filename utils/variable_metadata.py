@@ -1,7 +1,7 @@
 """Dataset-scoped analytical classifications, independent of Streamlit."""
 import numpy as np
 import pandas as pd
-from utils.temporal import SUBTYPES, infer_temporal_subtype, parse_temporal
+from utils.temporal import SUBTYPES, infer_temporal_subtype, parse_temporal, is_month_name_series
 
 ALLOWED = {'Numerical': ['Discrete', 'Continuous'], 'Categorical': ['Binary', 'Nominal', 'Ordinal'], 'Date / Time': SUBTYPES}
 KINDS = {'Numerical':'numerical', 'Categorical':'categorical', 'Date / Time':'datetime'}
@@ -37,7 +37,12 @@ def infer_metadata(df):
         if pd.api.types.is_bool_dtype(series):
             variable_type = 'Categorical'
         elif pd.api.types.is_numeric_dtype(series):
-            variable_type = 'Numerical'
+            # A named year column has explicit semantic evidence; arbitrary IDs do not.
+            if str(column).strip().lower() in ('year', 'calendar year') and len(series.dropna()) and parse_temporal(series.dropna(), 'Year').notna().mean() >= .8:
+                temporal = 'Year'
+                variable_type = 'Date / Time'
+            else:
+                variable_type = 'Numerical'
         else:
             temporal = infer_temporal_subtype(series)
             variable_type = 'Date / Time' if temporal else 'Categorical'
@@ -67,7 +72,7 @@ def validate_type_subtype(series, variable_type, subtype, order=None):
             raise ValueError('Ordinal order must include every observed category exactly once.')
     if variable_type=='Date / Time':
         values=series.dropna()
-        if (pd.api.types.is_numeric_dtype(series) and subtype not in ('Year', 'Month')) or not len(values):
+        if (pd.api.types.is_numeric_dtype(series) and subtype not in ('Year', 'Month', 'Quarter')) or not len(values):
             raise ValueError('Use temporal values with explicit formats or units; unitless numeric values require conversion first.')
         parsed = parse_temporal(values, subtype)
         if parsed.notna().mean() < .8:
@@ -96,6 +101,19 @@ def ensure_metadata(state, df, dataset_id):
     inferred=infer_metadata(df[missing]) if missing else {}
     state['variable_metadata']={c:metadata.get(c,inferred.get(c)) for c in df}
     for column, item in state['variable_metadata'].items():
+        if (item.get('source') == 'Automatic' and item['variable_type'] == 'Date / Time'
+                and item['variable_subtype'] in ('Date', 'DateTime')
+                and is_month_name_series(df[column])):
+            item['variable_subtype'] = 'Month'
+        elif (item.get('source') == 'Automatic' and item['variable_type'] == 'Date / Time'
+              and item['variable_subtype'] in ('Date', 'DateTime')
+              and not pd.api.types.is_datetime64_any_dtype(df[column])):
+            text = df[column].dropna().astype('string').str.strip()
+            component = text.str.fullmatch(r'(?:\d{4}(?:[-/]\d{2})?|[A-Za-z]+[\s/-]+\d{4}|\d{4}[\s/-]+[A-Za-z]+|[Qq][1-4](?:[\s/-]+\d{4})?|\d{4}[\s/-]?[Qq][1-4])', na=False)
+            if len(text) and component.mean() >= .8:
+                inferred = infer_temporal_subtype(df[column])
+                if inferred in ('Year', 'Year-Month', 'Quarter', 'Year-Quarter'):
+                    item['variable_subtype'] = inferred
         if item['variable_type'] == 'Date / Time' and item['variable_subtype'] == 'Date / Time':
             item['variable_subtype'] = infer_variable_subtype(df[column], 'Date / Time')
     return state['variable_metadata']
@@ -103,13 +121,13 @@ def ensure_metadata(state, df, dataset_id):
 def effective_data(df, metadata):
     data=df.copy()
     groups={k:[] for k in KINDS.values()}
-    groups.update(temporal=[], time=[], duration=[], year=[], month=[])
+    groups.update(temporal=[], time=[], duration=[], year=[], month=[], quarter=[], year_quarter=[])
     for c,m in metadata.items():
         t=m['variable_type']
         if t == 'Date / Time':
             groups['temporal'].append(c)
             subtype = m['variable_subtype']
-            groups[subtype.lower() if subtype in ('Time', 'Duration', 'Year', 'Month') else 'datetime'].append(c)
+            groups[subtype.lower().replace('-', '_') if subtype in ('Time', 'Duration', 'Year', 'Month', 'Quarter', 'Year-Quarter') else 'datetime'].append(c)
         else:
             groups[KINDS[t]].append(c)
         if t=='Numerical':

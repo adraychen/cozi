@@ -1,6 +1,6 @@
 """Carry explicit analytical classifications through table transformations."""
 from copy import deepcopy
-from utils.variable_metadata import infer_metadata, validate_type_subtype
+from utils.variable_metadata import infer_metadata, infer_variable_subtype, validate_type_subtype
 
 
 def inherit_metadata(result, left, metadata, config, registry):
@@ -24,6 +24,7 @@ def inherit_metadata(result, left, metadata, config, registry):
         # Conversion explicitly changes the meaning to a numerical measure.
         for column in config['columns']:
             candidates.pop(column, None)
+            inferred[column] = dict(variable_type='Numerical', variable_subtype=infer_variable_subtype(result[column], 'Numerical'), order=[], source='Automatic')
     elif operation in ('Aggregate', 'Pivot', 'Unpivot'):
         preserved = config['groups'] if operation == 'Aggregate' else config['rows'] if operation == 'Pivot' else config['identifiers']
         candidates = {column: [metadata[column]] for column in preserved}

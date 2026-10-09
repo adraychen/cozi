@@ -12,7 +12,7 @@ from utils.temporal import period_frequencies, period_values
 
 def render_relationship_analysis(df, numerical, categorical, dates):
     metadata = st.session_state.get('variable_metadata', {})
-    dates = [date for date in dates if period_frequencies(metadata.get(date, {}).get('variable_subtype'))]
+    dates = [date for date in dates if period_frequencies(metadata.get(date, {}).get('variable_subtype')) and metadata.get(date, {}).get('variable_subtype') != 'Year-Quarter']
     methods = []
     if response_candidates(df,numerical,categorical,st.session_state.get('variable_metadata',{})) and len(numerical) + len(categorical) >= 2:
         methods.append('Regression')

@@ -9,9 +9,11 @@ from utils.temporal import temporal_value
 
 def render_noncalendar_temporal(series, subtype, key_prefix, *, interactive_summary=False):
     clean = series.dropna()
-    if subtype in ('Year', 'Month', 'Year-Month'):
+    if subtype in ('Year', 'Month', 'Year-Month', 'Quarter', 'Year-Quarter'):
         st.caption('Year: a calendar year, without a month or day.' if subtype == 'Year' else
                    'Month: month of the year, without an associated year. Values from different years are pooled.' if subtype == 'Month' else
+                   'Quarter: quarter of the year, without an associated year. Repeated quarters are pooled.' if subtype == 'Quarter' else
+                   'Year-Quarter: a specific calendar quarter; no particular day is implied.' if subtype == 'Year-Quarter' else
                    'Year-Month: a specific calendar month. The first day is only an internal period anchor, not an observed day.')
         counts = clean.value_counts().sort_index()
         table = pd.DataFrame({subtype: [temporal_value(v, subtype) for v in counts.index], 'Count': counts.to_numpy()})
@@ -19,7 +21,7 @@ def render_noncalendar_temporal(series, subtype, key_prefix, *, interactive_summ
         presentation.dataframe(table, hide_index=True, width='stretch')
         if len(clean):
             presentation.plotly_chart(px.bar(table, x=subtype, y='Count'), key=key_prefix+'_distribution', use_container_width=True)
-        if subtype != 'Year-Month':
+        if subtype in ('Year', 'Month', 'Quarter'):
             st.caption('These components are not full dates. Dated monthly trends and period comparisons require a Year-Month, Date, or DateTime variable.')
         return
     st.caption(f'{subtype}: ' + ('time of day; no calendar date is attached.' if subtype == 'Time' else 'elapsed time, not a calendar timestamp.'))

@@ -17,6 +17,8 @@ class TransformationMetadataTests(unittest.TestCase):
             app.session_state[key] = value
         app.run(timeout=60)
         app.selectbox(key='vm_column').select('year').run(timeout=60)
+        next(s for s in app.selectbox if s.label == 'Variable Type').select('Categorical').run(timeout=60)
+        app.button(key='vm_apply').click().run(timeout=60)
         next(s for s in app.selectbox if s.label == 'Variable Type').select('Date / Time').run(timeout=60)
         next(s for s in app.selectbox if s.label == 'Variable Subtype').select('Year').run(timeout=60)
         app.button(key='vm_apply').click().run(timeout=60)

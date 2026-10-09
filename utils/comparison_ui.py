@@ -6,6 +6,7 @@ from utils.ttest_analysis import numerical_candidates
 from utils.ttest_ui import render_ttest
 from utils.group_statistics_ui import render_group_statistics
 from utils.temporal import temporal_columns, period_frequencies
+from utils.period_comparison import interpret_time
 
 ANALYSES = ['One-way ANOVA', 'Segment Comparison', 'Period-over-Period Comparison', 't-Test', 'Factorial ANOVA']
 
@@ -21,8 +22,14 @@ def available_comparisons(df, selected, metadata=None):
         methods.append('Factorial ANOVA')
     if n <= 1 and c >= 1 and t == 0:
         methods.append('Segment Comparison')
-    if n <= 1 and t == 1 and period_frequencies((metadata or {}).get(selected['datetime'][0], {}).get('variable_subtype')):
-        methods.append('Period-over-Period Comparison')
+    if n <= 1 and t == 1:
+        date = selected['datetime'][0]
+        try:
+            interpret_time(df[date], (metadata or {}).get(date, {}).get('variable_subtype'))
+        except (ValueError, TypeError):
+            pass
+        else:
+            methods.append('Period-over-Period Comparison')
     if t == 0 and len(quantitative) == n:
         if (n in (1, 2) and c == 0) or (n == 1 and c == 1 and df[selected['categorical'][0]].nunique(dropna=True) == 2):
             methods.append('t-Test')
@@ -64,6 +71,12 @@ def render_comparison(df, col_types):
         )
     if not methods:
         st.session_state.pop('gs_cmp_analysis', None)
+        if len(selected['datetime']) == 1 and len(selected['numerical']) <= 1:
+            date = selected['datetime'][0]
+            try:
+                interpret_time(df[date], st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype'))
+            except (ValueError, TypeError) as exc:
+                st.info(str(exc))
         st.info('No comparison matches the full selection. Select numerical and categorical variables according to the guide above. For ANOVA, keep exactly one numerical response; for a two-column t-test, keep two numerical variables and no categorical or temporal variables.')
         return
     if st.session_state.get('gs_cmp_analysis') == 'Group Comparison (ANOVA)':

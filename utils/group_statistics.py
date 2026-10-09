@@ -54,6 +54,12 @@ def contribution(result, keys, parent=False):
 
 def temporal(df, measure, dimensions, date_column, frequency, statistic,
              analysis, window=3, lag=1, zero_fill=False, subtype=None):
+    if analysis == 'Period-over-Period Comparison':
+        from utils.period_comparison import interpret_time, build_timeline, calculate
+        axis = interpret_time(df[date_column], subtype)
+        planned = build_timeline(df, measure, dimensions, axis, frequency, statistic)
+        result = calculate(planned['timeline'], planned['keys'], zero_fill, lag)
+        return result.drop(columns=['_period']), planned['keys']
     data, keys = prepare(df, measure, dimensions)
     data["Period"] = period_values(df[date_column], frequency, subtype)
     data = data.dropna(subset=["Period"])
@@ -72,11 +78,7 @@ def temporal(df, measure, dimensions, date_column, frequency, statistic,
         if zero_fill:
             values["Value"] = values["Value"].fillna(0)
         series = values["Value"]
-        if analysis == "Period-over-Period Comparison":
-            values["Previous"] = series.shift(lag)
-            values["Change"] = series - values["Previous"]
-            values["Change %"] = values["Change"].div(values["Previous"].abs().where(values["Previous"] != 0)) * 100
-        elif analysis == "Running & Cumulative Statistics":
+        if analysis == "Running & Cumulative Statistics":
             values["Cumulative sum"] = series.cumsum()
             values["Expanding mean"] = series.expanding().mean()
             values["Observed periods"] = series.notna().cumsum()

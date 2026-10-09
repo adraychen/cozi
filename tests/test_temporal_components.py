@@ -6,6 +6,47 @@ from utils.variable_overview_display import value_details
 
 
 class TemporalComponentTests(unittest.TestCase):
+    def test_month_details_refresh_existing_automatic_date_classification(self):
+        from streamlit.testing.v1 import AppTest
+        app = AppTest.from_string('''
+import calendar
+import pandas as pd
+import streamlit as st
+from utils.variable_metadata_ui import render_column_overview
+raw = pd.DataFrame({'Month Name': list(calendar.month_name)[1:] * 2})
+if 'variable_metadata' not in st.session_state:
+    st.session_state['variable_dataset_id'] = 'months'
+    st.session_state['variable_metadata'] = {'Month Name': dict(variable_type='Date / Time', variable_subtype='Date', source='Automatic', order=[])}
+render_column_overview(raw, 'months')
+''').run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['variable_metadata']['Month Name']['variable_subtype'], 'Month')
+        details = next(e for e in app.expander if e.label == 'Unique value details')
+        self.assertEqual(details.dataframe[0].value['Value'].tolist(),
+                         ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
+        self.assertEqual(details.dataframe[0].value['Detail'].unique().tolist(), ['Value'])
+
+    def test_month_names_are_components_and_details_list_unique_months(self):
+        from utils.temporal import infer_temporal_subtype
+        from utils.variable_metadata import ensure_metadata
+        raw = pd.DataFrame({'Month Name': ['December', 'jan', ' January ', 'September', None]})
+        self.assertEqual(infer_temporal_subtype(raw['Month Name']), 'Month')
+        metadata = infer_metadata(raw)
+        self.assertEqual(metadata['Month Name']['variable_subtype'], 'Month')
+        heading, details = value_details(raw['Month Name'], metadata['Month Name'])
+        self.assertEqual(heading, 'All unique months in calendar order')
+        self.assertEqual(details, [('Value', 'January'), ('Value', 'September'), ('Value', 'December')])
+        self.assertTrue(parse_temporal(raw['Month Name'], 'DateTime').isna().all())
+        self.assertEqual(infer_temporal_subtype(pd.Series(['January 1, 2024', 'December 2, 2024'])), 'Date')
+        state = {'variable_dataset_id': 'data', 'variable_metadata': {
+            'Month Name': dict(variable_type='Date / Time', variable_subtype='Date', source='Automatic', order=[])}}
+        ensure_metadata(state, raw, 'data')
+        self.assertEqual(state['variable_metadata']['Month Name']['variable_subtype'], 'Month')
+        override = apply_user_override(metadata, 'Month Name', raw['Month Name'], 'Categorical', 'Nominal')
+        state['variable_metadata'] = override
+        ensure_metadata(state, raw, 'data')
+        self.assertEqual(state['variable_metadata']['Month Name']['variable_type'], 'Categorical')
+
     def test_inspect_year_override_is_available_in_relationship_and_comparison(self):
         from streamlit.testing.v1 import AppTest
         from unittest.mock import patch
@@ -73,7 +114,7 @@ class TemporalComponentTests(unittest.TestCase):
         raw = pd.DataFrame({'year':[2024,2025], 'month':['Jan','February'], 'period':['2024-01','2025-02']})
         original = raw.copy(deep=True)
         metadata = infer_metadata(raw)
-        self.assertEqual(metadata['year']['variable_type'], 'Numerical')
+        self.assertEqual(metadata['year']['variable_subtype'], 'Year')
         for column, subtype in [('year','Year'),('month','Month'),('period','Year-Month')]:
             metadata = apply_user_override(metadata, column, raw[column], 'Date / Time', subtype)
         data, groups = effective_data(raw, metadata)
@@ -103,7 +144,8 @@ for c in groups['temporal']:
             app.selectbox(key='vm_column').select(column).run()
             next(s for s in app.selectbox if s.label == 'Variable Type').select('Date / Time').run()
             next(s for s in app.selectbox if s.label == 'Variable Subtype').select(subtype).run()
-            app.button(key='vm_apply').click().run()
+            if not app.button(key='vm_apply').disabled:
+                app.button(key='vm_apply').click().run()
             self.assertFalse(app.exception)
             self.assertFalse(app.error)
             self.assertEqual(app.session_state['variable_metadata'][column]['variable_subtype'], subtype)

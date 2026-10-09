@@ -37,7 +37,7 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
             st.session_state.pop(key_prefix + "_analysis", None)
         analysis = st.selectbox("Analysis type", GROUP_ANALYSES, key=key_prefix + "_analysis")
     time_based = analysis in ANALYSES[2:5]
-    allowed = ["Row count"] if measure is None else (["Sum", "Non-missing count", "Row count"] if analysis == ANALYSES[5] else list(STATISTICS))
+    allowed = ["Row count"] if measure is None else (["Sum", "Non-missing count", "Row count"] if analysis == ANALYSES[5] else list(STATISTICS) + (["Period-end value"] if analysis == ANALYSES[2] else []))
     statistic = st.selectbox("Statistic", allowed, key=key_prefix + "_stat_" + analysis + ("_counts" if measure is None else "_numeric"))
     presentation.caption("Missing categories are included. Row count counts all rows, including missing measures. Non-missing count counts valid numerical values. Standard deviation uses the sample definition.")
     try:
@@ -52,6 +52,10 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                 date = dates[0]
             else:
                 date = st.selectbox("Date column", temporal_candidates, key=key_prefix + "_date")
+            if analysis == ANALYSES[2]:
+                from utils.period_comparison_ui import render_period_comparison
+                render_period_comparison(df, measure, dimensions, date, statistic, key_prefix)
+                return
             subtype = st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype')
             frequencies = period_frequencies(subtype)
             if not frequencies:

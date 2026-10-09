@@ -19,7 +19,8 @@ def render_column_overview(raw, dataset_id):
         default=m['variable_subtype'] if t==m['variable_type'] else infer_variable_subtype(raw[col],t)
         subtype=st.selectbox('Variable Subtype',ALLOWED[t],index=ALLOWED[t].index(default),key=prefix+'_'+t+'_subtype',format_func=lambda value: 'Temporal' if value=='Date / Time' else value)
         if t == 'Date / Time':
-            st.caption('Date: calendar date; Time: time of day; DateTime: date and time; Duration: elapsed time with explicit units. Year: four-digit year (1000–9999). Month: January/Jan or 1–12, without a year. Year-Month: YYYY-MM or YYYY/MM; internally anchored to the first day for period analysis. Numeric year/month columns require an explicit Temporal override. Full dates are not truncated by these overrides. HH:MM[:SS] is inferred as Time; choose Duration for elapsed clock notation. Zoned timestamps are normalized to UTC.')
+            st.caption('Quarter: Q1–Q4 without a year. Year-Quarter: 2026-Q2 or Q2 2026. Year-Month also accepts January 2026 or Jan 2026. Named Year columns and four-digit year text are detected automatically; other numeric components require a Temporal override.')
+            st.caption('Date: calendar date; Time: time of day; DateTime: date and time; Duration: elapsed time with explicit units. Year: four-digit year (1000–9999). Month: January/Jan or 1–12, without a year. Year-Month: YYYY-MM or YYYY/MM; internally anchored to the first day for period analysis. Numeric month columns require an explicit Temporal override. Full dates are not truncated by these overrides. HH:MM[:SS] is inferred as Time; choose Duration for elapsed clock notation. Zoned timestamps are normalized to UTC.')
         order=[]
         if subtype=='Ordinal':
             values,recognized=category_order(raw[col])

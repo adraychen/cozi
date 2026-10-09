@@ -166,7 +166,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
 
         def render_datetime_panel(col_name: str) -> None:
             subtype = variable_metadata[col_name]['variable_subtype']
-            if subtype in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
+            if subtype in ('Time', 'Duration', 'Year', 'Month', 'Year-Month', 'Quarter', 'Year-Quarter'):
                 from utils.temporal_ui import render_noncalendar_temporal
                 presentation.markdown(f'**{col_name}**')
                 render_noncalendar_temporal(df[col_name], subtype, 'quality_temporal_'+str(col_name))
@@ -444,7 +444,7 @@ def render_analyze(raw, _show_feedback):
                             presentation.info(st.session_state[ai_key])
 
                 # ── Date / Time ───────────────────────────────────────────────────────────
-                elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month'):
+                elif col_type == "Date / Time" and variable_metadata[selected_col]['variable_subtype'] in ('Time', 'Duration', 'Year', 'Month', 'Year-Month', 'Quarter', 'Year-Quarter'):
                     from utils.temporal_ui import render_noncalendar_temporal
                     render_noncalendar_temporal(df[selected_col], variable_metadata[selected_col]['variable_subtype'], 'descriptive_temporal', interactive_summary=True)
                 elif col_type == "Date / Time":
@@ -553,7 +553,7 @@ def render_analyze(raw, _show_feedback):
                     available.append("Heatmap — Numerical Values")
                 if n_num == 1 and n_cat == 1 and n_dt == 0:
                     available.append("Boxplot — Distribution by Category")
-                if n_dt == 1 and n_num >= 1 and n_cat == 0:
+                if n_dt == 1 and n_num >= 1 and n_cat == 0 and variable_metadata[sel_dt[0]]['variable_subtype'] not in ('Quarter', 'Year-Quarter'):
                     available.append("Line Chart — Trend")
                 if n_num == 2 and n_cat == 0 and n_dt == 0:
                     available += ["Scatter Plot — Correlation", "Interaction Chart — Density"]

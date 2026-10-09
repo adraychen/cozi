@@ -42,7 +42,7 @@ class TemporalSubtypeTests(unittest.TestCase):
         self.assertTrue(values[0][1].startswith('08:15'))
 
     def test_overrides_and_validation(self):
-        self.assertEqual(get_allowed_subtypes('Date / Time'),['Date','Time','DateTime','Duration','Year','Month','Year-Month'])
+        self.assertEqual(get_allowed_subtypes('Date / Time'),['Date','Time','DateTime','Duration','Year','Month','Year-Month','Quarter','Year-Quarter'])
         raw=pd.DataFrame({'x':['08:30','09:45']})
         m=apply_user_override(infer_metadata(raw),'x',raw.x,'Date / Time','Duration')
         data,groups=effective_data(raw,m)
@@ -87,7 +87,7 @@ if column and st.session_state['variable_metadata'][column]['variable_subtype'] 
 ''').run(timeout=40)
         self.assertFalse(app.exception)
         sub=next(s for s in app.selectbox if s.label=='Variable Subtype')
-        self.assertEqual(sub.options,['Date','Time','DateTime','Duration','Year','Month','Year-Month'])
+        self.assertEqual(sub.options,['Date','Time','DateTime','Duration','Year','Month','Year-Month','Quarter','Year-Quarter'])
         self.assertEqual(sub.value,'Time')
         sub.select('Duration').run(timeout=40)
         app.button(key='vm_apply').click().run(timeout=40)

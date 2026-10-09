@@ -11,6 +11,12 @@ def value_details(series, metadata):
     subtype=metadata['variable_subtype']
     if not values:
         return 'No non-missing values', []
+    if subtype == 'Month':
+        months = parse_temporal(series, 'Month').dropna().unique()
+        return 'All unique months in calendar order', [('Value', temporal_value(month, 'Month')) for month in sorted(months)]
+    if subtype == 'Quarter':
+        quarters = parse_temporal(series, subtype).dropna().unique()
+        return 'All unique quarters in calendar order', [('Value', temporal_value(quarter, subtype)) for quarter in sorted(quarters)]
     if subtype=='Continuous' or (subtype=='Discrete' and len(values)>10):
         numeric=pd.to_numeric(series.dropna(),errors='raise')
         return 'Range', [('Minimum',numeric.min()),('Maximum',numeric.max())]
