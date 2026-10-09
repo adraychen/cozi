@@ -7,6 +7,8 @@ from utils.currency_conversion import convert_currency_to_numeric, CurrencyConve
 from utils.dataset_workspace import add_dataset
 from utils.transformation_metadata import inherit_metadata
 from utils.variable_metadata import infer_metadata
+from utils.date_components import COMBINATIONS, DISPLAY_FORMATS, STRICT, KEEP_MISSING, DateComponentError, combine_date_components, component_preview
+from utils.temporal_navigation import prepare_component_request, attach_analysis_return
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
@@ -87,6 +89,7 @@ def render_transform(dataset_id, registry):
     metadata = draft.get('metadata') if draft else st.session_state.get('variable_metadata')
     if metadata is None:
         metadata = infer_metadata(frame)
+    prepare_component_request(st.session_state, dataset_id, frame)
     if draft:
         st.subheader('Pending changes')
         for index, step in enumerate(draft['steps'], 1):
@@ -95,10 +98,11 @@ def render_transform(dataset_id, registry):
         for warning in draft.get('classification_warnings', []):
             st.warning(warning)
         with st.expander('Preview accumulated changes'):
-            presentation.dataframe(frame.head(100), width='stretch')
+            presentation.dataframe(component_preview(frame.head(100), metadata), width='stretch')
         draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
         if st.button('Create dataset', key='tf_draft_create', type='primary', disabled=not draft_name.strip()):
-            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']}, metadata=metadata)
+            created_id = add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']}, metadata=metadata)
+            attach_analysis_return(st.session_state, created_id, metadata)
             st.rerun()
         if st.button('Discard accumulated changes', key='tf_draft_discard'):
             for key in list(st.session_state):
@@ -305,7 +309,7 @@ def render_transform(dataset_id, registry):
             return result, {'Columns converted': ', '.join(selected_columns), 'Columns unchanged': ', '.join(c for c in columns if c not in selected_columns) or 'None', 'Data type': types, 'Numeric values': int(result[selected_columns].notna().sum().sum()), 'Missing values': int(result[selected_columns].isna().sum().sum()), 'Rows': len(result)}, []
     else:  # Add column
         new_name = st.text_input('New column name', key='tf_add_name').strip()
-        method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation'], key='tf_add_method')
+        method = st.selectbox('Column values', ['Blank', 'Constant value', 'Copy existing column', 'Row number', 'Calculation', 'Combine Date Components'], key='tf_add_method')
         options = {'method': method}
         if method == 'Constant value':
             value_type = st.selectbox('Value type', ['Text', 'Number', 'True/False'], key='tf_add_value_type')
@@ -328,11 +332,32 @@ def render_transform(dataset_id, registry):
             st.caption('Calculations use the stored numerical values and preserve missing values. Division by zero is not allowed.')
         elif method == 'Row number':
             st.caption('Numbers rows from 1 in their current order.')
+        elif method == 'Combine Date Components':
+            combination = st.selectbox('Date component combination', list(COMBINATIONS), key='tf_add_combination')
+            roles = ['year', 'quarter'] if combination == 'Year + Quarter' else ['year', 'month'] + (['day'] if combination == 'Year + Month + Day' else [])
+            options['combination'] = combination
+            for role in roles:
+                key = 'tf_add_' + role
+                if st.session_state.get(key) not in columns:
+                    st.session_state.pop(key, None)
+                options[role] = st.selectbox(role.title() + ' column', [None] + columns,
+                    format_func=lambda value: 'Choose a column…' if value is None else value, key=key)
+            formats = DISPLAY_FORMATS[combination]
+            if st.session_state.get('tf_add_display_format') not in formats:
+                st.session_state.pop('tf_add_display_format', None)
+            options['display_format'] = st.selectbox('Display format', formats, key='tf_add_display_format')
+            options['missing_policy'] = st.selectbox('Invalid or missing components', [STRICT, KEEP_MISSING], key='tf_add_missing_policy')
+            st.caption('Calendar components are combined without changing the source columns. A month uses its first day only as an internal anchor; a quarter represents the whole quarter. Calendar dates, not fiscal calendars, are used.')
         else:
             st.caption('Adds a column of missing values.')
         config.update(name=new_name, **options)
         def calculate():
             result = add_column(frame, new_name, **options)
+            if method == 'Combine Date Components':
+                _, issues = combine_date_components(frame, combination, options['year'], options.get('month'), options.get('quarter'), options.get('day'), options['missing_policy'], options['display_format'])
+                return result, {'New column': new_name, 'Combination': combination,
+                                'Temporal subtype': COMBINATIONS[combination], 'Affected rows': len(issues),
+                                'Rows': len(result)}, ([f'{len(issues):,} invalid or missing combinations remain missing in {new_name}. Source columns are unchanged.'] if len(issues) else [])
             return result, {'New column': new_name, 'Column values': method, 'Columns': len(result.columns), 'Rows': len(result)}, []
     parent_classifications = {parent: registry[parent]['state'].get('variable_metadata')
                               for parent in parents if parent != dataset_id}
@@ -355,6 +380,12 @@ def render_transform(dataset_id, registry):
             st.error(str(exc))
             presentation.dataframe(exc.invalid, hide_index=True, width='stretch')
             st.caption('Use Replace Values to resolve these values, then Apply and continue and try the conversion again. No conversion has been applied.')
+        except DateComponentError as exc:
+            st.session_state.pop('tf_result', None)
+            saved = None
+            st.error(str(exc))
+            presentation.dataframe(exc.issues.head(20), hide_index=True)
+            st.caption('Showing representative affected rows. No column has been created. Choose Leave affected values missing only if those exclusions are appropriate.')
         except (ValueError, TypeError, KeyError, OverflowError) as exc:
             st.session_state.pop('tf_result', None)
             saved = None
@@ -362,7 +393,12 @@ def render_transform(dataset_id, registry):
     if saved:
         st.subheader('Result preview')
         st.caption(f"{len(saved['frame']):,} rows · {len(saved['frame'].columns):,} columns · Showing the first 100 rows")
-        presentation.dataframe(saved['frame'].head(100), use_container_width=True)
+        presentation.dataframe(component_preview(saved['frame'].head(100), saved['metadata']), use_container_width=True)
+        if operation == 'Add column' and config.get('method') == 'Combine Date Components':
+            _, issues = combine_date_components(frame, config['combination'], config['year'], config.get('month'), config.get('quarter'), config.get('day'), KEEP_MISSING, config['display_format'])
+            if len(issues):
+                with st.expander('Affected date component rows'):
+                    presentation.dataframe(issues.head(20), hide_index=True)
         with st.expander('Validation details', expanded=True):
             render_validation(saved['report'], operation)
         for warning in saved['warnings']:
@@ -390,6 +426,7 @@ def render_transform(dataset_id, registry):
             name = st.text_input('Output dataset name', entry['name'] + ' · ' + operation, key='tf_output_name_' + operation)
             st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
             if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
-                add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
+                created_id = add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
                             operation={'steps': steps} if draft else config, metadata=saved['metadata'])
+                attach_analysis_return(st.session_state, created_id, saved['metadata'])
                 st.rerun()

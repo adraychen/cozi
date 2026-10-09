@@ -35,7 +35,8 @@ def remove_columns(frame, columns):
 
 
 def add_column(frame, name, method='Blank', value=None, value_type='Text', source=None,
-               left=None, right=None, calculation=None):
+               left=None, right=None, calculation=None, combination=None, year=None, month=None,
+               quarter=None, day=None, display_format=None, missing_policy=None):
     name = _new_name(frame, name)
     check_size(len(frame), len(frame.columns) + 1)
     result = frame.copy()
@@ -74,6 +75,10 @@ def add_column(frame, name, method='Blank', value=None, value_type='Text', sourc
         result[name] = operations[calculation](frame[left].astype('Float64'), frame[right].astype('Float64'))
         if result[name].isin([float('inf'), -float('inf')]).any():
             raise ValueError('The calculation produces infinite values. Check the input values.')
+    elif method == 'Combine Date Components':
+        from utils.date_components import combine_date_components, STRICT
+        result[name], _ = combine_date_components(frame, combination, year, month, quarter, day,
+                                                  missing_policy or STRICT, display_format)
     else:
         raise ValueError('Choose a supported column creation method.')
     return validate_table(result)

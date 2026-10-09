@@ -33,8 +33,14 @@ from utils.quality import (
 
 
 
-def dataset_csv(frame):
+def dataset_csv(frame, metadata=None):
     """Export all stored rows and columns, before analytical type conversions."""
+    if metadata:
+        from utils.date_components import display_component_values
+        frame = frame.copy()
+        for column, item in metadata.items():
+            if column in frame and item.get('origin') == 'Combine Date Components':
+                frame[column] = display_component_values(frame[column], item, canonical=True)
     return frame.to_csv(index=False).encode('utf-8-sig')
 
 
@@ -48,10 +54,11 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
         bool_cols = preview_df.select_dtypes(include="bool").columns.tolist()
         if bool_cols:
             preview_df[bool_cols] = preview_df[bool_cols].astype(str)
-        presentation.dataframe(preview_df, use_container_width=True, height=300)
+        from utils.date_components import component_preview
+        presentation.dataframe(component_preview(preview_df, st.session_state.get('variable_metadata', {})), use_container_width=True, height=300)
         filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', dataset_name).strip(' .') or 'Dataset'
         filename = re.sub(r'\.(csv|xlsx|xls)$', '', filename, flags=re.IGNORECASE) + '.csv'
-        st.download_button('Download dataset (CSV)', data=dataset_csv(df),
+        st.download_button('Download dataset (CSV)', data=dataset_csv(df, st.session_state.get('variable_metadata', {})),
                            file_name=filename, mime='text/csv', key='view_dataset_download',
                            on_click='ignore', help='Download all rows and columns, not only the preview.')
         presentation.caption('Datasets are kept for this session only. Download a CSV to save a local copy.')
@@ -290,6 +297,12 @@ def render_analyze(raw, _show_feedback):
     col_to_type = {c: m["variable_type"] for c, m in variable_metadata.items()}
     # ── Exploratory Data Analysis ─────────────────────────────────────────────────
     presentation.subheader("Exploratory Data Analysis")
+    recommended = st.session_state.get('temporal_recommendation')
+    if recommended in df:
+        from utils.temporal_navigation import continue_temporal_analysis
+        presentation.info(f'{recommended} is ready. Continue with this dated variable to restore your previous analysis selections.')
+        st.button('Continue with ' + str(recommended), key='temporal_select_button_return',
+                  on_click=continue_temporal_analysis, args=(st.session_state,))
 
     if st.session_state.get('view_analyze_tabs') == 'Predictive Analytics':
         st.session_state['view_analyze_tabs'] = 'Descriptive Statistics'
@@ -543,6 +556,14 @@ def render_analyze(raw, _show_feedback):
                 sel_cat = [c for c in selected_cols if col_to_type.get(c) == "Categorical"]
                 sel_dt  = [c for c in selected_cols if col_to_type.get(c) == "Date / Time"]
                 n_num, n_cat, n_dt = len(sel_num), len(sel_cat), len(sel_dt)
+
+                from utils.temporal_validation_ui import guide_temporal_selection
+                for temporal_column in sel_dt:
+                    allowed, _, _ = guide_temporal_selection(df, temporal_column, variable_metadata,
+                        {'tab': 'Relationship', 'numerical': sel_num, 'categorical': sel_cat},
+                        'temporal_guidance_relationship_' + str(temporal_column))
+                    if not allowed:
+                        return
 
                 from utils.relationship_ui import render_relationship_analysis
                 render_relationship_analysis(df, sel_num, sel_cat, sel_dt)

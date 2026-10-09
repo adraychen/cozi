@@ -56,6 +56,12 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
                 from utils.period_comparison_ui import render_period_comparison
                 render_period_comparison(df, measure, dimensions, date, statistic, key_prefix)
                 return
+            from utils.temporal_validation_ui import guide_temporal_selection
+            allowed, _, _ = guide_temporal_selection(df, date, st.session_state.get('variable_metadata', {}),
+                {'tab': 'Group Statistics', 'numerical': [measure] if measure is not None else [],
+                 'categorical': dimensions, 'analysis': analysis}, 'temporal_guidance_' + key_prefix + '_' + str(date))
+            if not allowed:
+                return
             subtype = st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype')
             frequencies = period_frequencies(subtype)
             if not frequencies:

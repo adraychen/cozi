@@ -10,11 +10,11 @@ ADD_TAB = '＋ Add datasets'
 _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summary',
               'datetime_overrides', 'override_warnings', 'regression_cached_fit'}
 _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'fac_', 'pa_', 'mc_',
-             'col_ai_', 'heatmap_ai_', 'tf_', 'view_')
+             'col_ai_', 'heatmap_ai_', 'tf_', 'view_', 'temporal_')
 _TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'pa_temporal_choose_target', 'tf_preview', 'tf_create',
              'rel_anova_ai_generate',
              'tf_apply', 'tf_draft_create', 'tf_draft_discard', 'tf_draft_finish',
-             'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_generate_ai'}
+             'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_generate_ai', 'temporal_resume_button'}
 
 
 def dataset_state_key(key):
@@ -25,7 +25,7 @@ def dataset_state_key(key):
     trigger = (key in _TRIGGERS or key.endswith(('_download', '_all', '_clear'))
                or key.startswith(('va_graph_button_', 'mc_all_', 'mc_clear_',
                                   'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_',
-                                  'pa_select_all_', 'pa_clear_all_', 'view_ai_generate_')))
+                                  'pa_select_all_', 'pa_clear_all_', 'view_ai_generate_', 'temporal_create_button_', 'temporal_select_button_')))
     return owned and not trigger
 
 
@@ -228,6 +228,10 @@ def render_workspace(samples, show_feedback):
             with tab:
                 st.subheader(entry['name'])
                 st.caption(f"{len(entry['frame']):,} rows · {len(entry['frame'].columns):,} columns · {entry['source']}")
+                context = st.session_state.get('temporal_return_context', {})
+                if context.get('target_id') == dataset_id:
+                    from utils.temporal_navigation import return_to_analysis
+                    st.button('Return to Analysis', key='temporal_resume_button', on_click=return_to_analysis, args=(st.session_state,))
                 if entry['parents']:
                     st.caption('Sources: ' + ' + '.join(registry[p]['name'] for p in entry['parents']))
                     with st.expander('Transformation settings'):

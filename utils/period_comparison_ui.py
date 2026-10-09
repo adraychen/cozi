@@ -48,6 +48,13 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
     source = raw[date] if raw is not None and date in raw and raw.index.equals(df.index) else None
     try:
         axis = interpret_time(df[date], metadata.get(date, {}).get('variable_subtype'), source)
+        from utils.temporal_validation_ui import guide_temporal_selection
+        context = {'tab': 'Comparison', 'numerical': [measure] if measure is not None else [],
+                   'categorical': dimensions, 'analysis': 'Period-over-Period Comparison'}
+        allowed, assessment, objective = guide_temporal_selection(df, date, metadata, context,
+            'temporal_guidance_' + key_prefix + '_' + str(date), allow_seasonal=True)
+        if not allowed:
+            return
         rules = frequency_rules(axis, statistic)
         frequencies = [name for name, (status, _) in rules.items() if status != 'Unavailable']
         if not frequencies:
@@ -77,7 +84,8 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
             if clarification is None:
                 presentation.info('Choose the reporting meaning to calculate a defensible quarterly result.')
                 return
-        planned = build_timeline(df, measure, dimensions, axis, frequency, statistic, clarification)
+        planned = build_timeline(df, measure, dimensions, axis, frequency, statistic, clarification,
+                                 objective, metadata, assessment.year_column)
         gap_count = len(planned['gaps'])
         zero = False
         policy_key = key_prefix + '_missing_policy'
@@ -114,6 +122,12 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
                 lag = {'Monthly': 12, 'Quarterly': 4, 'Yearly': 1}[frequency]
         result = calculate(planned['timeline'], planned['keys'], zero, lag)
         warnings = list(planned['warnings'])
+        seasonal = axis.kind == 'Month' and objective != 'Chronological reporting periods'
+        if assessment.years and not assessment.missing_year_rows:
+            warnings = [warning for warning in warnings if not warning.startswith('No unambiguous year is available')]
+        if seasonal:
+            warnings.append('Month-of-year values are pooled intentionally. Changes compare seasonal period aggregates, not chronological reporting periods across years.')
+            result.loc[result['Comparison'].eq('Consecutive periods'), 'Comparison'] = 'Adjacent pooled month-of-year periods'
         if zero:
             warnings.append(f'Inserted zeros into {gap_count:,} absent segment-periods for this analysis only. Percentage changes from zero are N/A.')
         if (result['Value'] < 0).any():
@@ -123,6 +137,8 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
             if result['_period'].max() >= current.ordinal:
                 warnings.append('The data includes the current or a future period. The current period may be incomplete.')
         interpretation = interpret_result(result, frequency)
+        if seasonal:
+            interpretation = 'Seasonal month profile: these are changes between pooled month-of-year aggregates, not dated month-over-month changes.\n\n' + interpretation
         validation_state = 'Warning' if warnings else 'Supported'
         segments = result['Segment'].unique().tolist()
         chart_key = key_prefix + '_chart_Period-over-Period Comparison'
@@ -146,6 +162,9 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
         presentation.caption(f'{frequency} · {statistic} · {mode} · {policy}. Baselines use calendar periods, never silently skip gaps. First-period and zero-baseline percentages are N/A.')
         if len(chart):
             actual, changes = comparison_charts(chart, measure or 'Row count', frequency)
+            if seasonal:
+                actual.update_layout(title='Seasonal period values (years pooled)')
+                changes.update_layout(title='Percentage change between pooled seasonal periods')
             presentation.plotly_chart(actual, use_container_width=True, key=key_prefix + '_chart')
             presentation.plotly_chart(changes, use_container_width=True, key=key_prefix + '_change_chart')
         columns = ['Period', 'Value', 'Previous', 'Change', 'Change %', 'Segment', 'Previous period', 'Comparison', 'Missing period', 'Missing value', 'Inserted zero']
@@ -162,6 +181,7 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
                       'comparison': mode, 'lag': lag, 'missing_period_handling': policy,
                       'month_reporting': clarification, 'chart_segments': chosen,
                       'validation_state': validation_state,
+                      'objective': objective, 'year_sources': assessment.year_columns, 'observed_years': assessment.years,
                       'percentage_denominator': 'Absolute previous value', 'chart_point_limit': chart_limit},
                      {'Summary rows': len(result), 'Missing periods': gap_count, 'Inserted zeros': int(result['Inserted zero'].sum())},
                      diagnostics={'invalid_temporal_rows': planned['invalid'], 'blank_metric_periods': planned['blank_periods']},

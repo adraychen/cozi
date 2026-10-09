@@ -96,10 +96,19 @@ def period_label(axis, frequency, key):
     return period.strftime('%d %b %Y')
 
 
-def build_timeline(df, measure, dimensions, axis, frequency, statistic, month_reporting=None):
+def build_timeline(df, measure, dimensions, axis, frequency, statistic, month_reporting=None,
+                   objective='Chronological reporting periods', temporal_metadata=None, year_column=None):
     """Aggregate once and detect absent periods within each segment's observed range."""
     if measure is None and statistic != 'Row count':
         raise ValueError('Choose a numerical metric or use Row count.')
+    year_assessment = None
+    if axis.kind == 'Month' and axis.values.name in df:
+        from utils.temporal_validation import assess_temporal_selection
+        declared = dict(temporal_metadata or {})
+        declared[axis.values.name] = {'variable_type': 'Date / Time', 'variable_subtype': 'Month'}
+        year_assessment = assess_temporal_selection(df, axis.values.name, declared, objective, dimensions, year_column)
+        if year_assessment.status == 'Blocked':
+            raise ValueError(year_assessment.message + ' Select or create a Month-Year variable, or explicitly choose a monthly seasonal profile.')
     if axis.kind == 'Month' and frequency == 'Quarterly' and month_reporting not in ('Monthly observations', 'Quarterly reports labelled by month'):
         raise ValueError('Clarify what the month labels represent before calculating quarterly comparisons.')
     data, keys = prepare(df, measure, dimensions)
@@ -113,7 +122,10 @@ def build_timeline(df, measure, dimensions, axis, frequency, statistic, month_re
     if invalid:
         warnings.append(f'Excluded {invalid:,} rows with missing or invalid temporal values.')
     if axis.kind in ('Month', 'Quarter'):
-        warnings.append('No year is available. Repeated labels are pooled within each segment; these results cannot identify year-to-year transitions or year-over-year changes.')
+        if year_assessment is None or not year_assessment.years:
+            warnings.append('No unambiguous year is available for chronology. Repeated labels are pooled within each segment; these results cannot identify year-to-year transitions or year-over-year changes.')
+        if year_assessment is not None and year_assessment.status == 'Warning':
+            warnings.append(year_assessment.message)
     if axis.kind == 'Month' and frequency == 'Quarterly':
         counts = data.groupby(keys + ['_period'], observed=True)['_time'].nunique()
         if month_reporting == 'Quarterly reports labelled by month':

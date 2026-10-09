@@ -20,6 +20,9 @@ def inherit_metadata(result, left, metadata, config, registry):
         candidates.pop(config['name'], None)
         if config['method'] == 'Copy existing column':
             candidates[config['name']] = [metadata[config['source']]]
+        elif config['method'] == 'Combine Date Components':
+            from utils.date_components import component_metadata
+            inferred[config['name']] = component_metadata(config)
     elif operation == 'Convert Currency to Numeric':
         # Conversion explicitly changes the meaning to a numerical measure.
         for column in config['columns']:
@@ -56,6 +59,9 @@ def inherit_metadata(result, left, metadata, config, registry):
         roles = {(item['variable_type'], item['variable_subtype'], tuple(item.get('order', []))) for item in overrides}
         if len(roles) > 1:
             warnings.append(f'{column}: conflicting user classifications; automatic classification used. Review in Inspect.')
+            continue
+        if first.get('origin') == 'Combine Date Components' and result[column].dropna().empty:
+            inferred[column] = deepcopy(first)
             continue
         try:
             validate_type_subtype(result[column], first['variable_type'], first['variable_subtype'], first.get('order'))

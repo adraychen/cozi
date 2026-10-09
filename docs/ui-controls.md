@@ -59,9 +59,11 @@ Five **side-by-side dropdowns**, wrapping on narrow screens, select one active o
 | Remove Characters | Column or All columns | — | Characters-to-remove text input |
 | Trim Spaces | Column or All columns; spaces to remove | — | — |
 | Convert Currency to Numeric | Column or All columns | Columns to convert when applicable | — |
-| Add column | Value method/type; Boolean value; source column; calculation and operands as applicable | — | Name and constant-value text inputs |
+| Add column | Value method/type; Boolean value; source column; calculation and operands; date component combination, Year/Month/Quarter/Day columns, display format, invalid-component policy as applicable | — | Name and constant-value text inputs |
 
 Preview result, Apply and continue, Create dataset and Discard accumulated changes are action buttons. Dataset names are text fields; previews/validation use expanders. Source: `utils/transform_ui.py`. Ordered join keys and append inputs are meaningful exceptions to consider before replacing multiselects with checkbox grids.
+
+Temporal guidance adds a Corresponding year column dropdown only when year sources conflict, and an Analysis objective dropdown only when chronology must be distinguished from an intentionally pooled monthly seasonal profile. Verified existing temporal variables have Use actions. Create Month-Year Variable preselects existing Add Column controls; creation still requires Preview and Apply/Create. Return to Analysis restores the workflow; Continue with the derived variable explicitly restores its analysis selections.
 
 ## Analytical variable and method selection
 
