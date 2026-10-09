@@ -13,7 +13,8 @@ def value_details(series, metadata):
         return 'No non-missing values', []
     if subtype == 'Month':
         months = parse_temporal(series, 'Month').dropna().unique()
-        return 'All unique months in calendar order', [('Value', temporal_value(month, 'Month')) for month in sorted(months)]
+        numeric = pd.api.types.is_numeric_dtype(series) and not pd.api.types.is_bool_dtype(series)
+        return 'All unique months in calendar order', [('Value', int(month) if numeric else temporal_value(month, 'Month')) for month in sorted(months)]
     if subtype == 'Quarter':
         quarters = parse_temporal(series, subtype).dropna().unique()
         return 'All unique quarters in calendar order', [('Value', temporal_value(quarter, subtype)) for quarter in sorted(quarters)]
@@ -82,7 +83,7 @@ def _render_value_details(raw, metadata):
         st.write(heading)
         if values:
             presentation.dataframe(
-                pd.DataFrame([(str(label), str(value)) for label, value in values],
+                pd.DataFrame([(str(label), value if metadata[column]['variable_subtype'] == 'Month' and pd.api.types.is_numeric_dtype(raw[column]) else str(value)) for label, value in values],
                              columns=['Detail', 'Value']), hide_index=True,
             )
 

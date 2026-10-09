@@ -6,6 +6,25 @@ from utils.variable_overview_display import value_details
 
 
 class TemporalComponentTests(unittest.TestCase):
+    def test_numeric_month_details_preserve_whole_numbers(self):
+        raw = pd.DataFrame({'Month Number': pd.Series([12, 1, 2, 1, None], dtype='Int64')})
+        original = raw.copy(deep=True)
+        metadata = apply_user_override(infer_metadata(raw), 'Month Number', raw['Month Number'], 'Date / Time', 'Month')
+        heading, details = value_details(raw['Month Number'], metadata['Month Number'])
+        self.assertEqual(details, [('Value', 1), ('Value', 2), ('Value', 12)])
+        pd.testing.assert_frame_equal(raw, original)
+        from streamlit.testing.v1 import AppTest
+        app = AppTest.from_string('''
+import pandas as pd
+from utils.variable_overview_display import render_overview
+raw = pd.DataFrame({'Month Number': pd.Series([12, 1, 2, 1, None], dtype='Int64')})
+render_overview(raw, {'Month Number': dict(variable_type='Date / Time', variable_subtype='Month', source='User override', order=[])})
+''').run(timeout=60)
+        self.assertFalse(app.exception)
+        displayed = next(e for e in app.expander if e.label == 'Unique value details').dataframe[0].value['Value']
+        self.assertEqual(displayed.tolist(), [1, 2, 12])
+        self.assertTrue(pd.api.types.is_integer_dtype(displayed))
+
     def test_month_details_refresh_existing_automatic_date_classification(self):
         from streamlit.testing.v1 import AppTest
         app = AppTest.from_string('''
