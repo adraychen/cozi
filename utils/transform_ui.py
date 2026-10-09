@@ -5,6 +5,8 @@ import streamlit as st
 from utils import presentation
 from utils.currency_conversion import convert_currency_to_numeric, CurrencyConversionError, detect_currency_columns
 from utils.dataset_workspace import add_dataset
+from utils.transformation_metadata import inherit_metadata
+from utils.variable_metadata import infer_metadata
 from utils.table_transforms import (
     FUNCTIONS, join_tables, append_tables, aggregate_table, pivot_table, unpivot_table,
 )
@@ -82,16 +84,21 @@ def render_transform(dataset_id, registry):
     entry = registry[dataset_id]
     draft = st.session_state.get('tf_draft')
     frame = draft['frame'] if draft else entry['frame']
+    metadata = draft.get('metadata') if draft else st.session_state.get('variable_metadata')
+    if metadata is None:
+        metadata = infer_metadata(frame)
     if draft:
         st.subheader('Pending changes')
         for index, step in enumerate(draft['steps'], 1):
             st.write(f"{index}. {step['operation']}" + (f" — {step['column'] if step['column'] != 0 else 'All columns'}" if 'column' in step else ''))
         st.caption('These changes are retained while you configure the next operation. Create dataset saves the applied changes listed here.')
+        for warning in draft.get('classification_warnings', []):
+            st.warning(warning)
         with st.expander('Preview accumulated changes'):
             presentation.dataframe(frame.head(100), width='stretch')
         draft_name = st.text_input('Dataset name for accumulated changes', entry['name'] + ' · Transformed', key='tf_draft_name')
         if st.button('Create dataset', key='tf_draft_create', type='primary', disabled=not draft_name.strip()):
-            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']})
+            add_dataset(st.session_state, frame, draft_name, 'Transform', parents=draft['parents'], operation={'steps': draft['steps']}, metadata=metadata)
             st.rerun()
         if st.button('Discard accumulated changes', key='tf_draft_discard'):
             for key in list(st.session_state):
@@ -327,16 +334,20 @@ def render_transform(dataset_id, registry):
         def calculate():
             result = add_column(frame, new_name, **options)
             return result, {'New column': new_name, 'Column values': method, 'Columns': len(result.columns), 'Rows': len(result)}, []
-    signature = json.dumps(config, sort_keys=True)
+    parent_classifications = {parent: registry[parent]['state'].get('variable_metadata')
+                              for parent in parents if parent != dataset_id}
+    signature = json.dumps({'config': config, 'metadata': metadata, 'parents': parent_classifications}, sort_keys=True, default=str)
     saved = st.session_state.get('tf_result')
-    if saved and saved['signature'] != signature:
+    if saved and (saved['signature'] != signature or 'metadata' not in saved):
         st.session_state.pop('tf_result', None)
         saved = None
     if st.button('Preview result', key='tf_preview', type='primary'):
         try:
             with st.spinner('Calculating and validating the result…'):
                 result, report, warnings = calculate()
-            saved = {'signature': signature, 'frame': result, 'report': report, 'warnings': warnings}
+                result_metadata, classification_warnings = inherit_metadata(result, frame, metadata, config, registry)
+            saved = {'signature': signature, 'frame': result, 'report': report, 'warnings': warnings + classification_warnings,
+                     'metadata': result_metadata, 'classification_warnings': classification_warnings}
             st.session_state['tf_result'] = saved
         except CurrencyConversionError as exc:
             st.session_state.pop('tf_result', None)
@@ -361,7 +372,9 @@ def render_transform(dataset_id, registry):
         combined_parents = list(dict.fromkeys((draft['parents'] if draft else []) + parents))
         steps = (draft['steps'] if draft else []) + [config]
         if st.button('Apply and continue', key='tf_apply'):
-            pending = {'frame': saved['frame'], 'parents': combined_parents, 'steps': steps}
+            pending = {'frame': saved['frame'], 'parents': combined_parents, 'steps': steps,
+                       'metadata': saved['metadata'],
+                       'classification_warnings': list(dict.fromkeys((draft.get('classification_warnings', []) if draft else []) + saved['classification_warnings']))}
             output_name = st.session_state.get('tf_output_name_' + operation, st.session_state.get('tf_draft_name', entry['name'] + ' · Transformed'))
             # Clear controls whose column choices may have changed after this step.
             for key in list(st.session_state):
@@ -378,5 +391,5 @@ def render_transform(dataset_id, registry):
             st.caption('Create dataset keeps the result in this session. To keep a local copy, download the full dataset from Inspect → Dataset Preview.')
             if st.button('Create dataset', key='tf_create', disabled=not name.strip()):
                 add_dataset(st.session_state, saved['frame'], name, operation, parents=combined_parents,
-                            operation={'steps': steps} if draft else config)
+                            operation={'steps': steps} if draft else config, metadata=saved['metadata'])
                 st.rerun()

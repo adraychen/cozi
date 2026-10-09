@@ -5,6 +5,32 @@ import re
 import pandas as pd
 
 SUBTYPES = ['Date', 'Time', 'DateTime', 'Duration', 'Year', 'Month', 'Year-Month']
+
+
+def temporal_columns(groups):
+    return list(dict.fromkeys(groups.get('temporal', []) + sum(
+        (groups.get(kind, []) for kind in ('datetime', 'time', 'duration', 'year', 'month')), [])))
+
+
+def period_frequencies(subtype):
+    if subtype == 'Year':
+        return ['Yearly']
+    if subtype == 'Year-Month':
+        return ['Monthly', 'Quarterly', 'Yearly']
+    if subtype in ('Time', 'Duration', 'Month'):
+        return []
+    return ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly']
+
+
+def period_values(series, frequency, subtype=None):
+    if frequency not in period_frequencies(subtype):
+        raise ValueError('The selected Temporal subtype does not support this period frequency.')
+    codes = {'Daily': 'D', 'Weekly': 'W-SUN', 'Monthly': 'M', 'Quarterly': 'Q', 'Yearly': 'Y'}
+    if subtype == 'Year':
+        years = parse_temporal(series, 'Year')
+        periods = pd.Series(pd.PeriodIndex(years.fillna(2000).astype(str), freq='Y'), index=series.index)
+        return periods.where(years.notna())
+    return parse_temporal(series, 'DateTime').dt.to_period(codes[frequency])
 MONTH_NAMES = {name.lower(): i for i in range(1, 13)
                for name in (calendar.month_name[i], calendar.month_abbr[i])}
 MONTH_NAMES['sept'] = 9

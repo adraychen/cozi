@@ -6,6 +6,53 @@ from utils.variable_overview_display import value_details
 
 
 class TemporalComponentTests(unittest.TestCase):
+    def test_inspect_year_override_is_available_in_relationship_and_comparison(self):
+        from streamlit.testing.v1 import AppTest
+        from unittest.mock import patch
+        from tests.test_dataset_workspace import FIXTURE, WorkspaceTests
+        helper = WorkspaceTests()
+        with patch('utils.dataset_views.render_predictive'):
+            app = AppTest.from_string(FIXTURE).run(timeout=60)
+            helper.add_manual(app, 'Annual', 'year,value\n2020,10\n2021,15\n2022,30')
+            app.selectbox(key='vm_column').select('year').run(timeout=60)
+            next(s for s in app.selectbox if s.label == 'Variable Type').select('Categorical').run(timeout=60)
+            app.button(key='vm_apply').click().run(timeout=60)
+            next(s for s in app.selectbox if s.label == 'Variable Type').select('Date / Time').run(timeout=60)
+            next(s for s in app.selectbox if s.label == 'Variable Subtype').select('Year').run(timeout=60)
+            app.button(key='vm_apply').click().run(timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.session_state['variable_metadata']['year']['variable_subtype'], 'Year')
+            app.session_state['ws_workflow'] = 'Analyze'
+            app.session_state['view_analyze_tabs'] = 'Relationship'
+            app.run(timeout=60)
+            app.checkbox(key='mc_year').check().run(timeout=60)
+            app.checkbox(key='mc_value').check().run(timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.selectbox(key='rel_period').options, ['Yearly'])
+            trend = next(d.value for d in app.dataframe if 'Linear trend' in d.value)
+            self.assertEqual(trend['Year'].tolist(), [2020,2021,2022])
+            app.session_state['view_analyze_tabs'] = 'Comparison'
+            app.run(timeout=60)
+            app.checkbox(key='gs_cmp_variable_year').check().run(timeout=60)
+            app.checkbox(key='gs_cmp_variable_value').check().run(timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.selectbox(key='gs_cmp_period_frequency').options, ['Yearly'])
+            table = next(d.value for d in app.dataframe if 'Change %' in d.value)
+            self.assertEqual(table.Period.tolist(), ['2020','2021','2022'])
+            self.assertAlmostEqual(table['Change %'].iloc[-1], 100)
+            self.assertEqual(app.session_state['col_types']['year'], ['year'])
+            self.assertNotIn('year', app.session_state['col_types']['categorical'])
+            app.session_state['view_analyze_tabs'] = 'Group Statistics'
+            app.run(timeout=60)
+            app.checkbox(key='gs_temporal_column_year').check().run(timeout=60)
+            app.checkbox(key='gs_measure_column_value').check().run(timeout=60)
+            app.selectbox(key='gs_analysis').select('Running & Cumulative Statistics').run(timeout=60)
+            self.assertFalse(app.exception)
+            self.assertEqual(app.selectbox(key='gs_frequency').options, ['Yearly'])
+            table = next(d.value for d in app.dataframe if 'Cumulative sum' in d.value)
+            self.assertEqual(table.Period.tolist(), ['2020', '2021', '2022'])
+            self.assertEqual(table['Cumulative sum'].tolist(), [10, 25, 55])
+
     def test_year_and_month_parsing(self):
         years = parse_temporal(pd.Series([2024, 2025., '2026', None, '26', '2026-01-01', 2024.5, True]), 'Year')
         self.assertEqual(years.dropna().tolist(), [2024,2025,2026])

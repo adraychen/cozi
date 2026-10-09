@@ -515,7 +515,7 @@ def render_analyze(raw, _show_feedback):
             checkbox_groups = [
                 ("Numerical",   col_types["numerical"]),
                 ("Categorical", col_types["categorical"]),
-                ("Temporal", col_types["datetime"]),
+                ("Temporal", col_types.get("temporal", col_types["datetime"])),
             ]
             def set_relationship_group(columns, selected):
                 for column in columns:

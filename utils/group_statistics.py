@@ -1,6 +1,7 @@
 """Group statistics independent of Streamlit. Internal columns avoid user-name collisions."""
 import numpy as np
 import pandas as pd
+from utils.temporal import period_values
 
 STATISTICS = {"Sum": "sum", "Mean": "mean", "Median": "median", "Minimum": "min",
               "Maximum": "max", "Standard deviation": "std", "Non-missing count": "count", "Row count": "size"}
@@ -52,10 +53,9 @@ def contribution(result, keys, parent=False):
 
 
 def temporal(df, measure, dimensions, date_column, frequency, statistic,
-             analysis, window=3, lag=1, zero_fill=False):
+             analysis, window=3, lag=1, zero_fill=False, subtype=None):
     data, keys = prepare(df, measure, dimensions)
-    dates = pd.to_datetime(df[date_column], errors="coerce")
-    data["Period"] = dates.dt.to_period(FREQUENCIES[frequency])
+    data["Period"] = period_values(df[date_column], frequency, subtype)
     data = data.dropna(subset=["Period"])
     if data.empty:
         raise ValueError("The selected date column has no valid dates.")
@@ -84,7 +84,7 @@ def temporal(df, measure, dimensions, date_column, frequency, statistic,
             values["Rolling average"] = series.rolling(window, min_periods=window).mean()
         values.index.name = "Period"
         values = values.reset_index()
-        values["Period"] = values["Period"].dt.to_timestamp()
+        values["Period"] = values["Period"].astype(str) if subtype == 'Year' else values["Period"].dt.to_timestamp()
         parts.append(values)
     return pd.concat(parts, ignore_index=True), keys
 

@@ -60,7 +60,7 @@ def _workflow_changed(dataset_id, widget_key):
         st.session_state['ws_workflow'] = st.session_state[widget_key]
 
 
-def add_dataset(state, frame, name, source, parents=None, operation=None):
+def add_dataset(state, frame, name, source, parents=None, operation=None, metadata=None):
     frame = validate_table(frame.copy())
     frame.columns = [str(c) for c in frame.columns]
     validate_table(frame)
@@ -74,6 +74,9 @@ def add_dataset(state, frame, name, source, parents=None, operation=None):
     dataset_id = uuid.uuid4().hex
     registry[dataset_id] = {'name': name, 'frame': frame, 'source': source,
                             'parents': list(parents or []), 'operation': operation, 'state': {}}
+    if metadata is not None:
+        from copy import deepcopy
+        registry[dataset_id]['state'].update(variable_metadata=deepcopy(metadata), variable_dataset_id=dataset_id)
     state['ws_pending'] = dataset_id
     return dataset_id
 

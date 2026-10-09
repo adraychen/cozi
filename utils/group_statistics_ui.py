@@ -6,6 +6,7 @@ import streamlit as st
 from utils import presentation
 from utils.variable_selection import variable_checkboxes
 from utils.group_statistics import STATISTICS, FREQUENCIES, summary, compare, contribution, temporal
+from utils.temporal import temporal_columns, period_frequencies, period_values
 
 ANALYSES = ["Group Summary", "Segment Comparison", "Period-over-Period Comparison",
             "Running & Cumulative Statistics", "Rolling Averages", "Contribution to Total"]
@@ -16,6 +17,7 @@ GROUP_ANALYSES = ["Group Summary", "Running & Cumulative Statistics", "Rolling A
 
 @reportable
 def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_heading=True):
+    temporal_candidates = temporal_columns(col_types)
     if show_heading:
         presentation.markdown("#### Group Statistics")
     if key_prefix == 'gs':
@@ -23,7 +25,7 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
         measures = variable_checkboxes('Numerical', col_types['numerical'], 'gs_measure', single=True, hide_empty=True)
         measure = measures[0] if measures else None
         dimensions = variable_checkboxes('Categorical', col_types['categorical'], 'gs_dimensions', hide_empty=True)
-        dates = variable_checkboxes('Temporal', col_types['datetime'], 'gs_temporal', single=True, hide_empty=True)
+        dates = variable_checkboxes('Temporal', temporal_candidates, 'gs_temporal', single=True, hide_empty=True)
     else:
         measure = st.selectbox("Numerical column", [None] + col_types["numerical"],
                                format_func=lambda value: "None (categorical data / row counts)" if value is None else value,
@@ -40,24 +42,29 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
     presentation.caption("Missing categories are included. Row count counts all rows, including missing measures. Non-missing count counts valid numerical values. Standard deviation uses the sample definition.")
     try:
         if time_based:
-            if not col_types["datetime"]:
+            if not temporal_candidates:
                 presentation.info("Select a Temporal override in Column Overview to enable time-based analysis.")
                 return
             if key_prefix == 'gs':
                 if not dates:
-                    presentation.info('Select one Date or DateTime variable above for time-based analysis.')
+                    presentation.info('Select one Date or DateTime variable, or a Year-Month or Year variable, above for time-based analysis.')
                     return
                 date = dates[0]
             else:
-                date = st.selectbox("Date column", col_types["datetime"], key=key_prefix + "_date")
-            frequencies = list(FREQUENCIES)
-            if st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype') == 'Year-Month':
-                frequencies = ['Monthly', 'Quarterly', 'Yearly']
+                date = st.selectbox("Date column", temporal_candidates, key=key_prefix + "_date")
+            subtype = st.session_state.get('variable_metadata', {}).get(date, {}).get('variable_subtype')
+            frequencies = period_frequencies(subtype)
+            if not frequencies:
+                presentation.info('Period analysis requires Date, DateTime, Year-Month, or Year values.')
+                return
+            if subtype == 'Year':
+                presentation.caption('Year values support yearly comparisons only.')
+            if subtype == 'Year-Month':
                 presentation.caption('Year-Month values represent whole months; daily and weekly comparisons are unavailable.')
             frequency_key = key_prefix + '_frequency'
             if st.session_state.get(frequency_key) not in frequencies:
                 st.session_state.pop(frequency_key, None)
-            frequency = st.selectbox("Period frequency", frequencies, index=frequencies.index('Monthly'), key=frequency_key)
+            frequency = st.selectbox("Period frequency", frequencies, index=frequencies.index('Monthly') if 'Monthly' in frequencies else 0, key=frequency_key)
             zero = st.checkbox("Treat missing period values as zero", key=key_prefix + "_zero",
                                help="Off by default. Enable only when missing values mean no activity.")
             lag, window = 1, 3
@@ -70,14 +77,15 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
             if analysis == ANALYSES[4]:
                 window = int(st.number_input("Window size (calendar periods)", min_value=2, max_value=365, value=3, key=key_prefix + "_window"))
                 presentation.caption("A rolling average requires a complete window of non-missing period values.")
-            result, keys = temporal(df, measure, dimensions, date, frequency, statistic, analysis, window, lag, zero)
-            invalid = pd.to_datetime(df[date], errors="coerce").isna().sum()
+            result, keys = temporal(df, measure, dimensions, date, frequency, statistic, analysis, window, lag, zero, subtype)
+            observed_periods = period_values(df[date], frequency, subtype)
+            invalid = observed_periods.isna().sum()
             if invalid:
                 presentation.caption(f"Excluded {invalid:,} rows with missing or invalid dates.")
             presentation.caption("Weekly periods run Monday–Sunday. Running and rolling statistics operate on the selected period statistic; expanding mean weights periods equally. Missing periods remain gaps unless zero filling is selected.")
-            latest = pd.to_datetime(df[date], errors="coerce").max()
+            latest = observed_periods.max()
             current = pd.Timestamp.now().to_period(FREQUENCIES[frequency])
-            if latest.to_period(FREQUENCIES[frequency]) >= current:
+            if latest >= current:
                 presentation.warning("The data includes the current or a future period. The current period may be incomplete.")
             presentation.caption("First and last periods may also be partial depending on dataset coverage.")
             plotted = ["Value", "Previous"] if analysis == ANALYSES[2] else (["Value", "Rolling average"] if analysis == ANALYSES[4] else [st.selectbox("Running statistic", ["Cumulative sum", "Expanding mean", "Observed periods"], key=key_prefix + "_running")])
