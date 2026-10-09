@@ -335,7 +335,7 @@ st.checkbox('x', key='pa_pred_x')
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             pd.DataFrame({'x': [1]}).to_excel(writer, sheet_name='First', index=False)
             pd.DataFrame({'x': [2]}).to_excel(writer, sheet_name='Second', index=False)
-        app.file_uploader[0].set_value([
+        next(u for u in app.file_uploader if u.key.startswith('ws_upload_')).set_value([
             ('data.csv', b'x\n3', 'text/csv'),
             ('data.csv', b'x\n4', 'text/csv'),
             ('book.xlsx', buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
@@ -350,14 +350,14 @@ st.checkbox('x', key='pa_pred_x')
         self.assertEqual([d['frame'].x.iloc[0] for d in entries], [3, 4, 1, 2])
         app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
         app.run(timeout=60)
-        self.assertFalse(app.file_uploader[0].value)
+        self.assertFalse(next(u for u in app.file_uploader if u.key.startswith('ws_upload_')).value)
 
     def test_uploaded_text_and_dates_render_inspect_without_tab_roundtrip(self):
         app = self.app()
         frame = pd.DataFrame({'City': [' New York ', 'Toronto'] * 350,
                               'Date': ['2024-01-01', '2024-02-01'] * 350,
                               'Amount': ['$3000', '$-'] * 350})
-        app.file_uploader[0].set_value([('data.csv', frame.to_csv(index=False).encode(), 'text/csv')]).run(timeout=60)
+        next(u for u in app.file_uploader if u.key.startswith('ws_upload_')).set_value([('data.csv', frame.to_csv(index=False).encode(), 'text/csv')]).run(timeout=60)
         app.button(key='ws_import').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertTrue({'Dataset Preview', 'Column Overview', 'Row Overview', 'Data Quality Summary'}.issubset({e.label for e in app.expander}))
@@ -376,7 +376,7 @@ st.checkbox('x', key='pa_pred_x')
         self.add_manual(app, 'Existing', 'x\n1\n2')
         app.session_state['ws_dataset_tabs'] = '＋ Add datasets'
         app.run(timeout=60)
-        app.file_uploader[0].set_value([('valid.csv', b'x\n4', 'text/csv'), ('empty.csv', b'', 'text/csv')]).run(timeout=60)
+        next(u for u in app.file_uploader if u.key.startswith('ws_upload_')).set_value([('valid.csv', b'x\n4', 'text/csv'), ('empty.csv', b'', 'text/csv')]).run(timeout=60)
         app.button(key='ws_import').click().run(timeout=60)
         self.assertEqual(len(app.session_state['ws_datasets']), 1)
         self.assertTrue(app.error)

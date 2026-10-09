@@ -1,5 +1,4 @@
 import streamlit as st
-from utils.database import record_visit, get_stats, submit_feedback
 from utils.branding import render_brand
 from utils.enterprise_ui import (enterprise_requested, preserve_page_state,
                                  render_enterprise_page, render_footer)
@@ -54,38 +53,8 @@ _SAMPLE_DATASETS = [
 ]
 
 
-# ── Feedback dialog (must be at module level for @st.dialog) ──────────────────
-@st.dialog("Thank you for your feedback")
-def _feedback_dialog(section: str, feedback_type: str) -> None:
-    comment = st.text_area(
-        "Add a comment (optional)",
-        placeholder="Tell us what you think…",
-        key="dlg_comment",
-    )
-    c1, c2 = st.columns(2)
-    if c1.button("Submit", type="primary", key="dlg_submit"):
-        try:
-            submit_feedback(section, feedback_type, comment)
-        except Exception:
-            pass
-        st.rerun()
-    if c2.button("Skip", key="dlg_skip"):
-        try:
-            submit_feedback(section, feedback_type, "")
-        except Exception:
-            pass
-        st.rerun()
-
-
 def _show_feedback(section: str, key: str) -> None:
-    """Render 👍 / 👎 buttons that open the feedback dialog."""
-    st.divider()
-    st.markdown("**Was this section helpful?**")
-    fb1, fb2, _ = st.columns([1, 1, 8])
-    if fb1.button("👍", key=f"like_{key}", help="Like this section"):
-        _feedback_dialog(section, "like")
-    if fb2.button("👎", key=f"dislike_{key}", help="Dislike this section"):
-        _feedback_dialog(section, "dislike")
+    pass
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Cozy — Community Edition", page_icon="📊", layout="wide")
@@ -94,18 +63,6 @@ if enterprise_requested():
     st.set_page_config(page_title="Cozy — Enterprise Edition")
     render_enterprise_page()
     st.stop()
-
-# ── App stats banner (above title) ───────────────────────────────────────────
-_b1, _b2, _b3 = st.columns(3)
-try:
-    _app_stats = get_stats()
-    _b1.metric("👁 Total Visits", f"{_app_stats['visits']:,}")
-    _b2.metric("👍 Likes",        f"{_app_stats['likes']:,}")
-    _b3.metric("👎 Dislikes",     f"{_app_stats['dislikes']:,}")
-except Exception:
-    _b1.metric("👁 Total Visits", "—")
-    _b2.metric("👍 Likes",        "—")
-    _b3.metric("👎 Dislikes",     "—")
 
 render_brand()
 st.caption(
@@ -136,13 +93,9 @@ with st.container(horizontal=True, vertical_alignment="center", gap="xxsmall"):
     if st.button("ⓘ", key="data_privacy_info", type="tertiary", help="Read Data and Privacy information"):
         _show_data_privacy()
 
-# ── Visit tracking ────────────────────────────────────────────────────────────
-if not st.session_state.get("visit_recorded"):
-    try:
-        record_visit()
-        st.session_state["visit_recorded"] = True
-    except Exception:
-        pass
+from utils.project_file import render_file_menu
+
+render_file_menu()
 st.divider()
 
 from utils.dataset_workspace import render_workspace

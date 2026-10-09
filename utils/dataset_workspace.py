@@ -226,14 +226,18 @@ def render_workspace(samples, show_feedback):
         activate(st.session_state, dataset_id)
         try:
             with tab:
-                st.subheader(entry['name'])
+                from utils.project_file import remove_dataset
+                with st.container(horizontal=True, vertical_alignment='center', gap='small'):
+                    st.subheader(entry['name'], width='content')
+                    st.button('×', key='ws_remove_' + dataset_id, help='Remove ' + entry['name'],
+                              on_click=remove_dataset, args=(st.session_state, dataset_id))
                 st.caption(f"{len(entry['frame']):,} rows · {len(entry['frame'].columns):,} columns · {entry['source']}")
                 context = st.session_state.get('temporal_return_context', {})
                 if context.get('target_id') == dataset_id:
                     from utils.temporal_navigation import return_to_analysis
                     st.button('Return to Analysis', key='temporal_resume_button', on_click=return_to_analysis, args=(st.session_state,))
                 if entry['parents']:
-                    st.caption('Sources: ' + ' + '.join(registry[p]['name'] for p in entry['parents']))
+                    st.caption('Sources: ' + ' + '.join(registry[p]['name'] if p in registry else 'Removed source dataset' for p in entry['parents']))
                     with st.expander('Transformation settings'):
                         st.json(entry['operation'])
                 # A new dataset needs a new browser widget identity. Reusing the

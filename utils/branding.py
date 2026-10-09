@@ -6,7 +6,7 @@ def render_brand(*, enterprise=False, show_subtitle=True):
     color = '#D4AF37' if enterprise else '#A65F46'
     badge_style = ('background: #000000; color: #FFFFFF; border: 1px solid #000000;'
                    if enterprise else
-                   'background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc;')
+                   'background: #15803d; color: #FFFFFF; border: 1px solid #15803d;')
     edition = 'Enterprise Edition' if enterprise else 'Community Edition'
     subtitle = 'Analytics designed around your organization.' if enterprise else 'Automated Data Analytics'
     subtitle_html = f'<p class="cozy-subtitle">{subtitle}</p>' if show_subtitle else ''
