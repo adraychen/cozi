@@ -24,7 +24,7 @@ def comparison_charts(result, metric, frequency):
                                    hovertemplate='%{x}<br>Value: %{y:,.2f}<br>Inserted zero: %{customdata[2]}<extra>%{fullData.name}</extra>'))
         percentages = rows['Change %'].astype(object).replace({np.nan: None}).tolist()
         changes.add_trace(go.Bar(x=rows['Period'].tolist(), y=percentages, name=segment,
-                                marker_color=color, customdata=rows[['Previous period', 'Change', 'Comparison']].fillna('N/A').to_numpy(),
+                                marker_color=color, customdata=rows[['Previous period', 'Change', 'Comparison']].astype(object).fillna('N/A').to_numpy(),
                                 hovertemplate='%{x}<br>Change: %{y:+.2f}%<br>Baseline: %{customdata[0]}<br>Absolute change: %{customdata[1]}<br>%{customdata[2]}<extra>%{fullData.name}</extra>'))
         unavailable = rows[rows['Change %'].isna()]
         if len(unavailable):

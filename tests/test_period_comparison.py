@@ -180,6 +180,19 @@ class PeriodComparisonTests(unittest.TestCase):
         _, changes = comparison_charts(result, 'Metric', 'Monthly')
         self.assertEqual(list(changes.data[0].y), [None, -50, 50])
 
+    def test_charts_nullable_numeric_missing_changes(self):
+        result, _ = self.run_result(['Jan', 'Feb', 'Mar'], pd.Series([0, 10, 20], dtype='Int64'))
+        for column in ['Value', 'Previous', 'Change', 'Change %']:
+            result[column] = result[column].astype('Float64')
+        original = result.copy(deep=True)
+        actual, changes = comparison_charts(result, 'Metric', 'Monthly')
+        self.assertEqual(list(actual.data[0].y), [0, 10, 20])
+        self.assertEqual(list(changes.data[0].y), [None, None, 100])
+        self.assertEqual(changes.data[0].customdata[0][1], 'N/A')
+        self.assertEqual(changes.data[0].customdata[2][1], 10)
+        self.assertEqual(list(changes.data[1].text), ['N/A', 'N/A'])
+        assert_frame_equal(result, original)
+
 
 UI_FIXTURE = '''
 import pandas as pd
