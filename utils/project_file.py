@@ -126,7 +126,7 @@ def replace_project(state, payload=None):
         if dataset_state_key(key) or key.startswith(_PREFIXES + ('ws_', 'report_', 'manual_', 'cozy_report', 'project_')) or key in ('df', 'file_id'):
             del state[key]
     state['ws_datasets'] = payload['datasets'] if payload else {}
-    state['project_name'] = payload['name'] if payload else 'Untitled project'
+    state['project_name'] = payload['name'] if payload else 'Untitled Project'
     if payload:
         if payload['report'] is not None: state['cozy_report'] = payload['report']
         if payload['latest'] is not None: state['report_latest'] = payload['latest']
@@ -151,44 +151,103 @@ def remove_dataset(state, identity):
             state['ws_dataset_tabs'] = ADD_TAB
 
 
-def render_file_menu():
+def cancel_project_action():
     import streamlit as st
-    from utils.dataset_workspace import initialize
-    initialize(st.session_state)
-    st.session_state.setdefault('project_name', 'Untitled project')
-    if 'project_saved_hash' not in st.session_state:
-        st.session_state['project_saved_hash'] = fingerprint(st.session_state)
-    with st.popover('File'):
+    st.session_state.pop('project_dialog', None)
+    st.session_state.pop('project_pending', None)
+
+
+def request_project_action(action):
+    import streamlit as st
+    state = st.session_state
+    if action in ('new', 'close'):
+        queue_project_replacement(action, None)
+    else:
+        state['project_dialog'] = action
+
+
+def queue_project_replacement(action, payload):
+    import streamlit as st
+    state = st.session_state
+    if fingerprint(state) != state['project_saved_hash']:
+        state['project_pending'] = (action, payload)
+        state['project_dialog'] = 'confirm'
+    else:
+        replace_project(state, payload)
+
+
+def finish_project_replacement():
+    import streamlit as st
+    pending = st.session_state.get('project_pending')
+    replace_project(st.session_state, pending[1] if pending else None)
+
+
+def saved_project_download(snapshot_hash):
+    import streamlit as st
+    state = st.session_state
+    state['project_saved_hash'] = snapshot_hash
+    if state.get('project_dialog') == 'save_before':
+        finish_project_replacement()
+    else:
+        cancel_project_action()
+    state['project_saved_message'] = True
+
+
+import streamlit as st
+
+
+@st.dialog('Project', on_dismiss=cancel_project_action)
+def project_action_dialog():
+    state = st.session_state
+    action = state.get('project_dialog')
+    if action == 'open':
+        st.write('Open Project')
+        uploaded = st.file_uploader('Choose a saved project', type=['cozy'], key='project_upload')
+        if st.button('Open Project', key='project_open_confirm', disabled=uploaded is None):
+            try:
+                payload = loads(uploaded.getvalue())
+                queue_project_replacement('open', payload)
+                st.rerun()
+            except Exception as exc:
+                st.error(f'Cannot open project: {exc}')
+        st.button('Cancel', key='project_cancel', on_click=cancel_project_action)
+    elif action == 'confirm':
+        st.warning('The current project has unsaved changes. Save it before closing?')
+        save, discard, cancel = st.columns(3)
+        save.button('Save', key='project_save_before', on_click=lambda: state.update(project_dialog='save_before'))
+        discard.button('Discard', key='project_confirm', on_click=finish_project_replacement)
+        cancel.button('Cancel', key='project_cancel', on_click=cancel_project_action)
+    elif action in ('save', 'save_before'):
         st.text_input('Project name', key='project_name')
-        try:
-            current = fingerprint(st.session_state)
-            dirty = current != st.session_state['project_saved_hash']
-            st.caption('Unsaved changes' if dirty else 'Saved / unchanged')
-            if st.button('Create project', key='project_create'):
-                st.session_state['project_pending'] = ('create', None)
-            file = st.file_uploader('Open project (.cozy)', type=['cozy'], key='project_upload')
-            if st.button('Open project', disabled=file is None, key='project_open'):
-                payload = loads(file.getvalue())
-                st.session_state['project_pending'] = ('open', payload)
-            pending = st.session_state.get('project_pending')
-            if pending:
-                if dirty:
-                    st.warning('The current project has unsaved changes. Save it before replacing it, or confirm that you want to discard them.')
-                st.button('Discard changes and continue' if dirty else 'Continue', key='project_confirm',
-                          on_click=replace_project, args=(st.session_state, pending[1]))
-                if st.button('Cancel', key='project_cancel'):
-                    st.session_state.pop('project_pending', None)
-                    st.rerun()
-            st.button('Save project', key='project_save', on_click=prepare_download, args=(st.session_state,))
-            if st.session_state.get('project_save_error'):
-                st.error(st.session_state['project_save_error'])
-            prepared = st.session_state.get('project_download')
-            if prepared and prepared['hash'] == current:
-                st.download_button('Download .cozy project', prepared['content'], prepared['name'], 'application/octet-stream',
-                                   key='project_download_button',
-                                   on_click=lambda: st.session_state.update(project_saved_hash=prepared['hash']))
-        except Exception as exc:
-            st.error(f'Cannot save or open project: {exc}')
+        prepare_download(state)
+        if state.get('project_save_error'):
+            st.error(state['project_save_error'])
+        else:
+            prepared = state['project_download']
+            st.caption('The browser saves this .cozy file. Save status confirms the download was requested.')
+            st.download_button('Save project and continue' if action == 'save_before' else 'Save project',
+                               prepared['content'], prepared['name'], 'application/octet-stream',
+                               key='project_download_button', on_click=saved_project_download, args=(prepared['hash'],))
+        st.button('Cancel', key='project_cancel', on_click=cancel_project_action)
+
+
+def render_file_menu():
+    from utils.dataset_workspace import initialize
+    state = st.session_state
+    initialize(state)
+    # Retain the editable name after the save dialog's widget is removed.
+    state['project_name'] = state.get('project_name', 'Untitled Project')
+    if 'project_saved_hash' not in state:
+        state['project_saved_hash'] = fingerprint(state)
+    with st.popover('☰ ' + state['project_name']):
+        st.button('New project', key='project_create', on_click=request_project_action, args=('new',))
+        st.button('Open Project', key='project_open', on_click=request_project_action, args=('open',))
+        st.button('Save project', key='project_save', on_click=request_project_action, args=('save',))
+        st.button('Close project', key='project_close', on_click=request_project_action, args=('close',))
+    if state.pop('project_saved_message', False):
+        st.success('Project is saved.')
+    if state.get('project_dialog'):
+        project_action_dialog()
 
 
 def prepare_download(state):

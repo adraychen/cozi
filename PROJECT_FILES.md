@@ -1,12 +1,12 @@
 # Cozy project files
 
-File appears between Data and Privacy and the dataset tabs. One project is active at a time. Create and Open replace it; unsaved changes require explicit discard confirmation. Cancel preserves the current project. Opening validates the archive before offering replacement.
+The ☰ project-name menu appears immediately above the divider above the dataset tabs. It starts as ☰ Untitled Project and offers New project, Open Project, Save project, and Close project. One project is active at a time. New, Open, and Close offer Save, Discard, and Cancel when there are unsaved changes. Cancel preserves the current project. Opening uses a dialog to choose a `.cozy` file and validates it before replacement. New and Close return to the initial blank Untitled Project.
 
-Save project prepares a fresh snapshot. Download .cozy project saves that snapshot through the browser. Cozy marks the snapshot as saved when the download is requested; the browser controls the download location and completion. The app does not automatically save projects to the server. A new session starts with an untitled blank project.
+Save project opens a dialog with the project name and a fresh snapshot download. After requesting the download, Cozy shows “Project is saved.” This confirms the download request; the browser controls its location and completion. Save before closing offers Save project and continue, which requests the download and then performs the pending New, Open, or Close action. The app does not automatically save projects to the server.
 
 The version 1 `.cozy` format is a ZIP archive with tagged JSON metadata, Parquet tables, and binary report images. It includes all source/derived datasets, dataset names and lineage, Inspect classifications, Transform previews and accumulated drafts, dataset controls, report metadata, authored blocks, captured tables/charts, and the latest reportable output. Fitted model caches are recalculated rather than serialized. Archives never contain Python pickle or executable objects. Open rejects unknown versions, invalid registries and oversized archives (512 MB uncompressed limit).
 
-The × beside the active dataset's heading removes that dataset. Derived datasets keep their independent data; lineage displays a removed-source label. Reports retain captured evidence when a source dataset is removed. Project saving includes these snapshots.
+The × beside each dataset name in the dataset navigation row opens a confirmation naming that dataset. Remove deletes it; Cancel leaves it unchanged. Derived datasets keep their independent data; lineage displays a removed-source label. Reports retain captured evidence when a source dataset is removed. Project saving includes these snapshots.
 
 Saved projects contain the datasets and report content. Store and share the `.cozy` file as you would the original data.
 

@@ -61,12 +61,13 @@ class ProjectFileTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertFalse(app.metric)
         self.assertFalse(any(b.label in ('👍', '👎') for b in app.button))
-        app.text_input(key='project_name').set_value('Changed').run(timeout=60)
+        app.session_state['project_name'] = 'Changed'
+        app.run(timeout=60)
         app.button(key='project_create').click().run(timeout=60)
         self.assertTrue(any('unsaved changes' in w.value for w in app.warning))
         app.button(key='project_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state['project_name'], 'Untitled project')
+        self.assertEqual(app.session_state['project_name'], 'Untitled Project')
         source = {'project_name': 'Reopened'}
         identity = add_dataset(source, pd.DataFrame({'month': pd.Series([1, 2], dtype='Int64')}), 'Monthly data', 'Manual')
         activate(source, identity)
@@ -74,9 +75,9 @@ class ProjectFileTests(unittest.TestCase):
         source['variable_dataset_id'] = identity
         source['cozy_report'] = {'metadata': {}, 'blocks': []}
         content = dumps(project_payload(source))
-        app.file_uploader(key='project_upload').set_value(('saved.cozy', content, 'application/octet-stream')).run(timeout=60)
         app.button(key='project_open').click().run(timeout=60)
-        app.button(key='project_confirm').click().run(timeout=60)
+        app.file_uploader(key='project_upload').set_value(('saved.cozy', content, 'application/octet-stream')).run(timeout=60)
+        app.button(key='project_open_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['project_name'], 'Reopened')
         assert_frame_equal(app.session_state['df'], source['df'])
@@ -84,7 +85,44 @@ class ProjectFileTests(unittest.TestCase):
         app.button(key='project_save').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(loads(app.session_state['project_download']['content'])['name'], 'Reopened')
+        app.button(key='project_cancel').click().run(timeout=60)
         app.button(key='ws_remove_' + identity).click().run(timeout=60)
+        self.assertIn(identity, app.session_state['ws_datasets'])
+        app.button(key='ws_remove_cancel').click().run(timeout=60)
+        self.assertIn(identity, app.session_state['ws_datasets'])
+        app.button(key='ws_remove_' + identity).click().run(timeout=60)
+        app.button(key='ws_remove_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertFalse(app.session_state['ws_datasets'])
+        app.button(key='project_close').click().run(timeout=60)
+        self.assertTrue(any('unsaved changes' in w.value for w in app.warning))
+        app.button(key='project_cancel').click().run(timeout=60)
+        self.assertEqual(app.session_state['project_name'], 'Reopened')
+        app.button(key='project_close').click().run(timeout=60)
+        app.button(key='project_save_before').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertIn('cozy_report', app.session_state)
+        app.button(key='project_cancel').click().run(timeout=60)
+        app.button(key='project_close').click().run(timeout=60)
+        app.button(key='project_confirm').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['project_name'], 'Untitled Project')
+        self.assertNotIn('cozy_report', app.session_state)
+
+    def test_save_before_close_preserves_download_then_resets_project(self):
+        from unittest.mock import patch
+        from utils.project_file import saved_project_download
+        state = {'project_name': 'Work'}
+        identity = add_dataset(state, pd.DataFrame({'value': [1, 2]}), 'Data', 'Manual')
+        activate(state, identity)
+        state['project_pending'] = ('close', None)
+        state['project_dialog'] = 'save_before'
+        prepare_download(state)
+        download = state['project_download']
+        with patch('streamlit.session_state', state):
+            saved_project_download(download['hash'])
+        self.assertEqual(state['project_name'], 'Untitled Project')
+        self.assertTrue(state['project_saved_message'])
+        self.assertFalse(state['ws_datasets'])
+        self.assertIn(identity, loads(download['content'])['datasets'])
 

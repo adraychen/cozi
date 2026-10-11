@@ -60,6 +60,31 @@ def _workflow_changed(dataset_id, widget_key):
         st.session_state['ws_workflow'] = st.session_state[widget_key]
 
 
+def _select_dataset_tab(label):
+    st.session_state['ws_dataset_tabs'] = label
+
+
+def _request_remove_dataset(dataset_id):
+    st.session_state['ws_remove_pending'] = dataset_id
+
+
+@st.dialog('Remove dataset')
+def _confirm_remove_dataset(dataset_id):
+    registry = st.session_state['ws_datasets']
+    if dataset_id not in registry:
+        st.rerun()
+    st.write(f"Remove {registry[dataset_id]['name']}?")
+    remove, cancel = st.columns(2)
+    if remove.button('Remove', type='primary', key='ws_remove_confirm'):
+        from utils.project_file import remove_dataset
+        st.session_state.pop('ws_remove_pending', None)
+        remove_dataset(st.session_state, dataset_id)
+        st.rerun()
+    if cancel.button('Cancel', key='ws_remove_cancel'):
+        st.session_state.pop('ws_remove_pending', None)
+        st.rerun()
+
+
 def add_dataset(state, frame, name, source, parents=None, operation=None, metadata=None):
     frame = validate_table(frame.copy())
     frame.columns = [str(c) for c in frame.columns]
@@ -214,23 +239,38 @@ def render_workspace(samples, show_feedback):
     labels = [d['name'] for d in registry.values()] + [ADD_TAB]
     if st.session_state.get('ws_dataset_tabs') not in labels:
         st.session_state['ws_dataset_tabs'] = labels[0]
-    tabs = st.tabs(labels, key='ws_dataset_tabs', on_change='rerun')
-    if tabs[-1].open:
+    # Native Streamlit tabs cannot contain a second, independent close control.
+    # Keep the dataset navigation in one tab-style row with adjacent buttons.
+    st.html('''<style>
+        .st-key-ws_dataset_navigation {border-bottom: 2px solid #8883; padding-bottom: 0;}
+        .st-key-ws_dataset_navigation button {border: 0; border-radius: 0; background: transparent;
+            padding: .4rem .2rem; box-shadow: none;}
+        .st-key-ws_dataset_navigation [class*="st-key-ws_dataset_selected_"] button {
+            color: #4c72b0; border-bottom: 3px solid #4c72b0;}
+    </style>''')
+    with st.container(horizontal=True, gap='small', key='ws_dataset_navigation'):
+        for dataset_id, entry in registry.items():
+            with st.container(horizontal=True, gap='xxsmall', width='content'):
+                selected = entry['name'] == st.session_state['ws_dataset_tabs']
+                st.button(entry['name'], key=('ws_dataset_selected_' if selected else 'ws_dataset_select_') + dataset_id,
+                          type='tertiary', on_click=_select_dataset_tab, args=(entry['name'],))
+                st.button('×', key='ws_remove_' + dataset_id, type='tertiary', help='Remove ' + entry['name'],
+                          on_click=_request_remove_dataset, args=(dataset_id,))
+        st.button(ADD_TAB, key='ws_add_dataset_tab', type='tertiary', on_click=_select_dataset_tab, args=(ADD_TAB,))
+    removal = st.session_state.get('ws_remove_pending')
+    if removal in registry:
+        _confirm_remove_dataset(removal)
+    if st.session_state['ws_dataset_tabs'] == ADD_TAB:
         save_active(st.session_state)
-        with tabs[-1]:
-            render_add_datasets(samples)
+        render_add_datasets(samples)
         return
-    for (dataset_id, entry), tab in zip(registry.items(), tabs):
-        if not tab.open:
+    for dataset_id, entry in registry.items():
+        if entry['name'] != st.session_state['ws_dataset_tabs']:
             continue
         activate(st.session_state, dataset_id)
         try:
-            with tab:
-                from utils.project_file import remove_dataset
-                with st.container(horizontal=True, vertical_alignment='center', gap='small'):
-                    st.subheader(entry['name'], width='content')
-                    st.button('×', key='ws_remove_' + dataset_id, help='Remove ' + entry['name'],
-                              on_click=remove_dataset, args=(st.session_state, dataset_id))
+            with st.container():
+                st.subheader(entry['name'])
                 st.caption(f"{len(entry['frame']):,} rows · {len(entry['frame'].columns):,} columns · {entry['source']}")
                 context = st.session_state.get('temporal_return_context', {})
                 if context.get('target_id') == dataset_id:

@@ -134,7 +134,7 @@ class WorkspaceTests(unittest.TestCase):
             if selected == 'Transform':
                 self.assertTrue(app.selectbox(key='tf_menu_combine_datasets'))
             elif selected == 'Help':
-                self.assertEqual([t.label for t in app.tabs][1:6], ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'])
+                self.assertEqual([t.label for t in app.tabs][:5], ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'])
                 self.assertEqual(len(app.expander), 0)
                 from utils.help_ui import FEATURE_HELP
                 self.assertEqual([m.value.strip('*') for m in app.markdown if m.value.startswith('**')],
@@ -284,7 +284,7 @@ st.checkbox('x', key='pa_pred_x')
     def test_manual_add_switch_inspect_and_transform_creation(self):
         app = self.app()
         self.assertFalse(app.exception)
-        self.assertTrue(any(t.label == '＋ Add datasets' for t in app.tabs))
+        self.assertEqual(app.button(key='ws_add_dataset_tab').label, '＋ Add datasets')
         self.add_manual(app, 'Sales', 'id,amount\n1,20\n2,30')
         self.assertEqual(len(app.session_state['ws_datasets']), 1)
         self.assertEqual([e.label for e in app.expander][:4], ['Dataset Preview', 'Column Overview', 'Unique value details', 'Edit variable classification'])
