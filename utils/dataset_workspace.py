@@ -136,8 +136,8 @@ def render_add_datasets(samples):
         }
         [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"],
         .st-key-manual_entry_panel {
-            background:var(--secondary-background-color, #f0f2f6); border-radius:.5rem; padding:1rem;
-            min-height:6rem; align-items:center;
+            background:var(--secondary-background-color, #f0f2f6); border-radius:.5rem; padding:.5rem .75rem;
+            min-height:56px; align-items:center;
         }
         [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"] button,
         .st-key-manual_open button {
