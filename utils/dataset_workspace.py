@@ -141,8 +141,8 @@ def render_add_datasets(samples):
         }
         [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"] button,
         .st-key-manual_open button {
-            width:148px; height:64px; min-height:64px; padding:.75rem 1rem;
-            background:var(--background-color, #fff); border:1px solid #8884; border-radius:.75rem;
+            width:120px; height:40px; min-height:40px; padding:.25rem .75rem;
+            background:var(--background-color, #fff); border:1px solid #8884; border-radius:.5rem;
             font-size:1rem;
         }
         .st-key-manual_entry_panel p {color:var(--text-color); opacity:.65; margin:0;}
