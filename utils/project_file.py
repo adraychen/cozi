@@ -200,18 +200,7 @@ import streamlit as st
 def project_action_dialog():
     state = st.session_state
     action = state.get('project_dialog')
-    if action == 'open':
-        st.write('Open Project')
-        uploaded = st.file_uploader('Choose a saved project', type=['cozy'], key='project_upload')
-        if st.button('Open Project', key='project_open_confirm', disabled=uploaded is None):
-            try:
-                payload = loads(uploaded.getvalue())
-                queue_project_replacement('open', payload)
-                st.rerun()
-            except Exception as exc:
-                st.error(f'Cannot open project: {exc}')
-        st.button('Cancel', key='project_cancel', on_click=cancel_project_action)
-    elif action == 'confirm':
+    if action == 'confirm':
         st.warning('The current project has unsaved changes. Save it before closing?')
         save, discard, cancel = st.columns(3)
         save.button('Save', key='project_save_before', on_click=lambda: state.update(project_dialog='save_before'))
@@ -233,21 +222,45 @@ def project_action_dialog():
 
 def render_file_menu():
     from utils.dataset_workspace import initialize
+    from utils.project_menu import render_menu
     state = st.session_state
     initialize(state)
     # Retain the editable name after the save dialog's widget is removed.
     state['project_name'] = state.get('project_name', 'Untitled Project')
     if 'project_saved_hash' not in state:
         state['project_saved_hash'] = fingerprint(state)
-    with st.popover('☰ ' + state['project_name']):
-        st.button('New project', key='project_create', on_click=request_project_action, args=('new',))
-        st.button('Open Project', key='project_open', on_click=request_project_action, args=('open',))
-        st.button('Save project', key='project_save', on_click=request_project_action, args=('save',))
-        st.button('Close project', key='project_close', on_click=request_project_action, args=('close',))
+    event = render_menu(state['project_name'], MAX_BYTES)
+    if event and event != state.get('project_last_menu_event'):
+        try:
+            handle_menu_event(event)
+            state['project_last_menu_event'] = event
+            st.rerun()
+        except (ValueError, TypeError) as exc:
+            state['project_last_menu_event'] = event
+            st.error(f'Cannot open project: {exc}')
     if state.pop('project_saved_message', False):
         st.success('Project is saved.')
     if state.get('project_dialog'):
         project_action_dialog()
+
+
+def handle_menu_event(event):
+    import base64
+    action = event.get('action')
+    if action == 'rename':
+        name = event.get('name', '').strip()
+        if not name or len(name) > 200:
+            raise ValueError('Use a project name between 1 and 200 characters.')
+        st.session_state['project_name'] = name
+    elif action == 'open':
+        content = event.get('content', '')
+        if len(content) > MAX_BYTES * 4 // 3 + 4:
+            raise ValueError('Project file exceeds the 512 MB limit.')
+        queue_project_replacement('open', loads(base64.b64decode(content, validate=True)))
+    elif action in ('new', 'close', 'save'):
+        request_project_action(action)
+    else:
+        raise ValueError('Unknown project action.')
 
 
 def prepare_download(state):

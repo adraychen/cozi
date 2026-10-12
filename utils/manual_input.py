@@ -75,8 +75,10 @@ def parse_grid(grid, header_mode='Auto detect'):
 
 
 def render_manual_input(on_add=None):
-    if st.button('Input Data', key='manual_open'):
-        st.session_state['manual_visible'] = not st.session_state.get('manual_visible', False)
+    with st.container(horizontal=True, vertical_alignment='center', gap='medium', key='manual_entry_panel'):
+        if st.button('Input Data', key='manual_open'):
+            st.session_state['manual_visible'] = not st.session_state.get('manual_visible', False)
+        st.markdown('Maximum 500 data rows and 25 columns')
     if not st.session_state.get('manual_visible', False):
         return
     with st.container(border=True):

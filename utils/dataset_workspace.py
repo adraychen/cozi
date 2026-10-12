@@ -128,8 +128,27 @@ def render_add_datasets(samples):
     st.subheader('Add datasets')
     st.caption('Upload, input, or choose sample data. Each addition opens its own dataset tab.')
     epoch = st.session_state.get('ws_upload_epoch', 0)
-    files = st.file_uploader('Drop or upload CSV or Excel files', type=['csv', 'xlsx', 'xls'],
-                             accept_multiple_files=True, key=f'ws_upload_{epoch}')
+    st.html('''<style>
+        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzoneInstructions"] > * {display:none;}
+        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzoneInstructions"]::after {
+            content:"Drop or upload a CSV or Excel file. 200 MB max.";
+            font-size:1rem; color:var(--text-color); opacity:.65;
+        }
+        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"],
+        .st-key-manual_entry_panel {
+            background:var(--secondary-background-color, #f0f2f6); border-radius:.5rem; padding:1rem;
+            min-height:6rem; align-items:center;
+        }
+        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"] button,
+        .st-key-manual_open button {
+            width:148px; height:64px; min-height:64px; padding:.75rem 1rem;
+            background:var(--background-color, #fff); border:1px solid #8884; border-radius:.75rem;
+            font-size:1rem;
+        }
+        .st-key-manual_entry_panel p {color:var(--text-color); opacity:.65; margin:0;}
+    </style>''')
+    files = st.file_uploader('Drop or upload a CSV or Excel file. 200 MB max.', type=['csv', 'xlsx', 'xls'],
+                             label_visibility='collapsed', accept_multiple_files=True, key=f'ws_upload_{epoch}')
     candidates = []
     for index, file in enumerate(files or []):
         identity = hashlib.sha256(file.getvalue()).hexdigest()

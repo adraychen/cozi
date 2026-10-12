@@ -6,6 +6,12 @@ from utils.project_file import dumps, loads, project_payload, replace_project, f
 
 
 class ProjectFileTests(unittest.TestCase):
+    def menu_event(self, app, action, **values):
+        from unittest.mock import patch
+        import uuid
+        with patch('utils.project_menu.render_menu', return_value=dict(action=action, id=uuid.uuid4().hex, **values)):
+            app.run(timeout=60)
+
     def test_complete_round_trip_and_independent_projects(self):
         state = {}
         frame = pd.DataFrame({'month': pd.Series([1, 2, None], dtype='Int64'),
@@ -61,9 +67,9 @@ class ProjectFileTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertFalse(app.metric)
         self.assertFalse(any(b.label in ('👍', '👎') for b in app.button))
-        app.session_state['project_name'] = 'Changed'
-        app.run(timeout=60)
-        app.button(key='project_create').click().run(timeout=60)
+        self.menu_event(app, 'rename', name='Changed')
+        self.assertEqual(app.session_state['project_name'], 'Changed')
+        self.menu_event(app, 'new')
         self.assertTrue(any('unsaved changes' in w.value for w in app.warning))
         app.button(key='project_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
@@ -75,14 +81,13 @@ class ProjectFileTests(unittest.TestCase):
         source['variable_dataset_id'] = identity
         source['cozy_report'] = {'metadata': {}, 'blocks': []}
         content = dumps(project_payload(source))
-        app.button(key='project_open').click().run(timeout=60)
-        app.file_uploader(key='project_upload').set_value(('saved.cozy', content, 'application/octet-stream')).run(timeout=60)
-        app.button(key='project_open_confirm').click().run(timeout=60)
+        import base64
+        self.menu_event(app, 'open', content=base64.b64encode(content).decode())
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['project_name'], 'Reopened')
         assert_frame_equal(app.session_state['df'], source['df'])
         self.assertEqual(app.session_state['variable_metadata']['month']['source'], 'User override')
-        app.button(key='project_save').click().run(timeout=60)
+        self.menu_event(app, 'save')
         self.assertFalse(app.exception)
         self.assertEqual(loads(app.session_state['project_download']['content'])['name'], 'Reopened')
         app.button(key='project_cancel').click().run(timeout=60)
@@ -94,16 +99,16 @@ class ProjectFileTests(unittest.TestCase):
         app.button(key='ws_remove_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertFalse(app.session_state['ws_datasets'])
-        app.button(key='project_close').click().run(timeout=60)
+        self.menu_event(app, 'close')
         self.assertTrue(any('unsaved changes' in w.value for w in app.warning))
         app.button(key='project_cancel').click().run(timeout=60)
         self.assertEqual(app.session_state['project_name'], 'Reopened')
-        app.button(key='project_close').click().run(timeout=60)
+        self.menu_event(app, 'close')
         app.button(key='project_save_before').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertIn('cozy_report', app.session_state)
         app.button(key='project_cancel').click().run(timeout=60)
-        app.button(key='project_close').click().run(timeout=60)
+        self.menu_event(app, 'close')
         app.button(key='project_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['project_name'], 'Untitled Project')

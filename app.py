@@ -96,7 +96,6 @@ with st.container(horizontal=True, vertical_alignment="center", gap="xxsmall"):
 from utils.project_file import render_file_menu
 
 render_file_menu()
-st.divider()
 
 from utils.dataset_workspace import render_workspace
 
