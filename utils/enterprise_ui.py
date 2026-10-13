@@ -86,29 +86,23 @@ def render_enterprise_page():
     .enterprise-card p {margin:0; line-height:1.65;}
     </style>''')
     st.write("Cozy Enterprise brings Cozy's guided analytics platform into your organization's own environment, with customized analytical capabilities designed around your data, workflows, and analytical needs.")
-    st.write('Deploy on Azure, AWS, Google Cloud, or on-premises while maintaining greater control over your data and infrastructure.')
-    st.header('Deployment options')
-    st.caption('Four deployment options for the same Cozy Enterprise product.')
-    options = [
-        ('Cozy Enterprise for Azure', "Deploy Cozy Enterprise within the organization's Microsoft Azure environment."),
-        ('Cozy Enterprise for AWS', "Deploy Cozy Enterprise within the organization's Amazon Web Services environment."),
-        ('Cozy Enterprise for Google Cloud', "Deploy Cozy Enterprise within the organization's Google Cloud environment."),
-        ('Cozy Enterprise On-Premises', "Deploy Cozy Enterprise within the organization's own servers or private infrastructure."),
-    ]
-    st.html('<div class="enterprise-grid">' + ''.join(
-        f'<section class="enterprise-card"><h3>{escape(title)}</h3><p>{escape(body)}</p></section>'
-        for title, body in options) + '</div>')
     st.header('Designed for your organization')
-    st.subheader('Private Deployment')
-    st.write("Deploy Cozy within the organization's cloud or private infrastructure.")
     st.subheader('Customized Analytics')
-    st.write("Customize Cozy's analytical capabilities to fit the organization's specific analytical needs. Adapt the analytical functionality and workflows—not just their appearance—to your data, methods, and requirements.")
+    st.markdown('**Cozy Enterprise adapts to the way your organization works.** '
+                'We customize the platform around your data, processes, reporting requirements, and business priorities—'
+                'creating an analytical environment that supports how your teams operate and make decisions.')
     st.markdown('Customization may include:\n\n'
-                '- Analytical workflows\n- Statistical methods\n- Specialized analyses\n'
-                '- Data processing\n- Dashboards\n- Charts and visualizations\n'
-                '- Reports\n- Organization-specific analytical features')
-    st.subheader('Enterprise Access')
-    st.write('Support controlled access to Cozy across teams and departments. Access requirements are discussed as part of the enterprise implementation.')
+                '- **Dashboards** tailored to your objectives, workflows, and performance indicators\n'
+                '- **Data processing** designed around your data sources, structures, rules, and preparation requirements\n'
+                '- **Reports** customized for different audiences, decisions, and organizational standards')
+    st.markdown('Cozy Enterprise can also include specialized analytical modules. Examples include:\n\n'
+                '- Quality\n- Reliability Analysis\n- Supply Chain\n- Property Management')
+    st.write('These are examples rather than a fixed catalogue. Additional modules can be developed to support '
+             'the analytical needs of different industries, functions, and organizations.')
+    st.markdown('**The result is an enterprise analytics platform configured around what your organization '
+                'needs to understand, monitor, and improve.**')
+    st.header('Deployment options')
+    st.write('Deploy on Azure, AWS, Google Cloud, or on-premises while maintaining greater control over your data and infrastructure.')
     st.subheader('Enterprise Support')
     st.write('Implementation, customization, deployment, and ongoing technical support.')
     st.divider()

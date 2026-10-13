@@ -66,8 +66,7 @@ if enterprise_requested():
 
 render_brand()
 st.caption(
-    "Upload or input your data and analyze it through a broad range of guided analytical workflows and visualizations. "
-    "Designed to make data analysis more accessible, structured, and efficient."
+    "Upload or input your data and analyze it through guided analytical workflows designed to make data analysis more accessible, efficient, and insightful."
 )
 
 @st.dialog("Data and Privacy")
