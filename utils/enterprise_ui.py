@@ -101,7 +101,7 @@ def render_enterprise_page():
              'the analytical needs of different industries, functions, and organizations.')
     st.markdown('**The result is an enterprise analytics platform configured around what your organization '
                 'needs to understand, monitor, and improve.**')
-    st.header('Deployment options')
+    st.subheader('Deployment Options')
     st.write('Deploy on Azure, AWS, Google Cloud, or on-premises while maintaining greater control over your data and infrastructure.')
     st.subheader('Enterprise Support')
     st.write('Implementation, customization, deployment, and ongoing technical support.')
