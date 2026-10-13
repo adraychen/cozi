@@ -8,6 +8,31 @@ from utils.database import configured_value
 
 
 class PostgresStoreTests(unittest.TestCase):
+    def test_connection_diagnostics_classify_without_disclosing_error_text(self):
+        from psycopg2 import OperationalError
+        cases = [
+            ('password authentication failed for user', 'password_authentication_failed'),
+            ('Tenant or user not found', 'pooler_tenant_or_user_not_found'),
+            ('unsupported startup parameter: options', 'unsupported_startup_parameter'),
+            ('could not translate host name', 'dns_resolution_failed'),
+            ('connection timed out', 'connection_timeout'),
+            ('connection refused', 'connection_refused'),
+            ('SSL error: certificate verify failed', 'tls_certificate_verification_failed'),
+            ('Circuit breaker open', 'pooler_circuit_breaker_open'),
+            ('unrecognized error', 'unclassified_connection_failure'),
+        ]
+        for message, reason in cases:
+            with self.subTest(reason=reason):
+                error = OperationalError(message + ' SECRET_PASSWORD postgresql://private-host alex@example.org')
+                with patch('utils.enterprise_store.configured_value', return_value='dbname=postgres'), patch('utils.enterprise_store._connect', side_effect=error), self.assertLogs('utils.enterprise_store', level='ERROR') as logs:
+                    with self.assertRaises(OperationalError):
+                        PostgresEnquiryStore().save(Enquiry(name='Alex', email='alex@example.org', organization='Example', deployment='AWS'), str(uuid4()))
+                output = ' '.join(logs.output)
+                self.assertIn('reason=' + reason, output)
+                self.assertIn('phase=connect', output)
+                for sensitive in ('SECRET_PASSWORD', 'private-host', 'alex@example.org', 'postgresql://'):
+                    self.assertNotIn(sensitive, output)
+
     def test_parameterized_save_receipt_and_closed_connection(self):
         connection=MagicMock()
         cursor=connection.cursor.return_value.__enter__.return_value
