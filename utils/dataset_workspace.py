@@ -139,7 +139,7 @@ def render_add_datasets(samples):
             background:var(--secondary-background-color, #f0f2f6); border-radius:.5rem; padding:.5rem .75rem;
             min-height:56px; align-items:center;
         }
-        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"] button,
+        [class*="st-key-ws_upload_"] [data-testid="stFileUploaderDropzone"] > div:has(+ [data-testid="stFileUploaderDropzoneInstructions"]) button,
         .st-key-manual_open button {
             width:120px; height:40px; min-height:40px; padding:.25rem .75rem;
             background:var(--background-color, #fff); border:1px solid #8884; border-radius:.5rem;
