@@ -27,7 +27,10 @@ def effect_controls(factors, outcome, prefix):
             st.session_state[key] = effects[factor]
         effects[factor] = st.radio(f'{factor} — Effect Type', ['Fixed', 'Random'], horizontal=True, key=key)
     st.session_state[base] = effects
-    presentation.write('Automatically selected model: **' + model_family(effects) + '**')
+    if len(factors) > 1:
+        presentation.write('Automatically selected model: **' + model_family(effects) + '**')
+    elif 'Random' in effects.values():
+        presentation.write('**' + model_family(effects) + '**')
     return effects
 
 

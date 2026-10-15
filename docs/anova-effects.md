@@ -1,6 +1,6 @@
 # ANOVA effect settings
 
-Each selected categorical factor has a horizontal Fixed / Random radio control. Newly added factors default to Fixed. The model-family label updates immediately. The comparison selection prunes removed factors, including when that selection makes ANOVA temporarily unavailable. Dataset and response changes reset unrelated settings; ordinary reruns retain choices. Saved report blocks are copied snapshots.
+Each selected categorical factor has a horizontal Fixed / Random radio control. Newly added factors default to Fixed. Factorial model-family labels update immediately. One-way Fixed identifies Welch in the Model summary Analysis method row and Statistical Results heading; its explanation is in Help. One-way Random shows its model name without an automatic-selection prefix. The comparison selection prunes removed factors, including when that selection makes ANOVA temporarily unavailable. Dataset and response changes reset unrelated settings; ordinary reruns retain choices. Saved report blocks are copied snapshots.
 
 ## Routing
 

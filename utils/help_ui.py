@@ -12,6 +12,7 @@ FEATURE_HELP = {
     'Root Mean Squared Error (RMSE)': 'Measures the size of prediction errors, giving larger errors more weight than MAE. It is expressed in response units. A residual is an observed value minus its predicted value.',
     'Standard Error (Mean)': 'Measures the uncertainty in the estimated mean. In the formula, n is the number of valid observations. Missing and infinite values are excluded. At least two valid values are required.',
     'Unpivot': 'Turn columns into values.',
+    "Welch's One-way ANOVA": "Welch's One-way ANOVA compares a numerical response across independent groups and allows unequal variances. Identifiers are not meaningful outcomes; ordered ratings assume equally spaced scores.",
 }
 
 FEATURE_FORMULAS = {
