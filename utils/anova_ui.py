@@ -150,16 +150,17 @@ def render_anova(df, category, outcome):
                 'F': '{:.6g}', 'p-value': '{:.4g}', 'df numerator': '{:.6g}',
                 'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'alpha': '{:.3g}',
             }), hide_index=True)
-            presentation.markdown('**Effect Size**')
-            presentation.write(f'Cohen f² (Welch): {result[EFFECT_SIZE]:.4g}')
-            presentation.caption('See Help → Effect Size (Cohen’s f²) for an explanation.')
         else:
             presentation.info('Descriptive summaries remain available; validated Welch inference is not available.')
         presentation.markdown('**Variation Decomposition**')
         if variation is not None:
-            display = variation.copy()
-            display['Mean Square (MS)'] = display['Mean Square (MS)'].map(lambda v: '—' if pd.isna(v) else f'{v:.6g}')
-            presentation.dataframe(display, hide_index=True)
+            display = variation.drop(columns=['Mean Square (MS)']).copy()
+            display['Source'] = display['Source'].replace({'Within Groups (Residual)': 'Within Groups'})
+            total_ss = display.loc[display['Source'] == 'Total', 'Sum of Squares (SS)'].iloc[0]
+            display['Percentage of Total'] = display['Sum of Squares (SS)'] / total_ss * 100 if total_ss > 0 else float('nan')
+            presentation.dataframe(display.style.format({'Percentage of Total': '{:.2f}%'}, na_rep='—'), hide_index=True)
+            if total_ss == 0:
+                presentation.caption('Percentages are unavailable because total observed variation is zero.')
             presentation.caption(VARIATION_NOTE)
         else:
             presentation.info('No numerically valid variation decomposition is available.')

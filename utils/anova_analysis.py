@@ -8,9 +8,8 @@ from statsmodels.stats.oneway import anova_oneway, effectsize_oneway
 
 PAIRWISE_GROUP_LIMIT = 30
 EFFECT_SIZE = 'Welch-compatible Cohen f² (variance-weighted)'
-VARIATION_NOTE = ("The variation table shows how total variation is divided between groups and within groups. "
-                  "Welch's ANOVA uses variance-adjusted calculations, so its F-statistic is not calculated "
-                  "directly from the mean squares shown here.")
+VARIATION_NOTE = ("Between-group variation measures differences among group means, while within-group variation "
+                  "measures differences among observations within each group. The percentages show how total observed variation is distributed.")
 
 
 def validate_alpha(alpha):
