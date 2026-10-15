@@ -15,7 +15,7 @@ _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'fac_', 'pa_
 _TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'pa_temporal_choose_target', 'tf_preview', 'tf_create',
              'rel_anova_ai_generate',
              'tf_apply', 'tf_draft_create', 'tf_draft_discard', 'tf_draft_finish',
-             'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_generate_ai', 'temporal_resume_button'}
+             'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_duplicate_rows_confirm', 'view_duplicate_rows_cancel', 'view_generate_ai', 'temporal_resume_button'}
 
 
 def dataset_state_key(key):
