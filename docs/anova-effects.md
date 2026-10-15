@@ -54,3 +54,9 @@ Statistical implementation references:
 - [statsmodels variance-component examples: nested and crossed designs](https://www.statsmodels.org/stable/examples/notebooks/generated/variance_components.html)
 - [statsmodels linear mixed-effects model documentation](https://www.statsmodels.org/stable/mixed_linear.html)
 - [MixedLM result covariance and inference methods](https://www.statsmodels.org/stable/generated/statsmodels.regression.mixed_linear_model.MixedLMResults.html)
+
+### Verification outcome (2026-10-15)
+
+- All 11 focused ANOVA effect tests pass, including independent numerical references and Streamlit state/report checks.
+- Complete suite: 361 tests run; 359 pass. Two existing failures reproduce with the original ANOVA renderers in an isolated copy: `test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create` expects an obsolete dropdown placeholder, and `test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action` cannot find its target checkbox. Neither failure originates in the ANOVA changes.
+- Real-browser checks use the synthetic fixture: one-way Fixed/Random routing, factorial Fixed/Mixed routing, group-identity and dependence clarification, result tables, diagnostics and charts. Desktop and mobile-width layouts were inspected; tables retain horizontal scrolling, and long chart titles were shortened for mobile.

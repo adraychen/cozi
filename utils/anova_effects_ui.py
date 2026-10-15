@@ -99,17 +99,17 @@ def render_random(df, outcome, effects, interactions, alpha, prefix):
     presentation.caption('Variance-component confidence intervals and significance tests are not supplied. Zero is a boundary; an ordinary chi-square likelihood-ratio test is not valid here.')
     if 'Fixed' in effects.values():
         presentation.subheader('Fixed effects')
-        presentation.dataframe(result['fixed'], hide_index=True)
+        presentation.dataframe(result['fixed'], hide_index=True, column_config={'p-value (asymptotic)': st.column_config.NumberColumn(format='%.4g')})
         presentation.caption(f'{1-alpha:.1%} asymptotic normal Wald intervals and two-sided z tests, when available; these are large-sample coefficient tests, not Type II F tests or small-sample corrected inference. Reference levels use first observed order. Estimates compare the selected fixed groups conditional on random variation. Small group counts can make inference unreliable even above the five-group suppression threshold.')
         reference = pd.DataFrame([{'Factor': str(f), 'Reference group': str(prepared['raw'][f].iloc[0])} for f in factors if effects[f] == 'Fixed'])
         presentation.dataframe(reference, hide_index=True)
         if result['inference']:
             plot = result['fixed'].copy()
             plot['Interval'] = plot['Upper CI']-plot['Estimate']
-            presentation.plotly_chart(px.scatter(plot, x='Estimate', y='Coefficient', error_x='Interval', title='Fixed-effect estimates and asymptotic confidence intervals'))
-    presentation.plotly_chart(px.bar(result['variance'], x='Component', y='Variance', title='Estimated variance components'))
+            presentation.plotly_chart(px.scatter(plot, x='Estimate', y='Coefficient', error_x='Interval', title='Fixed-effect estimates'))
+    presentation.plotly_chart(px.bar(result['variance'].assign(Component=lambda frame: frame.Component.replace({'Residual (within groups)': 'Residual'})), x='Component', y='Variance', title='Estimated variance components'))
     factor = st.selectbox('Distribution by factor', factors, key=base + '_plot')
-    presentation.plotly_chart(px.box(prepared['raw'], x=factor, y=outcome, title='Observed response distributions (descriptive)'))
+    presentation.plotly_chart(px.box(prepared['raw'], x=factor, y=outcome, title='Response distributions'))
     presentation.plotly_chart(px.scatter(x=result['fitted'], y=result['residuals'], labels={'x': 'Conditional fitted response', 'y': 'Conditional residual'}, title='Residuals versus fitted response'))
     from scipy import stats
     (quantiles, ordered), (slope, intercept, _) = stats.probplot(result['residuals'], dist='norm')
