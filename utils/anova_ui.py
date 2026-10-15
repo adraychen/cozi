@@ -145,7 +145,7 @@ def render_anova(df, category, outcome):
         presentation.markdown('**Statistical Results — Welch One-way ANOVA**')
         if result is not None:
             presentation.dataframe(pd.DataFrame([result]).rename(columns={
-                'df between': 'df numerator', 'alpha': 'α', EFFECT_SIZE: "Effect Size (Cohen's f²)",
+                'method': 'Method', 'df between': 'df numerator', 'alpha': 'α', EFFECT_SIZE: "Effect Size (Cohen's f²)",
             }).style.format({
                 'F': '{:.6g}', 'p-value': lambda p: 'p < 0.001' if p < .001 else f'{p:.4g}', 'df numerator': '{:.6g}',
                 'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'α': '{:.3g}',
@@ -163,8 +163,8 @@ def render_anova(df, category, outcome):
             presentation.dataframe(display.style.format({'Variation (%)': '{:.2f}%'}, na_rep='—'), hide_index=True)
             if total_ss == 0:
                 presentation.caption('Percentages are unavailable because total observed variation is zero.')
-            presentation.caption('Between-group variation measures differences among group means, while within-group variation measures differences among observations within each group. The percentages show how total observed variation is distributed.')
             presentation.caption(VARIATION_NOTE)
+            presentation.caption("Welch's F-statistic uses variance-adjusted methods; it is not calculated directly from these conventional sums of squares. These descriptive percentages are not causal contributions or Welch-adjusted effect sizes.")
         else:
             presentation.info('No numerically valid variation decomposition is available.')
     with tabs[1]:

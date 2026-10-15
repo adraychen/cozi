@@ -212,6 +212,7 @@ class DateComponentWorkspaceTests(unittest.TestCase):
         app.run(timeout=60)
         app.checkbox(key='gs_cmp_variable_Month').check().run(timeout=60)
         app.checkbox(key='gs_cmp_variable_Sales').check().run(timeout=60)
+        app.selectbox(key='gs_cmp_analysis').select('Period-over-Period Comparison').run(timeout=60)
 
     def test_guided_creation_return_and_dated_analysis(self):
         app = self.app('Year,Month,Sales\n2025,November,120000\n2025,December,135000\n2026,January,142000\n2026,February,138000')
@@ -244,6 +245,7 @@ class DateComponentWorkspaceTests(unittest.TestCase):
         self.assertTrue(app.checkbox(key='gs_cmp_variable_Month-Year').value)
         self.assertFalse(app.checkbox(key='gs_cmp_variable_Month').value)
         self.assertTrue(app.checkbox(key='gs_cmp_variable_Sales').value)
+        app.selectbox(key='gs_cmp_analysis').select('Period-over-Period Comparison').run(timeout=60)
         table = next(table.value for table in app.dataframe if 'Change %' in table.value)
         self.assertEqual(table.Period.tolist(), ['Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026'])
         self.assertEqual(table.Change.iloc[2], 7000)

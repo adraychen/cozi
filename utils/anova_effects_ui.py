@@ -157,7 +157,7 @@ def _render_oneway_random(prepared, result, outcome, effects, interactions, pare
             ('Effect type', 'Random'), ('Model family', model_family(effects)),
             ('Estimation method', 'REML'), ('Observations used', result['n']),
             ('Number of groups', len(descriptive['groups'])), ('Significance level (α)', alpha),
-        ], columns=['Model detail', 'Value']))
+        ], columns=['Model detail', 'Value']).astype(str))
         presentation.caption(f"Excluded missing/nonfinite observations: {prepared['excluded']}.")
         presentation.markdown('**Variance Components**')
         presentation.dataframe(result['variance'], hide_index=True)

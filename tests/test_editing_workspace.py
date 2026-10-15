@@ -29,6 +29,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(list(app.session_state['df']), ['a', 'b'])
         app.button(key='view_remove_duplicate_rows').click().run(timeout=60)
+        app.button(key='view_duplicate_rows_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(len(app.session_state['df']), 2)
         self.assertEqual(app.session_state['ws_workflow'], 'Inspect')
@@ -205,6 +206,7 @@ class EditingWorkspaceTests(unittest.TestCase):
         self.assertEqual({m.label: m.value for m in app.metric}['Duplicated rows'], '7')
         self.assertFalse(any(b.key == 'view_remove_duplicate_columns' for b in app.button))
         app.button(key='view_remove_duplicate_rows').click().run(timeout=60)
+        app.button(key='view_duplicate_rows_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['df'].date.tolist(), ['2024-01-01', 'invalid-one', 'invalid-two'])
 

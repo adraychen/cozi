@@ -79,6 +79,7 @@ class TTestUITests(unittest.TestCase):
         app = self.app()
         app.checkbox(key='gs_cmp_variable_a').uncheck().run(timeout=45)
         app.checkbox(key='gs_cmp_variable_constant').check().run(timeout=45)
+        app.selectbox(key='gs_cmp_analysis').select('t-Test').run(timeout=45)
         app.selectbox(key='gs_tt_first').select('constant').run(timeout=45)
         self.assert_healthy(app)
         self.assertTrue(any('variation must be positive' in w.value for w in app.warning))

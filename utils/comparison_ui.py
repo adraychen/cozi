@@ -82,12 +82,10 @@ def render_comparison(df, col_types):
                 st.info(str(exc))
         st.info('No comparison matches the full selection. Select numerical and categorical variables according to the guide above. For ANOVA, keep exactly one numerical response; for a two-column t-test, keep two numerical variables and no categorical or temporal variables.')
         return
-    if st.session_state.get('gs_cmp_analysis') == 'Group Comparison (ANOVA)':
-        st.session_state['gs_cmp_analysis'] = 'One-way ANOVA'
     if st.session_state.get('gs_cmp_analysis') not in methods:
         st.session_state.pop('gs_cmp_analysis', None)
     st.markdown('##### Comparison analysis')
-    analysis = st.selectbox('Analysis method', methods, key='gs_cmp_analysis')
+    analysis = st.selectbox('Analysis method', methods, index=None, placeholder='Select an analysis method', key='gs_cmp_analysis')
     col_types = selected
     context = (st.session_state.get('file_id'), tuple(selected['numerical']),
                tuple(selected['categorical']), tuple(selected['datetime']))
@@ -97,6 +95,9 @@ def render_comparison(df, col_types):
         for prefix in ('gs_cmp_segment', 'gs_cmp_period'):
             st.session_state[prefix + '_dimensions'] = selected['categorical'][:]
             st.session_state[prefix + '_measure_optional'] = selected['numerical'][0] if len(selected['numerical']) == 1 else None
+    if analysis is None:
+        st.info('Select an analysis method to view its configuration and results.')
+        return
     if analysis == 't-Test':
         render_ttest(df, col_types['numerical'], col_types['categorical'], guided=True)
     elif analysis == 'Factorial ANOVA':

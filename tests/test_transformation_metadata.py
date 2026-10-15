@@ -40,6 +40,7 @@ class TransformationMetadataTests(unittest.TestCase):
         app.run(timeout=60)
         app.checkbox(key='gs_cmp_variable_annual').check().run(timeout=60)
         app.checkbox(key='gs_cmp_variable_value').check().run(timeout=60)
+        app.selectbox(key='gs_cmp_analysis').select('Period-over-Period Comparison').run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key='gs_cmp_period_frequency').options, ['Yearly'])
 

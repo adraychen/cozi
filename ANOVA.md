@@ -25,7 +25,7 @@ The **Variation Decomposition** table is descriptive: SS between = Σnᵢ(ȳᵢ�
 
 For k ≥ 3, **Games–Howell** runs for all pairs without an overall-significance gate. Difference = mean A − mean B; SE = √(sA²/nA + sB²/nB); df = (sA²/nA+sB²/nB)² / [(sA²/nA)²/(nA−1)+(sB²/nB)²/(nB−1)]. q = √2|difference|/SE. Adjusted p-values use the studentized-range survival function with k groups and pair-specific df. Intervals are difference ± q(1−α, k, df)SE/√2. Significance uses adjusted p < α. Family confidence is 1−α (95% by default); all pairs remain in the family when filtering the plot.
 
-The pairwise table, CSV and forest plot share exactly these calculations. Positive differences favor A; negative differences favor B. Color and marker shape distinguish significant comparisons. Plot pages contain at most 20 comparisons. Computational work is limited to 30 groups/435 pairs; above that, Welch can still run and an explicit Games–Howell unavailable message is shown. No subsets are silently substituted. Pairwise computational failure yields no fabricated p-values or intervals.
+The pairwise table and forest plot share exactly these calculations. Positive differences favor A; negative differences favor B. Color and marker shape distinguish significant comparisons. Plot pages contain at most 20 comparisons. Computational work is limited to 30 groups/435 pairs; above that, Welch can still run and an explicit Games–Howell unavailable message is shown. No subsets are silently substituted. Pairwise computational failure yields no fabricated p-values or intervals.
 
 Group mean intervals are separate, pointwise 95% Student-t intervals: mean ± t(0.975,n−1)SD/√n. They are not the simultaneous Games–Howell intervals. Group boxplots are retained, with residual plots and Q–Q plots in Diagnostics. Shared Plotly rendering retains responsive sizing and image-export controls.
 
@@ -43,7 +43,7 @@ Meaningful repeated/clustered or serial indicators withhold ordinary inference u
 
 Deterministic overall, pairwise, variation and effect-size explanations work without AI. Optional AI interpretation uses the existing Groq infrastructure with bounded group/result/diagnostic and column-metadata summaries; no individual records, IDs or timestamps are sent. Instructions prohibit fabricated values, eligibility overrides, assumption certification or causal claims. Errors leave statistical outputs available; changed result contexts invalidate cached explanations. AI explanations remain advisory.
 
-Report capture preserves Welch numeric results, descriptive variation, group/diagnostic/pairwise tables, plots, qualifications and any current AI interpretation. Pairwise CSV contains full precision, group names, SE and df in addition to the displayed comparison columns.
+Report capture preserves Welch numeric results, descriptive variation, group/diagnostic/pairwise tables, plots, qualifications and any current AI interpretation. The dedicated Games–Howell CSV button is removed; Add to Report and native table downloads remain available.
 
 ## References and verification
 
@@ -53,3 +53,8 @@ Report capture preserves Welch numeric results, descriptive variation, group/dia
 - [Ljung–Box diagnostic](https://www.statsmodels.org/stable/generated/statsmodels.stats.diagnostic.acorr_ljungbox.html)
 
 `tests/test_anova.py` checks Welch against SciPy and independent df/effect formulas, Games–Howell adjusted p-values and intervals against SciPy, balanced/unbalanced/heteroskedastic groups, SS decomposition, signs and zero-crossings, cleaning, invalid/constant/extreme values, alpha handling, plot/table agreement, independence states/serial order, AI failure/privacy, pagination, dataset changes and report snapshots. Existing Comparison and Factorial ANOVA tests are included in the full suite.
+
+
+### One-way result navigation
+
+One-way results use Overview, Group Comparisons, Diagnostics, and ANOVA Findings for Fixed and Random effects. Group summaries and charts appear together, alongside Games–Howell comparisons for Fixed effects. Random-model variance components appear in Overview and conditional residual diagnostics in Diagnostics. Unconfirmed or failed random models retain four tabs with explicit status messages. Statistical engines and Factorial navigation are unchanged. Existing report action keys and saved snapshots are preserved. Comparison has no default method; users select a method before configuration and results appear.

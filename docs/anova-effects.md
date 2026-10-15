@@ -65,4 +65,9 @@ Statistical implementation references:
 
 Effect size appears only in the statistical results table; no duplicate Effect Size section is shown. Interpretation is in Help → Effect Size (Cohen's f²). The results table labels are df numerator and Effect Size (Cohen's f²); stored calculation keys remain unchanged for compatibility. Technical method: the existing unequal-variance plug-in estimate uses group-size/variance weights (`effectsize_oneway`, `use_var="unequal"`, `ddof_between=0`). It is not bias corrected, is not a percentage of explained variation, and is not computed from the descriptive SS table or Welch-corrected F. Calculations are unchanged.
 
-The One-way ANOVA variation table displays Source, DF, Sum of Squares (SS), and Percentage of Total. Within Groups omits the residual qualifier. Mean squares remain available internally but are not displayed. Percentages equal each sum of squares divided by total observed sum of squares, multiplied by 100; they are unavailable when total variation is zero.
+The One-way ANOVA variation table displays Source, DF, Sum of Squares (SS), and Variation (%). Within Groups omits the residual qualifier. Mean squares remain available internally but are not displayed. Percentages equal each sum of squares divided by total observed sum of squares, multiplied by 100; they are unavailable when total variation is zero.
+
+
+### One-way result navigation
+
+One-way results use Overview, Group Comparisons, Diagnostics, and ANOVA Findings for Fixed and Random effects. Group summaries and charts appear together, alongside Games–Howell comparisons for Fixed effects. Random-model variance components appear in Overview and conditional residual diagnostics in Diagnostics. Unconfirmed or failed random models retain four tabs with explicit status messages. Statistical engines and Factorial navigation are unchanged. Existing report action keys and saved snapshots are preserved. Comparison has no default method; users select a method before configuration and results appear.

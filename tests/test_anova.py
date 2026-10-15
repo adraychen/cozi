@@ -275,6 +275,23 @@ class AnovaUITests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertTrue(any('Welch One-way ANOVA' in m.value for m in app.markdown))
 
+    def test_result_navigation_and_pairwise_download_removed(self):
+        app = AppTest.from_string(UI_FIXTURE).run(timeout=45)
+        self.assertFalse(app.exception)
+        self.assertEqual([tab.label for tab in app.tabs], ['Overview', 'Group Comparisons', 'Diagnostics', 'ANOVA Findings'])
+        overview, groups, diagnostics, findings = app.tabs
+        self.assertFalse(any('Adjusted p-value' in table.value for table in overview.dataframe))
+        result = next(table.value for table in overview.dataframe if 'F' in table.value)
+        self.assertEqual(list(result.columns), ['Method', 'F', 'p-value', 'df numerator', 'df denominator', "Effect Size (Cohen's f²)", 'α'])
+        variation = next(table.value for table in overview.dataframe if 'Sum of Squares (SS)' in table.value)
+        self.assertEqual(list(variation.columns), ['Source', 'DF', 'Sum of Squares (SS)', 'Variation (%)'])
+        self.assertAlmostEqual(variation['Variation (%)'].iloc[:2].sum(), 100)
+        self.assertEqual(len(groups.get('plotly_chart')), 3)
+        self.assertTrue(any('Adjusted p-value' in table.value for table in groups.dataframe))
+        self.assertGreaterEqual(len(diagnostics.get('plotly_chart')), 3)
+        self.assertFalse(app.get('download_button'))
+        self.assertEqual(app.button(key='report_add_anova').label, 'Add to Report')
+
     def test_invalid_groups_keep_summary(self):
         app = AppTest.from_string("""
 import pandas as pd
