@@ -217,6 +217,8 @@ def render_factorial_anova(df, numerical, categorical):
     if 'fac_x' not in st.session_state:
         st.session_state['fac_x'] = categorical[:]
     factors = st.multiselect('Factors (X)', categorical, key='fac_x')
+    from utils.anova_effects_ui import effect_controls, render_random
+    effects = effect_controls(factors, outcome, 'fac')
     if len(factors) < 2:
         presentation.info('Choose at least two categorical factors.')
         return
@@ -228,6 +230,8 @@ def render_factorial_anova(df, numerical, categorical):
     _prune('fac_interactions', options, True)
     interactions = st.multiselect('Interaction effects (optional)', options,
                                  format_func=lambda pair: ' × '.join(map(str, pair)), key='fac_interactions')
+    if 'Random' in effects.values():
+        return render_random(df, outcome, effects, interactions, alpha, 'fac')
     presentation.write('Main effects: ' + ', '.join(map(str, factors)))
     presentation.write('Interaction effects: ' + (', '.join(' × '.join(map(str, p)) for p in interactions) or 'None'))
     presentation.caption(f'Type II Sum of Squares · α = {alpha:.3g}. Type II tests respect marginality: a main-effect test does not adjust for interactions containing that factor. Review interactions before interpreting main effects. The method never switches automatically.')

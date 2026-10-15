@@ -2,6 +2,7 @@
 import hashlib
 import io
 import uuid
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 from utils.table_transforms import validate_table
@@ -189,9 +190,12 @@ def render_add_datasets(samples):
                 try:
                     import requests
                     with st.spinner(f"Loading {sample['name']}…"):
-                        response = requests.get(f"https://drive.google.com/uc?export=download&id={sample['id']}", timeout=30)
-                        response.raise_for_status()
-                        frame = pd.read_csv(io.StringIO(response.text))
+                        if 'path' in sample:
+                            frame = pd.read_csv(Path(__file__).resolve().parents[1] / sample['path'])
+                        else:
+                            response = requests.get(f"https://drive.google.com/uc?export=download&id={sample['id']}", timeout=30)
+                            response.raise_for_status()
+                            frame = pd.read_csv(io.StringIO(response.text))
                         add_dataset(st.session_state, frame, sample['name'], 'Sample dataset')
                     st.rerun()
                 except Exception as exc:

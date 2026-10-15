@@ -58,6 +58,9 @@ def render_comparison(df, col_types):
             for cell, column in zip(cells, columns[start:start + 4]):
                 if cell.checkbox(column, key=f'gs_cmp_variable_{column}'):
                     selected[kind].append(column)
+    from utils.anova_effects import prune_effect_state
+    for prefix in ('fac', 'rel_anova'):
+        prune_effect_state(st.session_state, selected['categorical'], prefix)
     methods = available_comparisons(df, selected, st.session_state.get('variable_metadata', {}))
     st.caption(f"Selected: {len(selected['numerical'])} numerical · {len(selected['categorical'])} categorical · {len(selected['datetime'])} temporal. Available analyses match this selection.")
     with st.expander('Which variables should I select?'):

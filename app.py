@@ -23,7 +23,7 @@ _SAMPLE_DATASETS = [
     {
         "name": "CustomerSatisfaction.csv",
         "id":   "1tv1KDUNDixgPrhI2w6ixti1EKZtJHg_N",
-        "desc": "Statistical Analysis (120 rows)",
+        "desc": "Exploratory Data Analysis (120 rows)",
         "separator": "-",
     },
     {
@@ -33,9 +33,9 @@ _SAMPLE_DATASETS = [
         "separator": "-",
     },
     {
-        "name": "PlantGrowth.csv",
-        "id":   "19w_ELwkTJ_5fKWUi0Rh7YuLz8rNoFeB7",
-        "desc": "One-way ANOVA",
+        "name": "Productivity.csv",
+        "path": "data/samples/Productivity.csv",
+        "desc": "ANOVA (54 rows)",
         "separator": "-",
     },
     {

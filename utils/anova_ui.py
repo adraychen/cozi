@@ -89,6 +89,11 @@ def _show_pair_plot(pairwise):
 
 @reportable
 def render_anova(df, category, outcome):
+    from utils.anova_effects_ui import effect_controls, render_random
+    effects = effect_controls([category], outcome, 'rel_anova')
+    if effects[category] == 'Random':
+        alpha = st.number_input('Significance level (α)', min_value=.001, max_value=.20, value=.05, step=.01, format='%.3f', key='rel_anova_alpha')
+        return render_random(df, outcome, effects, (), alpha, 'rel_anova')
     metadata = st.session_state.get('variable_metadata', {})
     prepared, independence = _prepare(df, category, outcome, metadata)
     presentation.caption("Welch's One-way ANOVA compares a numerical response across independent groups and allows unequal variances. Identifiers are not meaningful outcomes; ordered ratings assume equally spaced scores.")

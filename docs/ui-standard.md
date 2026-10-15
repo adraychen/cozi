@@ -136,3 +136,7 @@ Relationship's plain, side-by-side **Select all / Clear all** buttons are the re
 Analyze has five exploratory tabs: Descriptive Statistics, Group Statistics, Visual Analysis, Relationship and Comparison. Only the open exploratory tab renders its analysis. Predictive Analytics remains below these tabs in Analyze; it is not a separate tab. Existing dataset-specific variable selections and results remain available when switching panels.
 
 AI Interpretation requires **Generate interpretation** or **Refresh interpretation**. Opening a panel or a collapsed interpretation section does not initiate a request. Cached interpretations display without another request. Predictive configuration uses the lightweight `utils/modelling_config.py`; model-fitting dependencies load on Run, and SHAP chart imports load when prediction results are displayed. Training calculations and model grids are unchanged. The first training run may still spend time loading libraries.
+
+### ANOVA factor effects
+
+One-way and Factorial ANOVA use an independent horizontal **Fixed / Random** radio control for each factor; Fixed is the default. The model-family label is automatic. For random models, dropdowns clarify real-world group identity and remaining dependence before fitting. These are design questions, not a model-family selector. Distribution plots retain a factor dropdown; Visual Analysis's chart-selection buttons remain its own standard. See [ANOVA effect settings](anova-effects.md) for statistical scope, validation and report behavior.
