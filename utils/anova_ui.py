@@ -128,14 +128,14 @@ def render_anova(df, category, outcome):
     except ValueError as exc:
         prepared['warnings'].append(str(exc))
     begin_result()
-    tabs = st.tabs(['Model Overview', 'Group Analysis', 'Diagnostics', 'Visual Analysis', 'ANOVA Findings'])
+    tabs = st.tabs(['Overview', 'Group Comparisons', 'Diagnostics', 'ANOVA Findings'])
     with tabs[0]:
         presentation.markdown('**Model summary**')
         presentation.table(pd.DataFrame([
             ('Response / Dependent Variable', str(outcome)), ('Grouping / Independent Variable', str(category)),
             ('Original rows', str(len(df))), ('Used rows', str(prepared['n'])),
             ('Excluded missing/nonfinite rows', str(prepared['excluded'])),
-            ('Number of groups', str(len(prepared['groups']))), ('Analysis method', 'Welch One-way ANOVA'),
+            ('Number of groups', str(len(prepared['groups']))), ('Effect type', 'Fixed'), ('Analysis method', 'Welch One-way ANOVA'),
             ('Significance level', str(alpha)), ('Independence assessment', independence['state']),
         ], columns=['Model detail', 'Value']))
         for error in prepared['errors']:
@@ -145,11 +145,13 @@ def render_anova(df, category, outcome):
         presentation.markdown('**Statistical Results — Welch One-way ANOVA**')
         if result is not None:
             presentation.dataframe(pd.DataFrame([result]).rename(columns={
-                'df between': 'df numerator', EFFECT_SIZE: "Effect Size (Cohen's f²)",
+                'df between': 'df numerator', 'alpha': 'α', EFFECT_SIZE: "Effect Size (Cohen's f²)",
             }).style.format({
-                'F': '{:.6g}', 'p-value': '{:.4g}', 'df numerator': '{:.6g}',
-                'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'alpha': '{:.3g}',
+                'F': '{:.6g}', 'p-value': lambda p: 'p < 0.001' if p < .001 else f'{p:.4g}', 'df numerator': '{:.6g}',
+                'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'α': '{:.3g}',
             }), hide_index=True)
+            presentation.write('Statistically significant at the selected α.' if result['p-value'] < alpha else 'Not statistically significant at the selected α; this does not establish equal population means.')
+            presentation.caption(f"Exact p-value: {result['p-value']:.17g}. Statistical significance does not establish practical importance.")
         else:
             presentation.info('Descriptive summaries remain available; validated Welch inference is not available.')
         presentation.markdown('**Variation Decomposition**')
@@ -157,14 +159,37 @@ def render_anova(df, category, outcome):
             display = variation.drop(columns=['Mean Square (MS)']).copy()
             display['Source'] = display['Source'].replace({'Within Groups (Residual)': 'Within Groups'})
             total_ss = display.loc[display['Source'] == 'Total', 'Sum of Squares (SS)'].iloc[0]
-            display['Percentage of Total'] = display['Sum of Squares (SS)'] / total_ss * 100 if total_ss > 0 else float('nan')
-            presentation.dataframe(display.style.format({'Percentage of Total': '{:.2f}%'}, na_rep='—'), hide_index=True)
+            display['Variation (%)'] = display['Sum of Squares (SS)'] / total_ss * 100 if total_ss > 0 else float('nan')
+            presentation.dataframe(display.style.format({'Variation (%)': '{:.2f}%'}, na_rep='—'), hide_index=True)
             if total_ss == 0:
                 presentation.caption('Percentages are unavailable because total observed variation is zero.')
+            presentation.caption('Between-group variation measures differences among group means, while within-group variation measures differences among observations within each group. The percentages show how total observed variation is distributed.')
             presentation.caption(VARIATION_NOTE)
         else:
             presentation.info('No numerically valid variation decomposition is available.')
+    with tabs[1]:
+        presentation.markdown('**Group Statistics**')
+        presentation.dataframe(prepared['summary'], hide_index=True)
+        presentation.caption('Individual group mean intervals use Student-t, mean ± t(0.975, n−1) × SD/√n. These pointwise 95% intervals are not multiplicity-adjusted pairwise intervals.')
+        presentation.markdown('**Group Boxplot**')
+        if not prepared['summary'].empty:
+            plot = prepared['clean'].copy()
+            plot[category] = plot[category].astype(str)
+            presentation.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), key='rel_anova_box')
+        else:
+            presentation.info('No usable observations to plot.')
+        presentation.markdown('**Group Means with 95% Confidence Intervals**')
+        means = group_mean_plot(prepared)
+        if means is not None:
+            presentation.plotly_chart(means, key='rel_anova_means')
+            presentation.caption('Pointwise Student-t intervals for each group mean; these are not Games–Howell or multiplicity-adjusted pairwise intervals. Their overlap is not a substitute for pairwise comparisons.')
+            if len(means.data[0].x) < len(prepared['summary']):
+                presentation.caption('Groups without estimable mean intervals are omitted from this chart only; all groups remain in the summaries and boxplot.')
+        else:
+            presentation.info('No estimable group mean confidence intervals are available.')
         presentation.markdown('**Games–Howell Pairwise Comparisons**')
+        presentation.caption('Compare mean differences using simultaneous confidence intervals and adjusted p-values across the full family of group pairs.')
+        _show_pair_plot(pairwise)
         if pairwise is not None and not pairwise['table'].empty:
             table = pairwise['table']
             columns = ['Comparison', 'Mean Difference', 'Adjusted p-value', pairwise['lower'], pairwise['upper'], 'Significant']
@@ -173,14 +198,8 @@ def render_anova(df, category, outcome):
                 pairwise['lower']: '{:.6g}', pairwise['upper']: '{:.6g}',
             }), hide_index=True, height=420)
             presentation.caption(f'Mean Difference = Mean(Group A) − Mean(Group B). Studentized-range adjusted p-values and {pairwise["confidence"]:.0%} simultaneous intervals use pair-specific variances and Welch–Satterthwaite degrees of freedom. All {len(table)} pairs form the family; an overall significant ANOVA is not required.')
-            st.download_button('Download Games–Howell comparisons (CSV)', table.to_csv(index=False).encode('utf-8'),
-                               file_name='games_howell_comparisons.csv', mime='text/csv', key='rel_anova_pair_download')
         else:
             presentation.info(pairwise['reason'] if pairwise else 'Games–Howell is unavailable while validated Welch inference is withheld.')
-    with tabs[1]:
-        presentation.markdown('**Group summaries**')
-        presentation.dataframe(prepared['summary'], hide_index=True)
-        presentation.caption('Individual group mean intervals use Student-t, mean ± t(0.975, n−1) × SD/√n. These pointwise 95% intervals are not multiplicity-adjusted pairwise intervals.')
     with tabs[2]:
         presentation.markdown('**Group sizes and variances**')
         presentation.dataframe(pd.DataFrame([
@@ -228,24 +247,6 @@ def render_anova(df, category, outcome):
             presentation.write('No usable entity or chronological structure was supplied. Inference proceeds under the independence assumption, with study-design limitations.')
         presentation.caption('Methods: [Welch ANOVA](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.anova_oneway.html), [unequal-variance effect size](https://www.statsmodels.org/stable/generated/statsmodels.stats.oneway.effectsize_oneway.html), [Games–Howell reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukey_hsd.html).')
     with tabs[3]:
-        presentation.markdown('**Group Boxplot**')
-        if not prepared['summary'].empty:
-            plot = prepared['clean'].copy()
-            plot[category] = plot[category].astype(str)
-            presentation.plotly_chart(px.box(plot, x=category, y=outcome, points='outliers'), key='rel_anova_box')
-        else:
-            presentation.info('No usable observations to plot.')
-        presentation.markdown('**Group Means with 95% Confidence Intervals**')
-        means = group_mean_plot(prepared)
-        if means is not None:
-            presentation.plotly_chart(means, key='rel_anova_means')
-            presentation.caption('Pointwise Student-t intervals for each group mean; these are not Games–Howell or multiplicity-adjusted pairwise intervals.')
-            if len(means.data[0].x) < len(prepared['summary']):
-                presentation.caption('Groups without estimable mean intervals are omitted from this chart only; all groups remain in the summaries and boxplot.')
-        else:
-            presentation.info('No estimable group mean confidence intervals are available.')
-        _show_pair_plot(pairwise)
-    with tabs[4]:
         presentation.markdown('**Overall findings**')
         if result is None:
             presentation.info('Inferential findings are withheld until numerical and study-design concerns are resolved.')

@@ -74,15 +74,30 @@ def render_random(df, outcome, effects, interactions, alpha, prefix):
         ['Choose the study design', 'None expected: group intercepts and selected interactions describe the dependence',
          'Effects vary within the same entity and need correlated slopes', 'Time, repeated measurements, or another grouping needs additional modeling', 'I do not know'], key=base + '_dependence')
     presentation.caption(('For factorial designs, if treatment effects vary across sampled groups, select the relevant factor × group interaction above. Independent interaction components are supported; correlated random slopes, serial correlation and unequal residual variances are not. Do not omit necessary terms to obtain a fit.') if len(factors) > 1 else 'This one-factor model accounts for shared group intercepts only. If other factors or within-entity changes are needed, select them in Comparison and use a supported factorial structure.')
+    tabs = st.tabs(['Overview', 'Group Comparisons', 'Diagnostics', 'ANOVA Findings']) if prefix == 'rel_anova' else None
     if unresolved or answer != 'None expected: group intercepts and selected interactions describe the dependence':
+        if tabs:
+            with tabs[0]:
+                presentation.info('Model awaiting study-design confirmation. No random-effects estimates are available.')
+            for tab in tabs[1:]:
+                with tab:
+                    presentation.info('Results will be available after a valid model is fitted.')
         presentation.info('Confirm group identity and dependence before fitting. Correlated slopes or additional repeated-measure structure are not supported here; select all necessary grouping variables or use a suitable mixed/repeated-measures analysis.')
         return
     try:
         with st.spinner('Checking estimability and fitting the requested REML model…'):
             prepared, result = _fit(df, outcome, effects, tuple(interactions), parents, alpha)
     except (ValueError, TypeError) as exc:
+        if tabs:
+            with tabs[0]:
+                presentation.warning('Model unavailable: ' + str(exc))
+            for tab in tabs[1:]:
+                with tab:
+                    presentation.info('No fitted model results are available. Review the model status in Overview.')
         presentation.warning('Cannot report this model: ' + str(exc))
         return
+    if tabs:
+        return _render_oneway_random(prepared, result, outcome, effects, interactions, parents, alpha, answer, prefix, evidence, tabs)
     begin_result()
     presentation.write('**' + model_family(effects) + '** · REML · ' + str(result['n']) + ' observations')
     presentation.caption(f"Excluded missing/nonfinite observations: {prepared['excluded']}. Balanced full crossing: {prepared['balanced']}. Unobserved combinations: {prepared['empty_cells']} (some may be structurally absent in a nested design).")
@@ -124,4 +139,78 @@ def render_random(df, outcome, effects, interactions, alpha, prefix):
     presentation.write(interpretation)
     offer_result('ANOVA — ' + model_family(effects), str(outcome) + ' by ' + ', '.join(map(str, factors)),
                  {'response': outcome, 'factors': factors}, {'effects': effects, 'parents': parents, 'interactions': interactions, 'alpha': alpha, 'dependence': answer},
+                 result, {'groups': prepared['groups'], 'balanced': prepared['balanced'], 'empty_cells': prepared['empty_cells']}, result['warnings'], interpretation, key=prefix + '_random')
+
+
+def _render_oneway_random(prepared, result, outcome, effects, interactions, parents, alpha, answer, prefix, evidence, tabs):
+    """One-way navigation only; the shared factorial renderer stays unchanged."""
+    from scipy import stats
+    from utils.anova_analysis import prepare_anova
+    from utils.anova_charts import group_mean_plot
+    factor = next(iter(effects))
+    descriptive = prepare_anova(prepared['raw'], factor, outcome)
+    begin_result()
+    with tabs[0]:
+        presentation.markdown('**Analysis Summary**')
+        presentation.table(pd.DataFrame([
+            ('Response variable', str(outcome)), ('Grouping factor', str(factor)),
+            ('Effect type', 'Random'), ('Model family', model_family(effects)),
+            ('Estimation method', 'REML'), ('Observations used', result['n']),
+            ('Number of groups', len(descriptive['groups'])), ('Significance level (α)', alpha),
+        ], columns=['Model detail', 'Value']))
+        presentation.caption(f"Excluded missing/nonfinite observations: {prepared['excluded']}.")
+        presentation.markdown('**Variance Components**')
+        presentation.dataframe(result['variance'], hide_index=True)
+        presentation.write(f"Total modeled variance: {result['total_variance']:.5g}")
+        if result['icc'] is not None:
+            presentation.write(f"ICC: {result['icc']:.4f} — correlation between two observations sharing the same random group.")
+        presentation.caption('Variance-component confidence intervals and significance tests are not supplied. Zero is a boundary; an ordinary chi-square likelihood-ratio test is not valid here.')
+        presentation.plotly_chart(px.bar(result['variance'].assign(Component=lambda frame: frame.Component.replace({'Residual (within groups)': 'Residual'})), x='Component', y='Variance', title='Estimated variance components'))
+    with tabs[1]:
+        presentation.markdown('**Group Statistics**')
+        presentation.dataframe(descriptive['summary'], hide_index=True)
+        presentation.markdown('**Group Boxplot**')
+        presentation.plotly_chart(px.box(prepared['raw'], x=factor, y=outcome, points='outliers', title='Response distributions'))
+        presentation.markdown('**Group Means with 95% Confidence Intervals**')
+        means = group_mean_plot(descriptive)
+        if means is not None:
+            presentation.plotly_chart(means)
+        else:
+            presentation.info('No estimable group mean confidence intervals are available.')
+        presentation.caption('Descriptive, individual Student-t intervals for observed group means; these are not model-based pairwise inferences. Games–Howell is not reported as a random-effects conclusion. Model-appropriate pairwise inference is not implemented.')
+    with tabs[2]:
+        presentation.markdown('**Data and Group Checks**')
+        presentation.dataframe(prepared['groups'], hide_index=True)
+        presentation.caption(f"Excluded missing/nonfinite observations: {prepared['excluded']}. Balanced full crossing: {prepared['balanced']}. Unobserved combinations: {prepared['empty_cells']}.")
+        if not prepared['relationships'].empty:
+            presentation.dataframe(prepared['relationships'], hide_index=True)
+        presentation.caption(f"Converged: {result['converged']}. Positive-definite information: {result['information_positive_definite']}. Near a variance boundary: {result['near_boundary']}.")
+        for note in result['warnings']:
+            presentation.warning(note)
+        presentation.markdown('**Conditional Residual Diagnostics**')
+        presentation.plotly_chart(px.scatter(x=result['fitted'], y=result['residuals'], labels={'x': 'Conditional fitted response', 'y': 'Conditional residual'}, title='Residuals versus fitted response'))
+        (quantiles, ordered), (slope, intercept, _) = stats.probplot(result['residuals'], dist='norm')
+        qq = px.scatter(x=quantiles, y=ordered, labels={'x': 'Theoretical normal quantile', 'y': 'Conditional residual'}, title='Residual normal Q–Q plot')
+        qq.add_scatter(x=quantiles, y=intercept+slope*quantiles, mode='lines', name='Normal reference')
+        presentation.plotly_chart(qq)
+        presentation.markdown('**Independence Assessment**')
+        presentation.write(evidence['state'])
+        presentation.caption(evidence['qualification'])
+        if not evidence['evidence'].empty:
+            presentation.dataframe(evidence['evidence'], hide_index=True)
+        presentation.caption('Review residuals for unequal spread, curves and outliers. Gaussian random effects, Gaussian residuals, common residual variance and conditional independence are assumptions, not conclusions from convergence. No dedicated random-effect normality diagnostic is implemented.')
+    interpretation = 'This model estimates variation among groups representing a broader population. Random variances are not differences between particular group means. Population generalization depends on sampling; these results do not establish causation.'
+    with tabs[3]:
+        presentation.markdown('**Overall Findings**')
+        presentation.write(interpretation)
+        for _, row in result['variance'].iterrows():
+            presentation.write(f"{row['Component']}: estimated variance {row['Variance']:.5g}.")
+        if result['icc'] is not None:
+            presentation.write(f"ICC = {result['icc']:.4f}: the estimated share of modeled variance associated with shared group membership.")
+        presentation.markdown('**Reliability and Limitations**')
+        for note in result['warnings']:
+            presentation.warning(note)
+        presentation.caption('REML estimates rely on the selected group structure, conditional independence and a common residual variance. Variance components do not establish fixed group-mean differences or causation. Review the diagnostic plots and the study design.')
+    offer_result('ANOVA — ' + model_family(effects), str(outcome) + ' by ' + str(factor),
+                 {'response': outcome, 'factors': [factor]}, {'effects': effects, 'parents': parents, 'interactions': interactions, 'alpha': alpha, 'dependence': answer},
                  result, {'groups': prepared['groups'], 'balanced': prepared['balanced'], 'empty_cells': prepared['empty_cells']}, result['warnings'], interpretation, key=prefix + '_random')
