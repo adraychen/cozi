@@ -144,13 +144,15 @@ def render_anova(df, category, outcome):
             presentation.warning('Inference withheld: ' + result_error)
         presentation.markdown('**Statistical Results — Welch One-way ANOVA**')
         if result is not None:
-            presentation.dataframe(pd.DataFrame([result]).style.format({
-                'F': '{:.6g}', 'p-value': '{:.4g}', 'df between': '{:.6g}',
-                'df denominator': '{:.6g}', EFFECT_SIZE: '{:.6g}', 'alpha': '{:.3g}',
+            presentation.dataframe(pd.DataFrame([result]).rename(columns={
+                'df between': 'df numerator', EFFECT_SIZE: "Effect Size (Cohen's f²)",
+            }).style.format({
+                'F': '{:.6g}', 'p-value': '{:.4g}', 'df numerator': '{:.6g}',
+                'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'alpha': '{:.3g}',
             }), hide_index=True)
             presentation.markdown('**Effect Size**')
-            presentation.write(f'{EFFECT_SIZE}: {result[EFFECT_SIZE]:.4g}. Larger values describe greater variance-weighted separation of group means. Practical importance depends on the response scale and context.')
-            presentation.caption("This unequal-variance plug-in Cohen f² estimate uses group-size/variance weights (statsmodels effectsize_oneway, use_var='unequal', ddof_between=0). It is not bias corrected, is not a percentage of explained variation, and is not computed from the descriptive SS table or Welch-corrected F. No universal small/medium/large thresholds are imposed.")
+            presentation.write(f'Cohen f² (Welch): {result[EFFECT_SIZE]:.4g}')
+            presentation.caption('See Help → Effect Size (Cohen’s f²) for an explanation.')
         else:
             presentation.info('Descriptive summaries remain available; validated Welch inference is not available.')
         presentation.markdown('**Variation Decomposition**')

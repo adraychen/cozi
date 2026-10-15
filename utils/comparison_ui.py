@@ -106,8 +106,10 @@ def render_comparison(df, col_types):
         if not col_types['categorical'] or not col_types['numerical']:
             st.info('One-way ANOVA requires a categorical grouping variable and a numerical outcome. Set their Variable Types in Column Overview.')
             return
-        category=st.selectbox('Grouping variable',col_types['categorical'],key='gs_cmp_group')
-        outcome=st.selectbox('Numerical outcome',col_types['numerical'],key='gs_cmp_outcome')
+        category = col_types['categorical'][0]
+        outcome = col_types['numerical'][0]
+        st.write('**Grouping variable:**', str(category))
+        st.write('**Numerical outcome:**', str(outcome))
         try:
             render_anova(df,category,outcome)
         except (ValueError,TypeError) as exc:

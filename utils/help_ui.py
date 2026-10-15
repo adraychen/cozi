@@ -6,6 +6,12 @@ FEATURE_HELP = {
     '95% Confidence Interval (Mean)': "Estimates the population mean using Student's t distribution. This method assumes independent observations and approximately normal data or a sufficiently large sample. Missing and infinite values are excluded. At least two valid values are required.",
     'Aggregate': 'Group rows and calculate summaries.',
     'Coefficient of Variation': 'Expresses the sample standard deviation as a percentage of the mean. The app shows it only when the mean is positive. It is meaningful for ratio-scale data with a true zero and can be unstable when the mean is close to zero.',
+    "Effect Size (Cohen's f²)": (
+        "Cohen's f² measures the magnitude of differences among group means relative to within-group variability. "
+        "A variance-weighted version compatible with Welch's ANOVA is used to accommodate unequal group variances.\n\n"
+        "Larger values indicate greater separation of group means. The effect size is not a percentage of explained variation, "
+        "and its practical importance depends on the analytical context."
+    ),
     'Mean Absolute Error (MAE)': 'Measures the average absolute difference between observed and predicted response values. It is expressed in response units. A residual is an observed value minus its predicted value.',
     'Pivot': 'Turn values into columns.',
     'Residual Standard Error': 'Estimates the standard deviation of regression errors, expressed in response units. Residual degrees of freedom account for the number of fitted model parameters. A residual is an observed value minus its predicted value.',

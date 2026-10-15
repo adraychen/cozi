@@ -60,3 +60,7 @@ Statistical implementation references:
 - All 11 focused ANOVA effect tests pass, including independent numerical references and Streamlit state/report checks.
 - Complete suite: 361 tests run; 359 pass. Two existing failures reproduce with the original ANOVA renderers in an isolated copy: `test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create` expects an obsolete dropdown placeholder, and `test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action` cannot find its target checkbox. Neither failure originates in the ANOVA changes.
 - Real-browser checks use the synthetic fixture: one-way Fixed/Random routing, factorial Fixed/Mixed routing, group-identity and dependence clarification, result tables, diagnostics and charts. Desktop and mobile-width layouts were inspected; tables retain horizontal scrolling, and long chart titles were shortened for mobile.
+
+### One-way effect-size explanation
+
+The result shows Cohen f² (Welch) and its value. Interpretation is in Help → Effect Size (Cohen's f²). The results table labels are df numerator and Effect Size (Cohen's f²); stored calculation keys remain unchanged for compatibility. Technical method: the existing unequal-variance plug-in estimate uses group-size/variance weights (`effectsize_oneway`, `use_var="unequal"`, `ddof_between=0`). It is not bias corrected, is not a percentage of explained variation, and is not computed from the descriptive SS table or Welch-corrected F. Calculations are unchanged.

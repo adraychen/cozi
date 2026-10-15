@@ -101,7 +101,7 @@ These are the current patterns, not a newly approved universal control policy:
 | Group Statistics | Single-choice numerical and temporal checkbox grids; multiple categorical checkboxes | Analysis and statistic dropdowns |
 | Visual Analysis | Multiple variable checkboxes; single-choice role checkboxes; multiple line measures/pair-plot variables | Chart-selection buttons; settings use dropdowns, sliders and Boolean checkboxes |
 | Relationship | Multiple variable checkboxes; regression response is exclusive and predictors/terms are multiple checkboxes | Analysis dropdown; supplementary chart radio buttons; other analyses retain role dropdowns |
-| Comparison | Multiple initial variable checkboxes; downstream role dropdowns/multiselects as implemented | Eligible-analysis dropdown; method-specific controls |
+| Comparison | Multiple initial variable checkboxes; One-way ANOVA displays its grouping variable and numerical outcome as labels; other downstream role controls remain as implemented | Eligible-analysis dropdown; method-specific controls |
 | Predictive Analytics | Target dropdown and predictor checkboxes | Explicit Run action; result-class dropdowns |
 
 Single-choice checkbox groups must continue to enforce exclusivity. Multiple-choice groups retain their current bulk-selection actions. Analysis choices remain dependent on eligible variables. Do not standardize controls by exposing unsupported analyses or removing required study-design decisions.
