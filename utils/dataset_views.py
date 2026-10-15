@@ -295,6 +295,33 @@ def render_analyze(raw, _show_feedback):
     df, col_types = effective_data(raw, variable_metadata)
     st.session_state["col_types"] = col_types
     col_to_type = {c: m["variable_type"] for c, m in variable_metadata.items()}
+    st.html('''<style>
+        .st-key-view_analytics_section > div > [role="tablist"] {
+            gap:.35rem; border-bottom:1px solid #8886; overflow:visible;
+        }
+        .st-key-view_analytics_section > div > [role="tablist"] > [role="tab"] {
+            border:1px solid #8885; border-radius:.6rem .6rem 0 0;
+            padding:.65rem 1.1rem; height:auto; margin-bottom:-1px;
+            background:var(--secondary-background-color, #f0f2f6); font-weight:600;
+        }
+        .st-key-view_analytics_section > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+            background:var(--background-color, #fff); border-bottom-color:var(--background-color, #fff);
+            color:var(--primary-color, #4c72b0); position:relative; z-index:1;
+        }
+        .st-key-view_analytics_section > div > [role="tablist"] > [data-baseweb="tab-highlight"],
+        .st-key-view_analytics_section > div > [role="tablist"] > [data-baseweb="tab-border"] {display:none;}
+    </style>''')
+    exploratory, predictive = st.tabs(['Exploratory Data Analysis', 'Predictive Analytics'],
+                                    key='view_analytics_section', on_change='rerun')
+    if exploratory.open:
+        with exploratory:
+            render_exploratory(raw, df, col_types, col_to_type, variable_metadata, _show_feedback)
+    elif predictive.open:
+        with predictive:
+            render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback)
+
+
+def render_exploratory(raw, df, col_types, col_to_type, variable_metadata, _show_feedback):
     # ── Exploratory Data Analysis ─────────────────────────────────────────────────
     presentation.subheader("Exploratory Data Analysis")
     recommended = st.session_state.get('temporal_recommendation')
@@ -662,10 +689,6 @@ def render_analyze(raw, _show_feedback):
 
 
     _show_feedback("Exploratory Data Analysis", "eda")
-
-    st.divider()
-    render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback)
-
 
 @reportable
 def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedback):

@@ -37,9 +37,9 @@ class AnalyzeLoadingTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertNotIn('ai_calls', app.session_state)
         self.assertNotIn('group_calls', app.session_state)
-        self.assertTrue(any(item.key.startswith('pa_target_check_') for item in app.checkbox))
+        self.assertFalse(any(item.key.startswith('pa_target_check_') for item in app.checkbox))
         self.assertFalse(any(item.key == 'pa_target_select' for item in app.selectbox))
-        self.assertNotIn('Predictive Analytics', [tab.label for tab in app.tabs])
+        self.assertEqual([tab.label for tab in app.tabs if tab.label in ('Exploratory Data Analysis', 'Predictive Analytics')], ['Exploratory Data Analysis', 'Predictive Analytics'])
         generate = next(button for button in app.button if button.label == 'Generate interpretation')
         generate.click().run(timeout=60)
         self.assertFalse(app.exception)
@@ -55,14 +55,18 @@ class AnalyzeLoadingTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['group_calls'], 1)
         self.assertEqual(app.session_state['ai_calls'], 1)
+        app.session_state['view_analytics_section'] = 'Predictive Analytics'
+        app.run(timeout=60)
+        self.assertTrue(any(item.key.startswith('pa_target_check_') for item in app.checkbox))
+        self.assertFalse(any(tab.label == 'Descriptive Statistics' for tab in app.tabs))
         app.button(key='pa_select_all_Numerical').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertTrue(app.checkbox(key='pa_pred_other').value)
-        app.session_state['view_analyze_tabs'] = 'Descriptive Statistics'
+        app.session_state['view_analytics_section'] = 'Exploratory Data Analysis'
         app.run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['ai_calls'], 1)
-        app.session_state['view_analyze_tabs'] = 'Descriptive Statistics'
+        app.session_state['view_analytics_section'] = 'Predictive Analytics'
         app.run(timeout=60)
         self.assertTrue(app.checkbox(key='pa_pred_other').value)
         self.assertFalse(app.exception)
