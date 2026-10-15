@@ -65,13 +65,6 @@ def _show_pair_plot(pairwise):
         presentation.info(pairwise['reason'] if pairwise else 'Pairwise inference is withheld until the study-design concern is resolved.')
         return
     table = pairwise['table']
-    mode = st.selectbox('Comparisons to plot', ['All comparisons', 'Significant comparisons', 'Nonsignificant comparisons'],
-                        key='rel_anova_pair_filter')
-    if mode != 'All comparisons':
-        table = table[table.Significant.eq(mode == 'Significant comparisons')]
-    if table.empty:
-        presentation.info('No comparisons match this filter.')
-        return
     pages = math.ceil(len(table)/20)
     if pages > 1:
         if st.session_state.get('rel_anova_pair_page', 0) >= pages:
@@ -81,10 +74,8 @@ def _show_pair_plot(pairwise):
     else:
         page = 0
     shown = table.iloc[page*20:(page+1)*20]
-    presentation.caption(f'Showing {len(shown)} of {len(table)} filtered comparisons. Filtering does not change the full comparison family or its adjustment.')
     fig = pairwise_plot(pairwise, shown)
     presentation.plotly_chart(fig, key='rel_anova_pair_plot')
-    presentation.caption(f'{pairwise["confidence"]:.0%} simultaneous Games–Howell intervals. Above zero: A has the higher mean; below zero: B has the higher mean. An interval containing zero does not establish equality. Significance uses the adjusted p-value at α = {pairwise["alpha"]:g}.')
 
 
 @reportable
@@ -170,7 +161,6 @@ def render_anova(df, category, outcome):
     with tabs[1]:
         presentation.markdown('**Group Statistics**')
         presentation.dataframe(prepared['summary'], hide_index=True)
-        presentation.caption('Individual group mean intervals use Student-t, mean ± t(0.975, n−1) × SD/√n. These pointwise 95% intervals are not multiplicity-adjusted pairwise intervals.')
         presentation.markdown('**Group Boxplot**')
         if not prepared['summary'].empty:
             plot = prepared['clean'].copy()
@@ -182,14 +172,11 @@ def render_anova(df, category, outcome):
         means = group_mean_plot(prepared)
         if means is not None:
             presentation.plotly_chart(means, key='rel_anova_means')
-            presentation.caption('Pointwise Student-t intervals for each group mean; these are not Games–Howell or multiplicity-adjusted pairwise intervals. Their overlap is not a substitute for pairwise comparisons.')
             if len(means.data[0].x) < len(prepared['summary']):
                 presentation.caption('Groups without estimable mean intervals are omitted from this chart only; all groups remain in the summaries and boxplot.')
         else:
             presentation.info('No estimable group mean confidence intervals are available.')
         presentation.markdown('**Games–Howell Pairwise Comparisons**')
-        presentation.caption('Compare mean differences using simultaneous confidence intervals and adjusted p-values across the full family of group pairs.')
-        _show_pair_plot(pairwise)
         if pairwise is not None and not pairwise['table'].empty:
             table = pairwise['table']
             columns = ['Comparison', 'Mean Difference', 'Adjusted p-value', pairwise['lower'], pairwise['upper'], 'Significant']
@@ -197,9 +184,9 @@ def render_anova(df, category, outcome):
                 'Mean Difference': '{:.6g}', 'Adjusted p-value': '{:.4g}',
                 pairwise['lower']: '{:.6g}', pairwise['upper']: '{:.6g}',
             }), hide_index=True, height=420)
-            presentation.caption(f'Mean Difference = Mean(Group A) − Mean(Group B). Studentized-range adjusted p-values and {pairwise["confidence"]:.0%} simultaneous intervals use pair-specific variances and Welch–Satterthwaite degrees of freedom. All {len(table)} pairs form the family; an overall significant ANOVA is not required.')
         else:
             presentation.info(pairwise['reason'] if pairwise else 'Games–Howell is unavailable while validated Welch inference is withheld.')
+        _show_pair_plot(pairwise)
     with tabs[2]:
         presentation.markdown('**Group sizes and variances**')
         presentation.dataframe(pd.DataFrame([

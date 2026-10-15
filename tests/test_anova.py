@@ -291,6 +291,13 @@ class AnovaUITests(unittest.TestCase):
         self.assertGreaterEqual(len(diagnostics.get('plotly_chart')), 3)
         self.assertFalse(app.get('download_button'))
         self.assertEqual(app.button(key='report_add_anova').label, 'Add to Report')
+        self.assertFalse(any(widget.key == 'rel_anova_pair_filter' for widget in app.selectbox))
+        self.assertFalse(any('Student-t' in caption.value or 'filtered comparisons' in caption.value or 'simultaneous Games–Howell intervals.' in caption.value or 'Mean Difference = Mean(Group A)' in caption.value for caption in groups.caption))
+        content = app.session_state['report_latest']['content']
+        heading = next(i for i, item in enumerate(content) if item == ('Subheading', 'Games–Howell Pairwise Comparisons'))
+        self.assertEqual(content[heading + 1][0], 'Table')
+        self.assertEqual(content[heading + 2], ('Subheading', 'Games–Howell Pairwise Comparison Plot'))
+
 
     def test_invalid_groups_keep_summary(self):
         app = AppTest.from_string("""

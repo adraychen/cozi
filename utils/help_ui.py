@@ -12,6 +12,19 @@ FEATURE_HELP = {
         "Larger values indicate greater separation of group means. The effect size is not a percentage of explained variation, "
         "and its practical importance depends on the analytical context."
     ),
+    'Games–Howell Pairwise Comparisons': """**Games–Howell Pairwise Comparisons** identifies which specific group means differ significantly after a One-way ANOVA. It is particularly suitable when groups have unequal variances or different sample sizes.
+
+The method compares every pair of groups and adjusts for multiple comparisons to reduce the risk of false-positive findings.
+
+**How to interpret the results:**
+
+- **Mean Difference:** The difference between two group means (first group minus second group). A positive value indicates that the first group has a higher mean.
+- **Adjusted p-value:** Indicates whether the difference is statistically significant after accounting for multiple comparisons. A value below the selected significance level (typically 0.05) indicates a statistically significant difference.
+- **95% Confidence Interval:** Provides a range of plausible values for the difference between the two population means, adjusted for multiple comparisons. If the interval excludes zero, the difference is statistically significant at the corresponding confidence level.
+- **Pairwise Comparison Plot:** Displays mean differences and their confidence intervals. The vertical reference line at zero represents no difference between the two group means.
+
+**Important:** A statistically significant difference does not necessarily mean the difference is practically important. Consider the magnitude of the mean difference and its relevance to the analytical context.
+""",
     'Mean Absolute Error (MAE)': 'Measures the average absolute difference between observed and predicted response values. It is expressed in response units. A residual is an observed value minus its predicted value.',
     'Pivot': 'Turn values into columns.',
     'Residual Standard Error': 'Estimates the standard deviation of regression errors, expressed in response units. Residual degrees of freedom account for the number of fitted model parameters. A residual is an observed value minus its predicted value.',
