@@ -36,7 +36,7 @@ def _choose_group_operation(key):
 def render_operation_selector():
     # Keep one canonical operation across independent group dropdowns, including
     # older sessions and the operation restored after Apply and continue.
-    operation = st.session_state.get('tf_operation', 'Join')
+    operation = st.session_state.get('tf_operation')
     if operation not in [op for ops in OPERATION_GROUPS.values() for op in ops]:
         operation = None
     st.session_state['tf_operation'] = operation
@@ -47,8 +47,7 @@ def render_operation_selector():
         for group, options in OPERATION_GROUPS.items():
             key = operation_menu_key(group)
             with st.container(width=220):
-                st.selectbox(group, [None] + options, key=key,
-                             format_func=lambda value: 'Choose operation…' if value is None else value,
+                st.selectbox(group, options, index=None, placeholder='Choose an option', key=key,
                              on_change=_choose_group_operation, args=(key,))
     if operation:
         st.markdown(f'**{operation}**')
@@ -112,7 +111,6 @@ def render_transform(dataset_id, registry):
     columns = list(frame)
     operation = render_operation_selector()
     if operation is None:
-        st.info('Choose an operation from one of the groups above.')
         return
     st.caption('Preview a change, then choose Apply and continue to edit another column or run another operation. Create dataset saves the combined result; source tables are preserved.')
     config = {'operation': operation, 'source': dataset_id}
