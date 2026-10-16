@@ -4,6 +4,7 @@ from utils.report_capture import reportable, offer_result
 """Factorial ANOVA configuration and readable model reporting."""
 from itertools import combinations
 import numpy as np
+import pandas as pd
 import plotly.express as px
 from scipy import stats
 import streamlit as st
@@ -206,7 +207,6 @@ def render_findings(prepared, result, diagnostics, comparisons):
 @reportable
 def render_factorial_anova(df, numerical, categorical):
     presentation.markdown('##### Factorial ANOVA')
-    presentation.caption('One numerical response and two or more categorical factors, with optional two-way interactions. All selected main effects remain in the model.')
     metadata = st.session_state.get('variable_metadata', {})
     numerical = numerical_candidates(df, numerical, metadata)
     categorical = [c for c in categorical if metadata.get(c, {}).get('variable_type', 'Categorical') == 'Categorical'
@@ -220,7 +220,6 @@ def render_factorial_anova(df, numerical, categorical):
     outcome, factors = numerical[0], list(categorical)
     presentation.write('**Response (Y):** ' + str(outcome))
     presentation.write('**Factors (X):** ' + ', '.join(map(str, factors)))
-    presentation.caption('To change these variables, update the selection in Comparison.')
     from utils.anova_effects_ui import effect_controls, render_random
     effects = effect_controls(factors, outcome, 'fac')
     if len(factors) < 2:
@@ -273,6 +272,14 @@ def render_factorial_anova(df, numerical, categorical):
                    key='fac_results_tab', on_change='rerun')
     with tabs[0]:
         presentation.subheader('Model Overview')
+        from utils.anova_effects import model_family
+        presentation.markdown('**Model summary**')
+        presentation.table(pd.DataFrame([
+            ('Response / Dependent Variable', str(outcome)),
+            ('Factors / Independent Variables', ', '.join(map(str, factors))),
+            ('Effect type', 'Fixed'), ('Analysis method', model_family(effects)),
+            ('Significance level', str(alpha)),
+        ], columns=['Model detail', 'Value']))
         if failure:
             st.error('Model issue — requested Factorial ANOVA inference is unavailable. Review Diagnostics.')
         else:

@@ -21,16 +21,21 @@ def effect_controls(factors, outcome, prefix):
     for factor in set(previous)-set(factors):
         st.session_state.pop(base + '_' + hashlib.sha256(str(factor).encode()).hexdigest()[:16], None)
     effects = sync_effects(previous, factors)
-    presentation.caption('Are you comparing these specific groups, or understanding variation across a broader population of groups? Fixed compares selected groups (for example, Machines A, B and C). Random estimates population variability (for example, machine-to-machine variation among sampled machines). Neither the number of groups nor an identifier name determines the choice.')
+    if prefix == 'fac':
+        presentation.markdown('##### Factor effect type')
+        presentation.write('Fixed Effect: The groups being studied are the specific groups you want to draw conclusions about.')
+        presentation.write('Random Effect: The groups being studied are treated as a sample from a broader population of groups.')
+    else:
+        presentation.caption('Are you comparing these specific groups, or understanding variation across a broader population of groups? Fixed compares selected groups (for example, Machines A, B and C). Random estimates population variability (for example, machine-to-machine variation among sampled machines). Neither the number of groups nor an identifier name determines the choice.')
     for factor in factors:
         key = base + '_' + hashlib.sha256(str(factor).encode()).hexdigest()[:16]
         if key not in st.session_state:
             st.session_state[key] = effects[factor]
         effects[factor] = st.radio(f'{factor} — Effect Type', ['Fixed', 'Random'], horizontal=True, key=key)
     st.session_state[base] = effects
-    if len(factors) > 1:
+    if prefix != 'fac' and len(factors) > 1:
         presentation.write('Automatically selected model: **' + model_family(effects) + '**')
-    elif 'Random' in effects.values():
+    elif prefix != 'fac' and 'Random' in effects.values():
         presentation.write('**' + model_family(effects) + '**')
     return effects
 
@@ -100,7 +105,14 @@ def render_random(df, outcome, effects, interactions, alpha, prefix):
     if tabs:
         return _render_oneway_random(prepared, result, outcome, effects, interactions, parents, alpha, answer, prefix, evidence, tabs)
     begin_result()
-    presentation.write('**' + model_family(effects) + '** · REML · ' + str(result['n']) + ' observations')
+    presentation.markdown('**Model summary**')
+    presentation.table(pd.DataFrame([
+        ('Response / Dependent Variable', str(outcome)),
+        ('Factors / Independent Variables', ', '.join(map(str, factors))),
+        ('Analysis method', model_family(effects)),
+        ('Estimation method', 'REML'), ('Used rows', str(result['n'])),
+        ('Significance level', str(alpha)),
+    ], columns=['Model detail', 'Value']))
     presentation.caption(f"Excluded missing/nonfinite observations: {prepared['excluded']}. Balanced full crossing: {prepared['balanced']}. Unobserved combinations: {prepared['empty_cells']} (some may be structurally absent in a nested design).")
     presentation.dataframe(prepared['groups'], hide_index=True)
     if not prepared['relationships'].empty:

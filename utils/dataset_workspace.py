@@ -8,6 +8,30 @@ import streamlit as st
 from utils.table_transforms import validate_table
 
 ADD_TAB = '＋ Add datasets'
+
+
+def _scroll_to_opened_dataset():
+    """Reset navigation once after an import, after the new view reaches the DOM."""
+    import streamlit.components.v2 as components
+
+    scroll = components.component('cozy_dataset_open_scroll', html='<span></span>', isolate_styles=False, js='''
+export default function({parentElement}) {
+    const heading = parentElement.closest('.st-key-ws_dataset_heading');
+    let secondFrame;
+    const firstFrame = requestAnimationFrame(() => {
+        secondFrame = requestAnimationFrame(() => {
+            heading?.scrollIntoView({block: 'start', behavior: 'instant'});
+        });
+    });
+    return () => {
+        cancelAnimationFrame(firstFrame);
+        if (secondFrame) cancelAnimationFrame(secondFrame);
+    };
+}
+''')
+    scroll(key='ws_dataset_open_scroll')
+
+
 _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summary',
               'datetime_overrides', 'override_warnings', 'regression_cached_fit'}
 _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'fac_', 'pa_', 'mc_',
@@ -293,7 +317,10 @@ def render_workspace(samples, show_feedback):
         activate(st.session_state, dataset_id)
         try:
             with st.container():
-                st.subheader(entry['name'])
+                with st.container(key='ws_dataset_heading'):
+                    st.subheader(entry['name'])
+                    if pending == dataset_id:
+                        _scroll_to_opened_dataset()
                 st.caption(f"{len(entry['frame']):,} rows · {len(entry['frame'].columns):,} columns · {entry['source']}")
                 context = st.session_state.get('temporal_return_context', {})
                 if context.get('target_id') == dataset_id:
