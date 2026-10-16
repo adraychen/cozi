@@ -166,8 +166,10 @@ st.session_state['variable_metadata'] = {
 render_factorial_anova(df, ['Y','B'], ['A','B','D'])
 ''').run(timeout=30)
         self.assertFalse(app.exception)
-        self.assertEqual(app.selectbox(key='fac_y').options, ['Y'])
-        self.assertEqual(app.multiselect(key='fac_x').options, ['A','B'])
+        self.assertFalse(any(w.key == 'fac_y' for w in app.selectbox))
+        self.assertFalse(any(w.key == 'fac_x' for w in app.multiselect))
+        self.assertTrue(any('**Response (Y):** Y' in m.value for m in app.markdown))
+        self.assertTrue(any('**Factors (X):** A, B' in m.value for m in app.markdown))
         self.assertTrue(any('Partial η²' in t.value for t in app.dataframe))
 
     def test_controls_results_and_stale_selections(self):
@@ -183,7 +185,6 @@ render_comparison(df, {'numerical':['Y'], 'categorical':['A','B','D'], 'datetime
         app.button(key='gs_cmp_all_categorical').click().run()
         app.selectbox(key='gs_cmp_analysis').select('Factorial ANOVA').run()
         self.assertFalse(app.exception)
-        app.multiselect(key='fac_x').set_value(['A', 'B', 'D']).run()
         app.multiselect(key='fac_interactions').set_value([('A', 'B')]).run()
         self.assertFalse(app.exception)
         app.button(key='fac_apply_model').click().run(timeout=40)
@@ -193,8 +194,11 @@ render_comparison(df, {'numerical':['Y'], 'categorical':['A','B','D'], 'datetime
         app.button(key='fac_apply_model').click().run(timeout=40)
         app.checkbox(key='fac_posthoc_show').check().run()
         self.assertTrue(any('Holm-adjusted p-value' in t.value for t in app.dataframe))
-        app.multiselect(key='fac_x').set_value(['A']).run()
-        self.assertTrue(any('at least two' in m.value for m in app.info))
+        app.checkbox(key='gs_cmp_variable_D').uncheck().run()
+        app.button(key='fac_apply_model').click().run(timeout=40)
+        self.assertTrue(any('**Factors (X):** A, B' in m.value for m in app.markdown))
+        app.checkbox(key='gs_cmp_variable_B').uncheck().run()
+        self.assertFalse(any('Partial η²' in t.value for t in app.dataframe))
         self.assertFalse(app.exception)
 
 

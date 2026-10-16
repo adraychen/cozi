@@ -211,18 +211,16 @@ def render_factorial_anova(df, numerical, categorical):
     numerical = numerical_candidates(df, numerical, metadata)
     categorical = [c for c in categorical if metadata.get(c, {}).get('variable_type', 'Categorical') == 'Categorical'
                    and metadata.get(c, {}).get('variable_subtype', 'Nominal') in ('Binary', 'Nominal', 'Ordinal')]
-    if not numerical or len(categorical) < 2:
+    if len(numerical) != 1 or len(categorical) < 2:
         presentation.info('Select one Numerical response and at least two Categorical variables in Comparison. Review Variable Type / Subtype in Column Overview; numerical codes must be explicitly classified as categorical to be factors.')
         return
-    _prune('fac_y', numerical)
-    _prune('fac_x', categorical, True)
     st.markdown('<a id="fac-model-configuration"></a>', unsafe_allow_html=True)
     if st.session_state.get('fac_review_terms'):
-        st.info('Review the response, factors, effect types and interactions below. Confirm changes to fit a new model.')
-    outcome = st.selectbox('Response (Y)', numerical, key='fac_y')
-    if 'fac_x' not in st.session_state:
-        st.session_state['fac_x'] = categorical[:]
-    factors = st.multiselect('Factors (X)', categorical, key='fac_x')
+        st.info('Review effect types and interactions below. Change response or factor selections in Comparison. Confirm changes to fit a new model.')
+    outcome, factors = numerical[0], list(categorical)
+    presentation.write('**Response (Y):** ' + str(outcome))
+    presentation.write('**Factors (X):** ' + ', '.join(map(str, factors)))
+    presentation.caption('To change these variables, update the selection in Comparison.')
     from utils.anova_effects_ui import effect_controls, render_random
     effects = effect_controls(factors, outcome, 'fac')
     if len(factors) < 2:

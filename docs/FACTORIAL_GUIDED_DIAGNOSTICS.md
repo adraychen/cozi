@@ -4,6 +4,11 @@ The fixed-effects Factorial ANOVA uses the existing Type II calculation engine.
 No fitting, significance, marginality, adjusted-mean, simple-effect or multiplicity
 calculations were changed. Guidance runs offline without an AI service.
 
+Response and factor selections are displayed as plain text, using the variables
+selected in Comparison. There are no duplicate Response (Y) or Factors (X)
+dropdowns within Factorial ANOVA. Effect types and interaction choices remain
+editable because they specify the model.
+
 ## Interface and message placement
 
 - **Model Overview:** one diagnostic status, response/factor model information,
@@ -55,6 +60,13 @@ Study-design answers are scoped to a fingerprint of source data, variable
 metadata and analysis configuration. Changed data, variables or model settings
 reset those answers. Existing dataset-scoped `fac_` state is preserved. Random
 model structure confirmations also reset when the source context changes.
+
+Factorial action buttons (`fac_open_diagnostics`, `fac_apply_model`, and
+`fac_action_*`) are excluded from workspace state retention, dataset snapshots
+and restoration. Streamlit forbids assigning button values through session
+state, including assigning `False`. Old saved datasets containing these action
+keys are filtered when restored. Integration tests exercise actual workspace
+reruns, navigation actions, model confirmation and dataset switching.
 
 The existing `factorial` report component identifier is preserved. Report
 snapshots include the structured diagnostic records and study-design

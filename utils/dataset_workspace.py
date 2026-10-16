@@ -13,7 +13,7 @@ _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summa
 _PREFIXES = ('vm_', 'va_', 'rel_', 'reg_', 'pred_', 'dist_', 'gs_', 'fac_', 'pa_', 'mc_',
              'col_ai_', 'heatmap_ai_', 'tf_', 'view_', 'temporal_')
 _TRIGGERS = {'vm_apply', 'pa_select_all', 'pa_deselect_all', 'pa_run_btn', 'pa_temporal_choose_target', 'tf_preview', 'tf_create',
-             'rel_anova_ai_generate',
+             'rel_anova_ai_generate', 'fac_open_diagnostics', 'fac_apply_model',
              'tf_apply', 'tf_draft_create', 'tf_draft_discard', 'tf_draft_finish',
              'view_remove_duplicate_columns', 'view_remove_duplicate_rows', 'view_duplicate_rows_confirm', 'view_duplicate_rows_cancel', 'view_generate_ai', 'temporal_resume_button'}
 
@@ -25,7 +25,7 @@ def dataset_state_key(key):
     owned = key in _DATA_KEYS or key.startswith(_PREFIXES)
     trigger = (key in _TRIGGERS or key.endswith(('_download', '_all', '_clear'))
                or key.startswith(('va_graph_button_', 'mc_all_', 'mc_clear_',
-                                  'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_',
+                                  'gs_cmp_all_', 'gs_cmp_clear_', 'rel_log_predict_', 'fac_action_',
                                   'pa_select_all_', 'pa_clear_all_', 'view_ai_generate_', 'temporal_create_button_', 'temporal_select_button_')))
     return owned and not trigger
 
