@@ -24,6 +24,31 @@ def select_operation(app, operation):
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_dataset_navigation_uses_full_app_reruns(self):
+        app = self.app()
+        self.add_manual(app, 'Existing', 'x\n1\n2')
+        dataset_id = app.session_state['ws_active']
+
+        def assert_full_app_widget(key):
+            state = app._session_state._state
+            widget_id = state._key_id_mapper.get_id_from_key(key)
+            self.assertIsNone(state._new_widget_state.widget_metadata[widget_id].fragment_id)
+
+        assert_full_app_widget('ws_add_dataset_tab')
+        app.button(key='ws_add_dataset_tab').click().run(timeout=60)
+        assert_full_app_widget('ws_sample_iris.csv')
+        # A full-app rerun can happen between displaying the menu and clicking it.
+        app.run(timeout=60)
+        assert_full_app_widget('ws_sample_iris.csv')
+        with patch('requests.get', return_value=Mock(text='x,y\n2,3\n4,5')):
+            app.button(key='ws_sample_iris.csv').click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['ws_dataset_tabs'], 'iris.csv')
+        assert_full_app_widget('ws_dataset_select_' + dataset_id)
+        app.button(key='ws_dataset_select_' + dataset_id).click().run(timeout=60)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['ws_active'], dataset_id)
+
     def test_unique_value_details_fragment_rerun(self):
         from dataclasses import replace
         from streamlit.testing.v1.local_script_runner import LocalScriptRunner

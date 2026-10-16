@@ -226,8 +226,11 @@ def render_add_datasets(samples):
                     st.error(f'Could not load the sample: {exc}')
 
 
-@st.fragment
 def render_workspace(samples, show_feedback):
+    # Navigation must request a full-app rerun. A full rerun clears Streamlit's
+    # fragment registry before rebuilding the page; queued clicks on workspace
+    # widgets must not depend on an old fragment still being registered.
+    # Keep fragments on individual result panels, not the workspace shell.
     # Scope the larger navigation treatment to the workflow row, leaving dataset
     # tabs and nested analytical tabs at their existing sizes.
     st.html('''<style>
