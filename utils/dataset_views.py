@@ -1,3 +1,5 @@
+from utils.numerical_formatting import sync_formatting_context
+from utils.numerical_formatting import format_statistic as fmt, DESCRIPTIVE, format_results, format_row_results
 from utils.report_capture import reportable, offer_result
 import pandas as pd
 import re
@@ -45,6 +47,7 @@ def dataset_csv(frame, metadata=None):
 
 
 def render_inspect(df, _show_feedback, dataset_name='Dataset'):
+    sync_formatting_context(st.session_state)
     raw = df
     with st.expander("Dataset Preview", expanded=True):
         # ── Dataset Preview ───────────────────────────────────────────────────────────
@@ -101,14 +104,14 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
             series = df[col_name]
             total = len(series)
             missing = int(series.isna().sum())
-            missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+            missing_pct = missing / total * 100 if total > 0 else 0.0
             unique = int(series.nunique())
             is_discrete = variable_metadata[col_name]["variable_subtype"] == "Discrete"
             has_data = not series.isna().all()
 
-            mn  = f"{series.min():.2f}"  if has_data else "—"
-            mx  = f"{series.max():.2f}"  if has_data else "—"
-            avg = f"{series.mean():.2f}" if has_data else "—"
+            mn  = fmt(series.min(), 'minimum')  if has_data else "—"
+            mx  = fmt(series.max(), 'maximum')  if has_data else "—"
+            avg = fmt(series.mean(), 'mean') if has_data else "—"
 
             with st.container(border=True):
                 presentation.markdown(f"**{col_name}**")
@@ -124,9 +127,9 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with right:
                     statistics = [
                         ("Missing Values", missing),
-                        ("Missing %",      f"{missing_pct:.2f}%"),
+                        ("Missing %",      fmt(missing_pct, 'percentage')),
                         ("Unique Values",  unique),
-                        ("Unique %",       f"{round(unique / total * 100, 2):.2f}%"),
+                        ("Unique %",       fmt(unique / total * 100, 'percentage')),
                         ("Minimum",        mn),
                         ("Maximum",        mx),
                         ("Average",        avg),
@@ -138,7 +141,7 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
             series = df[col_name]
             total = len(series)
             missing = int(series.isna().sum())
-            missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+            missing_pct = missing / total * 100 if total > 0 else 0.0
             unique = int(series.nunique())
 
             if series.dtype == object:
@@ -161,12 +164,12 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with right:
                     statistics = [
                         ("Missing Values",     missing),
-                        ("Missing %",          f"{missing_pct:.2f}%"),
+                        ("Missing %",          fmt(missing_pct, 'percentage')),
                         ("Unique Values",      unique),
-                        ("Unique %",           f"{round(unique / total * 100, 2):.2f}%"),
+                        ("Unique %",           fmt(unique / total * 100, 'percentage')),
                         ("Case Inconsistency", case_issue),
                         ("Special Characters", special_chars),
-                        ("Leading/Trailing Whitespace", f"{leading_trailing_whitespace_pct(raw[col_name]):.2f}%"),
+                        ("Leading/Trailing Whitespace", fmt(leading_trailing_whitespace_pct(raw[col_name]), 'percentage')),
                     ]
                     presentation.dataframe(pd.DataFrame([(label, str(value)) for label, value in statistics], columns=["Statistic", "Value"]), hide_index=True)
 
@@ -182,9 +185,9 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
             clean       = series.dropna()
             total       = len(series)
             missing     = int(series.isna().sum())
-            missing_pct = round(missing / total * 100, 2) if total > 0 else 0.0
+            missing_pct = missing / total * 100 if total > 0 else 0.0
             unique      = int(clean.nunique())
-            unique_pct  = round(unique / total * 100, 2) if total > 0 else 0.0
+            unique_pct  = unique / total * 100 if total > 0 else 0.0
             invalid     = int((clean > pd.Timestamp.now()).sum())
             earliest    = str(clean.min().date()) if not clean.empty else "—"
             latest      = str(clean.max().date()) if not clean.empty else "—"
@@ -200,9 +203,9 @@ def render_inspect(df, _show_feedback, dataset_name='Dataset'):
                 with right:
                     statistics = [
                         ("Missing Values",         missing),
-                        ("Missing %",              f"{missing_pct:.2f}%"),
+                        ("Missing %",              fmt(missing_pct, 'percentage')),
                         ("Unique Values",          unique),
-                        ("Unique %",               f"{unique_pct:.2f}%"),
+                        ("Unique %",               fmt(unique_pct, 'percentage')),
                         ("Earliest Date",          earliest),
                         ("Latest Date",            latest),
                         ("Date Range",             date_range),
@@ -446,7 +449,7 @@ def render_exploratory(raw, df, col_types, col_to_type, variable_metadata, _show
                     presentation.dataframe(
                         freq_df.style
                             .map(_style_rare_pct, subset=["Percentage"])
-                            .format({"Percentage": "{:.2f}%"}),
+                            .format({'Percentage': lambda v: fmt(v, 'percentage')}),
                         use_container_width=True,
                         hide_index=True,
                     )
@@ -505,7 +508,7 @@ def render_exploratory(raw, df, col_types, col_to_type, variable_metadata, _show
                             "Statistic": list(stats.keys()),
                             "Value":     [str(v) for v in stats.values()],
                         })
-                        presentation.dataframe(stats_df, use_container_width=True, hide_index=True)
+                        presentation.dataframe(stats_df, result_types=DESCRIPTIVE, use_container_width=True, hide_index=True)
 
                     ai_key = f"col_ai_{selected_col}"
                     with st.expander("🤖 AI Interpretation"):
@@ -653,7 +656,7 @@ def render_exploratory(raw, df, col_types, col_to_type, variable_metadata, _show
                             make_scatter(df[sel_num[0]], df[sel_num[1]], sel_num[0], sel_num[1], height=420),
                             use_container_width=True,
                         )
-                        presentation.caption(f"Correlation coefficient (r): **{corr_val:.2f}**")
+                        presentation.caption(f"Correlation coefficient (r): **{fmt(corr_val, 'correlation')}**")
 
                     # ── Interaction Chart — Density ───────────────────────────────────────
                     elif chart_type == "Interaction Chart — Density":
@@ -878,8 +881,8 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
                 gap = round(wm["train_r2"] - wm["test_r2"], 3)
                 severity = "good generalisation" if gap <= 0.05 else ("mild overfitting" if gap <= 0.10 else "possible overfitting")
                 return (
-                    f"Test R²: {wm['test_r2']:.3f}  |  Train R²: {wm['train_r2']:.3f}  |  Gap: {gap} ({severity})\n"
-                    f"CV Mean R²: {wm['cv_mean']:.3f} ± {wm['cv_std']:.3f}\n"
+                    f"Test R²: {fmt(wm['test_r2'], 'r2')}  |  Train R²: {fmt(wm['train_r2'], 'r2')}  |  Gap: {gap} ({severity})\n"
+                    f"CV Mean R²: {fmt(wm['cv_mean'], 'r2')} ± {wm['cv_std']:.3f}\n"
                     f"Test RMSE: {wm['test_rmse']:.3f}  |  Test MAE: {wm['test_mae']:.3f}"
                 )
             else:
@@ -953,14 +956,14 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
                 return styles
 
             presentation.dataframe(
-                cdf.style.apply(_style_cmp, axis=1).format({"Lasso": "{:.3f}", "Random Forest": "{:.3f}"}),
+                format_row_results(format_row_results(cdf.style.apply(_style_cmp, axis=1).format({"Lasso": "{:.3f}", "Random Forest": "{:.3f}"}), "Metric", "Lasso", {"Train R²":"r2", "Test R²":"r2", "CV Mean R²":"r2"}), "Metric", "Random Forest", {"Train R²":"r2", "Test R²":"r2", "CV Mean R²":"r2"}),
                 use_container_width=True, hide_index=True,
             )
             st.divider()
 
             wm = results["winner_metrics"]
             mc1, mc2, mc3, mc4 = st.columns(4)
-            presentation.metric(mc1, "Test R²",    f"{wm['test_r2']:.3f}")
+            presentation.metric(mc1, "Test R²",    fmt(wm['test_r2'], 'r2'))
             presentation.metric(mc2, "Test RMSE",  f"{wm['test_rmse']:.3f}")
             presentation.metric(mc3, "Test MAE",   f"{wm['test_mae']:.3f}")
             presentation.metric(mc4, "CV Mean R²", f"{wm['cv_mean']:.3f} ± {wm['cv_std']:.3f}")
@@ -1071,7 +1074,7 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
                         "Odds Ratio < 1: feature decreases it."
                     )
                     presentation.dataframe(
-                        results["odds_ratio_df"].style.format({"Coefficient": "{:.4f}", "Odds Ratio": "{:.4f}"}),
+                        format_results(results['odds_ratio_df'], {'Coefficient':'coefficient', 'Odds Ratio':'odds_ratio'}),
                         use_container_width=True, hide_index=True,
                     )
             st.divider()
@@ -1199,7 +1202,7 @@ def render_predictive(df, col_types, col_to_type, variable_metadata, _show_feedb
                     presentation.caption("Odds Ratio > 1: feature increases the likelihood of this class. Odds Ratio < 1: feature decreases it.")
                     presentation.dataframe(
                         results["odds_ratio_per_class"][sel_cls_coef]
-                           .style.format({"Coefficient": "{:.4f}", "Odds Ratio": "{:.4f}"}),
+                           .style.format({'Coefficient': lambda v: fmt(v, 'coefficient'), 'Odds Ratio': lambda v: fmt(v, 'odds_ratio')}),
                         use_container_width=True, hide_index=True,
                     )
             st.divider()

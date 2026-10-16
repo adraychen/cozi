@@ -1,3 +1,4 @@
+from utils.numerical_formatting import display_rows
 """Report snapshots from existing Inspect and Transform calculations."""
 from copy import deepcopy
 import pandas as pd
@@ -32,7 +33,7 @@ def dataset_snapshot(kind, entry, metadata, registry, dataset_id, pending=None):
         info = get_dataframe_info(frame).copy()
         info['Variable Type'] = [metadata[c]['variable_type'] for c in info['Column Name']]
         info['Variable Subtype'] = [metadata[c]['variable_subtype'] for c in info['Column Name']]
-        tables.append(structured(info) | {'title': 'Column overview'})
+        tables.append(structured(info) | {'title': 'Column overview', 'display_rows': structured(display_rows(info, {'Total Values':'count', 'Missing Values':'count', 'Missing %':'percentage'}))})
         results = {'Observations': len(frame), 'Variables': len(frame.columns)}
     elif kind == 'Data Quality Summary':
         from utils.table_editing import duplicate_columns
@@ -42,10 +43,12 @@ def dataset_snapshot(kind, entry, metadata, registry, dataset_id, pending=None):
             ('Categorical quality', check_categorical_quality, groups['categorical']),
             ('Calendar date quality', check_datetime_quality, groups['datetime'])]:
             if columns:
-                tables.append(structured(checker(data, columns)) | {'title': title})
+                quality = checker(data, columns)
+                tables.append(structured(quality) | {'title': title, 'display_rows': structured(display_rows(quality, {'Missing Values':'count', 'Unique Values':'count', 'Missing %':'percentage', 'Unique %':'percentage', 'Average':'mean', 'Minimum':'minimum', 'Maximum':'maximum'}))})
         # The loader's missing summary covers every temporal subtype as well.
         info = get_dataframe_info(frame)
-        tables.append(structured(info[['Column Name', 'Missing Values', 'Missing %']]) | {'title': 'Missing values'})
+        missing = info[['Column Name', 'Missing Values', 'Missing %']]
+        tables.append(structured(missing) | {'title': 'Missing values', 'display_rows': structured(display_rows(missing, {'Missing Values':'count', 'Missing %':'percentage'}))})
         results = {'Extra duplicate rows': int(frame.duplicated(keep='first').sum()),
                    'Duplicate columns': duplicate_columns(frame)}
     else:

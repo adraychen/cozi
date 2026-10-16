@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt, format_plot_hover, current_settings
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -205,9 +206,10 @@ def make_heatmap(corr_df: pd.DataFrame, height: int = 460) -> go.Figure:
     Correlation heatmap with values annotated in each cell.
     Uses a red–white–blue diverging colour scale (red = positive, blue = negative).
     """
-    z      = corr_df.values.round(2)
+    settings = current_settings()
+    z      = corr_df.values
     labels = corr_df.columns.tolist()
-    text   = [[f"{v:.2f}" for v in row] for row in z]
+    text   = [[fmt(v, 'correlation', settings) for v in row] for row in z]
 
     fig = go.Figure(
         go.Heatmap(
@@ -226,7 +228,7 @@ def make_heatmap(corr_df: pd.DataFrame, height: int = 460) -> go.Figure:
                 tickfont=dict(color=AXIS_COLOR, size=11),
                 title=dict(text="r", font=dict(color=AXIS_COLOR, size=12)),
             ),
-            hovertemplate="%{y} × %{x}: %{z:.2f}<extra></extra>",
+            hovertemplate="%{y} × %{x}: %{text}<extra></extra>",
         )
     )
     layout = _base_layout(height)
@@ -539,6 +541,8 @@ def make_learning_curve_chart(
         bgcolor="rgba(0,0,0,0)",
     )
     fig.update_layout(**layout)
+    if score_label == 'R² Score':
+        format_plot_hover(fig, {'x':'count', 'y':'r2'})
     return _style_axes(fig)
 
 
@@ -565,8 +569,9 @@ def make_pivot_heatmap(
         .reindex(index=top_a, columns=top_b)
     )
 
+    settings = current_settings()
     z    = pivot.values
-    text = [[f"{v:.2f}" if not np.isnan(v) else "—" for v in row] for row in z]
+    text = [[fmt(v, 'mean', settings) if not np.isnan(v) else '—' for v in row] for row in z]
 
     fig = go.Figure(
         go.Heatmap(
@@ -582,7 +587,7 @@ def make_pivot_heatmap(
                 tickfont=dict(color=AXIS_COLOR, size=11),
                 title=dict(text=f"Avg {num_col}", font=dict(color=AXIS_COLOR, size=12)),
             ),
-            hovertemplate=f"{cat_a}: %{{y}}<br>{cat_b}: %{{x}}<br>Avg {num_col}: %{{z:.2f}}<extra></extra>",
+            hovertemplate=f"{cat_a}: %{{y}}<br>{cat_b}: %{{x}}<br>Avg {num_col}: %{{text}}<extra></extra>",
         )
     )
     layout = _base_layout(height)
@@ -682,4 +687,4 @@ def make_coefficient_chart(coef_series: "pd.Series", height: int = 450) -> "go.F
         line=dict(color="#888888", width=1, dash="dot"),
     )]
     fig.update_layout(**layout)
-    return _style_axes(fig)
+    return _style_axes(format_plot_hover(fig, {'x':'coefficient'}))

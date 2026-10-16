@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt, format_p_value, REGRESSION, INFERENCE
 from utils.report_capture import reportable, offer_result
 """Seven-tab classical logistic regression interface."""
 import hashlib
@@ -88,7 +89,7 @@ def render_results(r,key):
         summary=[('Response / Dependent Variable',str(spec['target'])),('Modeled event',repr(r['event'])),('Non-event',repr(r['non_event'])),('Predictors / Independent Variables',', '.join(map(str,spec['predictors']))),('Original rows',str(r['original_n'])),('Used rows',str(r['n'])),('Excluded missing/nonfinite rows',str(r['excluded'])),('Percentage excluded',f"{100*r['excluded']/r['original_n']:.1f}%"),('Events',str(r['events'])),('Non-events',str(r['non_events'])),('Estimated parameters (including intercept)',str(r['k'])),('Confidence level',f'{confidence:g}%'),('Model-building method','Backward elimination — AIC' if r['elimination'] else 'No elimination')]
         presentation.dataframe(pd.DataFrame(summary,columns=['Model detail','Value']))
         presentation.markdown('**Fitted logistic regression equation**')
-        eta=f'{model.params[0]:.5g}'+''.join(f' {b:+.5g} × {name}' for name,b in zip(r['names'][1:],model.params[1:]))
+        eta=fmt(model.params[0], 'coefficient')+''.join(f" {'+' if b >= 0 else '−'} {fmt(abs(b), 'coefficient')} × {name}" for name,b in zip(r['names'][1:],model.params[1:]))
         presentation.write('log(p / (1 − p)) = '+eta)
         presentation.write('p = 1 / (1 + exp(−η)), where η is the right-hand side above.')
         presentation.caption('p is the probability of '+event+'. Category contrasts represent indicators (1 for that category, 0 otherwise). Interactions and polynomial terms describe conditional associations on the log-odds scale.')
@@ -101,13 +102,13 @@ def render_results(r,key):
             presentation.dataframe(pd.DataFrame([{'Predictor':c,'Reference category':repr(spec['levels'][c][0]),'Observed levels':len(spec['levels'][c])} for c in spec['categorical']]))
         with st.expander('Elimination history'):
             if r['history'].empty: presentation.write('No terms were removed.')
-            else: presentation.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
+            else: presentation.dataframe(format_table(r['history'], {'p-value':'p', 'F':'f', 'df':'df'}),hide_index=True,use_container_width=True)
             if r['elimination']: presentation.caption('Selection uncertainty is not included in the reported p-values or intervals. AIC selection is exploratory, not proof of scientific importance.')
     with tabs[1]:
         presentation.caption(f'Wald statistics use χ² with one degree of freedom per coefficient. All confidence intervals use {confidence:g}%. Odds ratios multiply odds of {event}, not probabilities; the intercept OR represents baseline odds.')
-        presentation.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(r['coefficients'], REGRESSION, alpha=1-r['confidence']), result_types=REGRESSION,alpha=1-r['confidence'],hide_index=True,use_container_width=True)
         if not r['term_tests'].empty:
-            presentation.markdown('**Joint term tests**');presentation.dataframe(format_table(r['term_tests']),hide_index=True,use_container_width=True)
+            presentation.markdown('**Joint term tests**');presentation.dataframe(format_table(r['term_tests'], INFERENCE, alpha=1-r['confidence']), result_types=INFERENCE,alpha=1-r['confidence'],hide_index=True,use_container_width=True)
             presentation.caption('Multi-level factors and their interactions are tested jointly. Individual main-effect odds ratios in interaction/polynomial models are conditional at centered zero and reference categories; use probability curves for the overall relationship.')
         st.download_button('Download logistic coefficients (CSV)',r['coefficients'].to_csv(index=False),'logistic_coefficients.csv',key='rel_log_coeff_download')
     with tabs[2]:
@@ -116,7 +117,7 @@ def render_results(r,key):
         presentation.caption('Limited outcome information triggers a review warning, not a hard events-per-variable rule. Independence depends on study design; repeated or clustered observations require a suitable method.')
         presentation.markdown('**Linearity of the logit**')
         if r['linearity'].empty: presentation.info('No retained Continuous predictor requires a separate logit-linearity check.')
-        else: presentation.dataframe(format_table(r['linearity']),hide_index=True,use_container_width=True)
+        else: presentation.dataframe(format_table(r['linearity'], {'p-value':'p', 'Holm-adjusted p-value':'p'}),hide_index=True,use_container_width=True)
         presentation.caption('For eligible additive continuous predictors, compare the fitted model with additional quadratic/cubic terms using a nested LR test and Holm adjustment. This supports zero/negative values. A nonsignificant result does not prove linearity; tests may have low power. Existing nonlinear/interaction terms require visual review. No transformations are applied automatically.')
         if not r['sparse'].empty:
             presentation.markdown('**Category-by-outcome counts**');presentation.dataframe(r['sparse'],hide_index=True,use_container_width=True)
@@ -255,7 +256,7 @@ def render_findings(r,key):
         presentation.warning('The data may not be adequately represented by classical binary logistic regression. Review the listed issues and revise the model. If prediction is the primary goal, consider Predictive Analytics; no alternative model is fitted automatically.')
     lines=[f'This model estimates the probability of {event}.']
     if r['lr_df']:
-        lines.append(f"The overall likelihood-ratio test (χ²={r['lr']:.4g}, df={r['lr_df']}, p={p_text(r['lr_p'])}) "+('provides evidence of better fit than the intercept-only model.' if r['lr_p']<.05 else 'does not provide strong evidence of better fit than the intercept-only model.'))
+        lines.append(f"The overall likelihood-ratio test (χ²={r['lr']:.4g}, df={r['lr_df']}, {format_p_value(r['lr_p'], 1-r['confidence'], context='narrative')}) "+('provides evidence of better fit than the intercept-only model.' if r['lr_p'] < 1-r['confidence'] else 'does not provide strong evidence of better fit than the intercept-only model.'))
     else: lines.append('The retained model is intercept-only; the overall likelihood-ratio comparison is not applicable.')
     complex_variables={c for b in r['active'] if b[0]!='main' for c in (b[1:] if b[0]=='interaction' else [b[1]])}
     for c in r['spec']['predictors']:
@@ -273,7 +274,7 @@ def render_findings(r,key):
             uncertainty='The confidence interval includes 1, so the effect direction is uncertain at this confidence level.' if row['OR CI Lower']<=1<=row['OR CI Upper'] else 'The confidence interval excludes 1 at the selected confidence level.'
             lines.append(f"{row['Term']}: the point estimate indicates {direction} odds of {event}. {uncertainty}")
             comparison='relative to its displayed reference category' if c in r['spec']['categorical'] else 'for a one-unit increase'
-            lines.append(f"After adjusting for the other model variables, {row['Term']} has an estimated odds ratio of {row['Odds Ratio']:.4g} {comparison} for {event} ({100*r['confidence']:g}% CI {row['OR CI Lower']:.4g}–{row['OR CI Upper']:.4g}; p={p_text(row['p-value'])}). This is an association in odds, not a probability ratio or causal effect.")
+            lines.append(f"After adjusting for the other model variables, {row['Term']} has an estimated odds ratio of {fmt(row['Odds Ratio'], 'odds_ratio')} {comparison} for {event} ({100*r['confidence']:g}% CI {row['OR CI Lower']:.4g}–{row['OR CI Upper']:.4g}; {format_p_value(row['p-value'], 1-r['confidence'], context='narrative')}). This is an association in odds, not a probability ratio or causal effect.")
     lines.append(f"McFadden Pseudo-R²={r['pseudo_r2']:.4g}; this is not the percentage of variance explained. The in-sample Brier score is {r['brier']:.4g}; assess it alongside the calibration plot.")
     if r['elimination']: lines.append('AIC selection used the same observations. Reported inference is conditional on the selected model.')
     for line in lines: presentation.write(line)

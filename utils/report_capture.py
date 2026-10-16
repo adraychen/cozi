@@ -40,6 +40,15 @@ def record_table(data, title=None):
             table['source_output'] = title is None
             if not isinstance(frame.index, pd.RangeIndex):
                 table = structured(frame.reset_index()) | {'title': table['title'], 'source_output': title is None}
+            schema = getattr(data, '_cozy_result_types', None)
+            if schema:
+                from utils.numerical_formatting import display_rows
+                rendered = display_rows(frame, schema, alpha=data._cozy_alpha, settings=data._cozy_settings)
+                if not isinstance(frame.index, pd.RangeIndex):
+                    rendered = [[index, *row] for index, row in zip(frame.index, rendered)]
+                table['display_rows'] = structured(rendered)
+            if hasattr(data, '_cozy_display_rows'):
+                table['display_rows'] = structured(data._cozy_display_rows)
             capture['tables'].append(table)
             capture['content'].append(('Table', deepcopy(table)))
 

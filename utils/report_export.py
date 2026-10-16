@@ -17,7 +17,7 @@ def cell_text(value):
 def text_value(value):
     if isinstance(value, dict):
         if 'columns' in value and 'rows' in value:
-            return '\n'.join(' | '.join(map(cell_text, row)) for row in [value['columns']]+value['rows'])
+            return '\n'.join(' | '.join(map(cell_text, row)) for row in [value['columns']]+value.get('display_rows', value['rows']))
         return '\n'.join(str(k)+': '+text_value(v) for k, v in value.items() if v is not None)
     if isinstance(value, list):
         return '\n'.join(text_value(v) for v in value)
@@ -51,7 +51,7 @@ def report_nodes(report):
 
 
 def table_groups(table):
-    columns, rows = table['columns'], table['rows']
+    columns, rows = table['columns'], table.get('display_rows', table['rows'])
     if len(columns) <= 6:
         return [(columns, rows)]
     groups = []

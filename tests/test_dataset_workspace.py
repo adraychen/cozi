@@ -137,7 +137,7 @@ class WorkspaceTests(unittest.TestCase):
                 self.assertEqual([t.label for t in app.tabs][:5], ['Inspect', 'Transform', 'Analyze', 'Report', 'Help'])
                 self.assertEqual(len(app.expander), 0)
                 from utils.help_ui import FEATURE_HELP
-                self.assertEqual([m.value.strip('*') for m in app.markdown if m.value.startswith('**')],
+                self.assertEqual([m.value.strip('*') for m in app.markdown if m.value.startswith('**') and '\n' not in m.value],
                                  sorted(FEATURE_HELP, key=str.casefold))
                 self.assertTrue(any(m.value == 'Group rows and calculate summaries.' for m in app.markdown))
 

@@ -40,5 +40,5 @@ def render_distribution_fit(series, column, subtype=None):
         st.caption('Fit quality uses 199 parametric bootstrap simulations with parameters refitted each time: p < 0.05 is Poor; otherwise Not rejected. Tests assume independent observations. These are exploratory, unadjusted checks across candidates, not proof of a distribution. Small samples have limited power and borderline p-values have Monte Carlo uncertainty.')
         st.caption('Integer or ordinal data, such as Bedroom, do not imply a count process. Poisson and geometric are only candidates. Binomial requires a known trial count. Continuous candidates: Normal, Uniform, and (for strictly positive data) Lognormal and Exponential; positive families have location fixed at zero.')
         if result['candidates']:
-            presentation.dataframe(pd.DataFrame(result['candidates']), hide_index=True, use_container_width=True)
+            presentation.dataframe(pd.DataFrame(result['candidates']), result_types={'Bootstrap p-value': 'p'}, hide_index=True, use_container_width=True)
         st.markdown('[Why refit parameters during goodness-of-fit testing](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.goodness_of_fit.html)')

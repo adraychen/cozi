@@ -587,9 +587,9 @@ def run_regression_comparison(
     # ── Comparison table ──────────────────────────────────────────────────────
     comparison_df = pd.DataFrame({
         "Metric": ["Train R²","Test R²","Train MAE","Test MAE","Train RMSE","Test RMSE","CV Mean R²"],
-        "Lasso":         [round(lasso_m[k], 3) for k in
+        "Lasso":         [lasso_m[k] if k in ("train_r2", "test_r2", "cv_mean") else round(lasso_m[k], 3) for k in
                           ("train_r2","test_r2","train_mae","test_mae","train_rmse","test_rmse","cv_mean")],
-        "Random Forest": [round(rf_m[k], 3)    for k in
+        "Random Forest": [rf_m[k] if k in ("train_r2", "test_r2", "cv_mean") else round(rf_m[k], 3) for k in
                           ("train_r2","test_r2","train_mae","test_mae","train_rmse","test_rmse","cv_mean")],
     })
 
@@ -802,8 +802,8 @@ def run_binary_classification_comparison(
         clean_labels = [n.split("__", 1)[-1] for n in top20.index]
         odds_ratio_df = pd.DataFrame({
             "Feature":     clean_labels,
-            "Coefficient": top20.values.round(4),
-            "Odds Ratio":  np.exp(top20.values).round(4),
+            "Coefficient": top20.values,
+            "Odds Ratio":  np.exp(top20.values),
         })
 
     # ── SHAP ──────────────────────────────────────────────────────────────────
@@ -1005,8 +1005,8 @@ def run_multiclass_classification_comparison(
             clean  = [n.split("__", 1)[-1] for n in top20.index]
             odds_ratio_per_class[cls] = pd.DataFrame({
                 "Feature":     clean,
-                "Coefficient": top20.values.round(4),
-                "Odds Ratio":  np.exp(top20.values).round(4),
+                "Coefficient": top20.values,
+                "Odds Ratio":  np.exp(top20.values),
             })
 
     # ── SHAP ──────────────────────────────────────────────────────────────────

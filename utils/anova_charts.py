@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_plot_hover
 """Plots consume the same group summaries and Games–Howell intervals as tables."""
 import numpy as np
 import plotly.express as px
@@ -22,7 +23,7 @@ def group_mean_plot(prepared):
     ))
     fig.update_layout(xaxis_title=prepared['category'], yaxis_title=f'{prepared["outcome"]} — mean')
     fig.update_xaxes(type='category')
-    return fig
+    return format_plot_hover(fig, {'y': 'mean', 'customdata[0]': 'count', 'customdata[1]': 'ci', 'customdata[2]': 'ci'})
 
 
 def pairwise_plot(pairwise, table=None):
@@ -52,7 +53,7 @@ def pairwise_plot(pairwise, table=None):
                       height=max(360, 150+30*len(table)),
                       legend=dict(orientation='h', y=1.12))
     fig.update_yaxes(type='category', categoryorder='array', categoryarray=table.Comparison.tolist(), autorange='reversed')
-    return fig
+    return format_plot_hover(fig, {'customdata[0]': 'ci', 'customdata[1]': 'ci', 'customdata[2]': 'p'}, alpha=pairwise['alpha'])
 
 
 def residual_plot(prepared):

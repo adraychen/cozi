@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt, REGRESSION, INFERENCE
 from utils.report_capture import reportable, offer_result
 """Interactive specification and reporting for exploratory OLS regression."""
 import hashlib
@@ -75,12 +76,12 @@ def render_results(r,key):
         presentation.write(equation(r))
         presentation.markdown('**Model performance**')
         a,b,c = st.columns(3)
-        presentation.metric(a, 'Adjusted R²',f"{r['adjusted_r2']:.3f}",help='R² adjusted for fitted model size.')
-        presentation.metric(b, 'R²',f"{r['r2']:.3f}")
+        presentation.metric(a, 'Adjusted R²',fmt(r['adjusted_r2'], 'adjusted_r2'),help='R² adjusted for fitted model size.')
+        presentation.metric(b, 'R²',fmt(r['r2'], 'r2'))
         presentation.metric(c, 'Residual standard error',f"{r['residual_se']:.4g}")
         stats = [('RMSE',f"{r['rmse']:.4g}"),('MAE',f"{r['mae']:.4g}"),
-                 ('Model degrees of freedom',str(r['model_df'])),('Residual degrees of freedom',str(r['residual_df'])),
-                 ('Overall F-statistic',f"{r['f_stat']:.4g}" if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
+                 ('Model degrees of freedom',fmt(r['model_df'], 'df')),('Residual degrees of freedom',fmt(r['residual_df'], 'df')),
+                 ('Overall F-statistic',fmt(r['f_stat'], 'f') if np.isfinite(r['f_stat']) else 'N/A'),('Overall F-test p-value',p_text(r['f_p']))]
         presentation.dataframe(pd.DataFrame(stats,columns=['Performance measure','Value']))
         presentation.caption('Fit on the analyzed observations. Error measures use response units. The overall F-test tests all non-intercept coefficients jointly. Inference uses α = 0.05.')
         presentation.markdown('**Selected terms**')
@@ -95,15 +96,15 @@ def render_results(r,key):
             if r['history'].empty:
                 presentation.write('No terms were removed.')
             else:
-                presentation.dataframe(format_table(r['history']),hide_index=True,use_container_width=True)
+                presentation.dataframe(format_table(r['history'], {'p-value':'p', 'F':'f', 'df':'df'}),hide_index=True,use_container_width=True)
                 presentation.caption('Removal p-values are joint partial F-tests before removal. Adjusted R² describes the refitted model after each removal. The complete-case sample stays fixed throughout.')
         for note in r['warnings']:
             presentation.warning(note)
     with tabs[1]:
-        presentation.dataframe(format_table(r['coefficients']),hide_index=True,use_container_width=True)
+        presentation.dataframe(format_table(r['coefficients'], REGRESSION), result_types=REGRESSION,hide_index=True,use_container_width=True)
         presentation.caption('Standardized coefficients = coefficient × SD(X)/SD(Y), only for ordinary numeric main effects without retained interactions or powers. N/A for other terms. Interactions describe changing associations; powers jointly describe a curve, not constant slopes.')
         if not r['term_tests'].empty:
-            presentation.dataframe(format_table(r['term_tests'].drop(columns='block')),hide_index=True,use_container_width=True)
+            presentation.dataframe(format_table(r['term_tests'].drop(columns='block'), INFERENCE), result_types=INFERENCE,hide_index=True,use_container_width=True)
             presentation.caption('Joint term tests keep categorical levels together. Hierarchy-protected terms cannot be removed while their dependent higher-order terms remain.')
         st.download_button('Download regression coefficients (CSV)',r['coefficients'].to_csv(index=False),file_name='regression_coefficients.csv',key='reg_coeff_download')
     with tabs[2]:
@@ -189,7 +190,7 @@ def prediction_ui(r,key):
             if r['perfect_fit']:
                 presentation.info('Intervals are unavailable for a perfect or near-perfect fit.')
             else:
-                presentation.write(f"95% confidence interval for mean response: {result['mean_ci_lower']:.5g} to {result['mean_ci_upper']:.5g}")
+                presentation.write(f"95% confidence interval for mean response: {fmt(result['mean_ci_lower'], 'ci')} to {fmt(result['mean_ci_upper'], 'ci')}")
                 presentation.write(f"95% prediction interval for an individual future observation: {result['obs_ci_lower']:.5g} to {result['obs_ci_upper']:.5g}")
             presentation.caption('Intervals assume an appropriate model and independent errors with constant variance; the prediction interval is not a guarantee. Selection uncertainty is not included after elimination.')
         except (ValueError,TypeError,np.linalg.LinAlgError) as exc:

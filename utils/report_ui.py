@@ -98,7 +98,7 @@ def render_part(kind, value, chart_key=None):
     if kind == 'Table':
         if not value.get('source_output'):
             st.caption(value.get('title', 'Table'))
-        presentation.dataframe(pd.DataFrame(value['rows'], columns=value['columns']), hide_index=True)
+        presentation.dataframe(pd.DataFrame(value.get('display_rows', value['rows']), columns=value['columns']), hide_index=True)
     elif kind == 'Chart':
         st.caption(value['title'])
         if 'png' in value:

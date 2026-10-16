@@ -118,8 +118,8 @@ class ExtendedRegressionTests(unittest.TestCase):
         text=' '.join(findings(r))
         self.assertIn('associated',text.replace('association','associated'))
         self.assertIn('Inspect residual',text)
-        self.assertEqual(p_text(.0000001),'< 0.001')
-        self.assertEqual(p_text(np.nan),'N/A')
+        self.assertEqual(p_text(.0000001),'<0.001')
+        self.assertEqual(p_text(np.nan),'—')
 
 
 class ExtendedRegressionUITests(unittest.TestCase):

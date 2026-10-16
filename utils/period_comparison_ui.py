@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_plot_hover
 """Guided controls and captured outputs for the existing period comparison."""
 import hashlib
 import numpy as np
@@ -165,11 +166,19 @@ def render_period_comparison(df, measure, dimensions, date, statistic, key_prefi
             if seasonal:
                 actual.update_layout(title='Seasonal period values (years pooled)')
                 changes.update_layout(title='Percentage change between pooled seasonal periods')
+            kind = {'Mean': 'mean', 'Median': 'median', 'Minimum': 'minimum', 'Maximum': 'maximum', 'Standard deviation': 'sd', 'Non-missing count': 'count', 'Row count': 'count'}.get(statistic)
+            if kind:
+                format_plot_hover(actual, {'y': kind})
             presentation.plotly_chart(actual, use_container_width=True, key=key_prefix + '_chart')
+            format_plot_hover(changes, {'y': 'percentage'})
             presentation.plotly_chart(changes, use_container_width=True, key=key_prefix + '_change_chart')
         columns = ['Period', 'Value', 'Previous', 'Change', 'Change %', 'Segment', 'Previous period', 'Comparison', 'Missing period', 'Missing value', 'Inserted zero']
         display = result[columns]
-        presentation.dataframe(display.style.format({'Value': '{:,.2f}', 'Previous': '{:,.2f}', 'Change': '{:+,.2f}', 'Change %': '{:+.2f}%'}, na_rep='N/A'), hide_index=True)
+        value_kind = {'Mean': 'mean', 'Median': 'median', 'Minimum': 'minimum', 'Maximum': 'maximum', 'Standard deviation': 'sd', 'Non-missing count': 'count', 'Row count': 'count'}.get(statistic)
+        schema = {'Change %': 'percentage'}
+        if value_kind:
+            schema.update({'Value': value_kind, 'Previous': value_kind})
+        presentation.dataframe(display.style.format({'Value': '{:,.2f}', 'Previous': '{:,.2f}', 'Change': '{:+,.2f}', 'Change %': '{:+.2f}%'}, na_rep='N/A'), result_types=schema, hide_index=True)
         st.download_button('Download statistics (CSV)', display.to_csv(index=False, na_rep='N/A').encode('utf-8-sig'),
                            file_name='comparison.csv', mime='text/csv', key=key_prefix + '_download')
         presentation.markdown('##### Interpretation')

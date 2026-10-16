@@ -77,8 +77,19 @@ def _table_options(data, options, static=False):
 
 def dataframe(data=None, **kwargs):
     from utils.report_capture import record_table
+    from utils.numerical_formatting import format_results
+    result_types = kwargs.pop('result_types', None)
+    alpha = kwargs.pop('alpha', .05)
+    if result_types:
+        data = format_results(data, result_types, alpha=alpha)
     record_table(data)
     options = _table_options(data, kwargs)
+    if getattr(data, '_cozy_result_types', None) and options.get('column_config'):
+        options['column_config'] = {
+            key: {**config, 'type_config': {**config['type_config'], 'format': None}}
+            if key in data._cozy_result_types and isinstance(config, dict) and isinstance(config.get('type_config'), dict)
+            else config for key, config in options['column_config'].items()
+        }
     frame = data.data if isinstance(getattr(data, 'data', None), pd.DataFrame) else data
     if isinstance(options.get('height'), int) and hasattr(frame, '__len__'):
         options['height'] = min(options['height'], max(73, 38 + 35*len(frame)))

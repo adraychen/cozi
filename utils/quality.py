@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_results
 import pandas as pd
 from pandas.io.formats.style import Styler
 from typing import List
@@ -21,9 +22,9 @@ def check_numerical_quality(df: pd.DataFrame, columns: List[str]) -> pd.DataFram
 
     for col in columns:
         missing    = df[col].isna().sum()
-        missing_pct = round((missing / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        missing_pct = (missing / total_rows) * 100 if total_rows > 0 else 0.0
         unique     = df[col].nunique()
-        unique_pct = round((unique / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        unique_pct = (unique / total_rows) * 100 if total_rows > 0 else 0.0
 
         rows.append({
             "Column":       col,
@@ -33,7 +34,7 @@ def check_numerical_quality(df: pd.DataFrame, columns: List[str]) -> pd.DataFram
             "Unique %":     unique_pct,
             "Minimum":      df[col].min(),
             "Maximum":      df[col].max(),
-            "Average":      round(df[col].mean(), 2) if not df[col].isna().all() else "—",
+            "Average":      df[col].mean() if not df[col].isna().all() else "—",
         })
 
     return pd.DataFrame(rows)
@@ -49,9 +50,9 @@ def check_categorical_quality(df: pd.DataFrame, columns: List[str]) -> pd.DataFr
 
     for col in columns:
         missing     = df[col].isna().sum()
-        missing_pct = round((missing / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        missing_pct = (missing / total_rows) * 100 if total_rows > 0 else 0.0
         unique      = df[col].nunique()
-        unique_pct  = round((unique / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        unique_pct  = (unique / total_rows) * 100 if total_rows > 0 else 0.0
 
         if df[col].dtype == object:
             lower_unique = df[col].dropna().str.strip().str.lower().nunique()
@@ -88,9 +89,9 @@ def check_datetime_quality(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame
         series      = pd.to_datetime(df[col], errors="coerce")
         clean       = series.dropna()
         missing     = series.isna().sum()
-        missing_pct = round((missing / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        missing_pct = (missing / total_rows) * 100 if total_rows > 0 else 0.0
         unique      = clean.nunique()
-        unique_pct  = round((unique / total_rows) * 100, 1) if total_rows > 0 else 0.0
+        unique_pct  = (unique / total_rows) * 100 if total_rows > 0 else 0.0
         invalid     = int((clean > now).sum())  # dates after today
 
         rows.append({
@@ -125,7 +126,7 @@ def colour_missing(val, col_name: str):
 
 def style_quality_table(df: pd.DataFrame) -> Styler:
     """Apply missing % colour coding to a quality DataFrame."""
-    return df.style.map(
+    return format_results(df, {"Missing Values": "count", "Unique Values": "count", "Future Dates": "count", "Missing %": "percentage", "Unique %": "percentage", "Minimum": "minimum", "Maximum": "maximum", "Average": "mean"}).map(
         lambda v: colour_missing(v, "Missing %"),
         subset=["Missing %"] if "Missing %" in df.columns else [],
     )

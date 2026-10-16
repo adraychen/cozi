@@ -1,3 +1,4 @@
+from utils.numerical_formatting import DESCRIPTIVE
 from utils.report_capture import reportable, offer_result
 """Comparison t-test configuration and tabbed statistical reporting."""
 import logging
@@ -117,7 +118,7 @@ def _render_ttest(df, numerical, categorical, guided=False):
         if structure == 'Separate-column format':
             presentation.caption('Missing/nonfinite values are excluded separately in each sample; row positions do not establish pairing.')
     with tabs[1]:
-        presentation.dataframe(format_table(prepared['descriptive']), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(prepared['descriptive'], DESCRIPTIVE), result_types=DESCRIPTIVE, hide_index=True, use_container_width=True)
         if mode == 'paired':
             presentation.caption('Original-variable summaries use the same complete pairs as the difference-based test.')
         st.download_button('Download descriptive statistics (CSV)', prepared['descriptive'].to_csv(index=False).encode('utf-8-sig'),
@@ -126,7 +127,7 @@ def _render_ttest(df, numerical, categorical, guided=False):
         presentation.write('Inference about the mean requires an appropriate sampling design. t-tests are often robust to moderate non-normality with adequate sample sizes, but strong skewness, extreme values, and very small samples can impair reliability. Graphical diagnostics do not certify assumptions.')
         if mode == 'paired':
             presentation.caption('All diagnostics below use Variable 1 - Variable 2 for complete pairs, not the original variables separately.')
-        presentation.dataframe(format_table(prepared['diagnostics']), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(prepared['diagnostics'], {'N':'count', 'IQR outlier flags':'count'}), hide_index=True, use_container_width=True)
         for note in prepared['warnings']:
             presentation.warning(note)
         if not prepared['outliers'].empty:

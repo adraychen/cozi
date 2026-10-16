@@ -1,34 +1,40 @@
+from utils.numerical_formatting import format_statistic as fmt, format_p_value, format_results
 """Deterministic, model-aware descriptions and display formatting."""
 import numpy as np
 from utils.regression_design import label
 
 
-def p_text(p):
-    return 'N/A' if not np.isfinite(p) else '< 0.001' if p < .001 else f'{p:.3f}'
+def p_text(p, alpha=.05):
+    return format_p_value(p, alpha)
 
 
-def format_table(frame):
+def format_table(frame, result_types=None, alpha=.05):
+    # Preserve prior generic formatting for unlisted diagnostics. Covered numeric
+    # columns stay numeric; Styler changes only their visible representation.
     display = frame.copy()
+    schema = dict(result_types or {})
+    # CI fields here can describe regression coefficients/probabilities: review.
+    for name in list(schema):
+        if schema[name] == 'ci':
+            schema.pop(name)
     for c in display.columns:
-        if c == 'p-value':
-            display[c] = display[c].map(p_text)
-        elif display[c].dtype.kind in 'fc':
-            display[c] = display[c].map(lambda v:'N/A' if np.isnan(v) else f'{v:.4g}')
-    return display
+        if c not in schema and display[c].dtype.kind in 'fc':
+            display[c] = display[c].map(lambda v: 'N/A' if np.isnan(v) else f'{v:.4g}')
+    return format_results(display, schema, alpha=alpha)
 
 
 def equation(result):
     values = result['model'].params
-    return result['spec']['target'] + ' = ' + f'{values[0]:.5g}' + ''.join(
-        f' {b:+.5g} × {name}' for name,b in zip(result['names'][1:],values[1:]))
+    return result['spec']['target'] + ' = ' + fmt(values[0], 'coefficient') + ''.join(
+        f" {'+' if b >= 0 else '−'} {fmt(abs(b), 'coefficient')} × {name}" for name,b in zip(result['names'][1:],values[1:]))
 
 
 def findings(result, ordered=False, visual_concerns=()):
     spec = result['spec']; y = spec['target']; lines = []
-    lines.append(f'The model explains {100*result["r2"]:.1f}% of the observed variation in {y} (Adjusted R² = {result["adjusted_r2"]:.3f}).')
+    lines.append(f'The model explains {fmt(100*result['r2'], 'percentage')} of the observed variation in {y} (Adjusted R² = {fmt(result['adjusted_r2'], 'adjusted_r2')}).')
     p = result['f_p']
     if np.isfinite(p):
-        lines.append(f'The overall regression {"shows evidence of an association" if p < .05 else "does not show strong evidence of an association"} (F = {result["f_stat"]:.4g}, p {"" if p < .001 else "= "}{p_text(p)}).')
+        lines.append(f'The overall regression {"shows evidence of an association" if p < .05 else "does not show strong evidence of an association"} (F = {fmt(result['f_stat'], 'f')}, p {"" if p < .001 else "= "}{p_text(p)}).')
     else:
         lines.append('An overall regression F-test is unavailable for an intercept-only or perfect-fit model.')
     involved = {v for b in result['active'] if b[0]!='main' for v in (b[1:3] if b[0]=='interaction' else [b[1]])}
@@ -46,7 +52,7 @@ def findings(result, ordered=False, visual_concerns=()):
                 lines.append(f'{c}: {"evidence" if p < .05 else "no strong evidence"} of adjusted differences from reference {spec["levels"][c][0]!r} (joint p {"" if p < .001 else "= "}{p_text(p)}).')
             else:
                 i = result['indices'][b][0]; coef = result['coefficients'].iloc[i]
-                lines.append(f'{c} has an estimated {"positive" if coef["Coefficient"] >= 0 else "negative"} association with {y}: {coef["Coefficient"]:.4g} units per one-unit increase, holding other predictors constant (95% CI {coef["95% lower"]:.4g} to {coef["95% upper"]:.4g}; p {"" if p < .001 else "= "}{p_text(p)}; {"statistically significant" if p < .05 else "not statistically significant"} at α = 0.05).')
+                lines.append(f'{c} has an estimated {"positive" if coef["Coefficient"] >= 0 else "negative"} association with {y}: {fmt(coef['Coefficient'], 'coefficient')} units per one-unit increase, holding other predictors constant (95% CI {coef["95% lower"]:.4g} to {coef["95% upper"]:.4g}; p {"" if p < .001 else "= "}{p_text(p)}; {"statistically significant" if p < .05 else "not statistically significant"} at α = 0.05).')
         elif b[0] == 'main':
             lines.append(f'{b[1]} participates in a polynomial or interaction: its coefficient is conditional at centered zero/reference levels and is not an overall constant slope.')
     if not result['vif'].empty:

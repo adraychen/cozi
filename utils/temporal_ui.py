@@ -18,7 +18,7 @@ def render_noncalendar_temporal(series, subtype, key_prefix, *, interactive_summ
         counts = clean.value_counts().sort_index()
         table = pd.DataFrame({subtype: [temporal_value(v, subtype) for v in counts.index], 'Count': counts.to_numpy()})
         st.write(f'Used values: {len(clean)} · Missing / invalid values: {series.isna().sum()} · Unique values: {clean.nunique()}')
-        presentation.dataframe(table, hide_index=True, width='stretch')
+        presentation.dataframe(table, result_types={'Count': 'count'}, hide_index=True, width='stretch')
         if len(clean):
             presentation.plotly_chart(px.bar(table, x=subtype, y='Count'), key=key_prefix+'_distribution', use_container_width=True)
         if subtype in ('Year', 'Month', 'Quarter'):

@@ -106,7 +106,7 @@ class AnovaTests(unittest.TestCase):
             np.testing.assert_allclose(trace.x, rows['Mean Difference'])
             np.testing.assert_allclose(np.asarray(trace.x)-trace.error_x.arrayminus, rows[result['lower']])
             np.testing.assert_allclose(np.asarray(trace.x)+trace.error_x.array, rows[result['upper']])
-            np.testing.assert_allclose(np.asarray(trace.customdata)[:,2], rows['Adjusted p-value'])
+            np.testing.assert_allclose(np.asarray(trace.customdata)[:,2].astype(float), rows['Adjusted p-value'])
         self.assertEqual(fig.layout.shapes[0].x0, 0)
         self.assertIsNone(pairwise_plot(games_howell(prepare([1,2],[3,4]))))
 

@@ -23,7 +23,7 @@ def get_dataframe_info(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         non_missing = df[col].notna().sum()
         missing = total_rows - non_missing
-        missing_pct = round((missing / total_rows) * 100, 2) if total_rows > 0 else 0.0
+        missing_pct = (missing / total_rows) * 100 if total_rows > 0 else 0.0
 
         # Map pandas dtype to plain language
         dtype = df[col].dtype

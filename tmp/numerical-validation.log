@@ -1,0 +1,676 @@
+2026-10-15 20:56:22.180 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 20:56:22.642 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-15 20:56:34.421 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:34.421 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:42.882 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:42.904 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:43.140 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:43.297 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:56:43.532 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:14.666 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:19.173 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:23.100 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:24.609 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:33.677 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:36.550 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:39.422 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:40.929 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:58.988 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:59.771 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:59.771 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:57:59.771 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:01.169 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:01.169 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:01.169 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:01.675 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:02.356 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:02.863 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:03.967 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 20:58:04.580 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:18.070 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:20.176 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:20.178 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:20.178 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:21.165 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:21.495 The widget with key "tf_currency_targets" was created with a default value but also had its value set via the Session State API.
+Stack (most recent call last):
+  File "C:\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\testing\v1\local_script_runner.py", line 144, in _run_script_thread
+    super()._run_script_thread()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 423, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 934, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 909, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\chung\AppData\Local\Temp\tmp5jrresv1\0949dcf074003b48cd6cb4f9f0361613", line 5, in <module>
+    runpy.run_path('C:\\Users\\chung\\GitHub Repositories\\DataAnalytics\\app.py', run_name='__main__')
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\app.py", line 108, in <module>
+    render_workspace(_SAMPLE_DATASETS, _show_feedback)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\fragment.py", line 749, in wrap
+    return wrapped_fragment()
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\fragment.py", line 717, in wrapped_fragment
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\utils\dataset_workspace.py", line 321, in render_workspace
+    render_transform(dataset_id, registry)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\utils\transform_ui.py", line 285, in render_transform
+    selected_columns = st.multiselect('Columns to convert', text_columns, default=detected, key='tf_currency_targets')
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 725, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\widgets\multiselect.py", line 646, in multiselect
+    return self._multiselect(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\widgets\multiselect.py", line 702, in _multiselect
+    check_widget_policies(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 146, in check_widget_policies
+    check_session_state_rules(
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 90, in check_session_state_rules
+    _LOGGER.warning(
+2026-10-15 20:58:21.888 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:21.890 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:21.890 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:22.772 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:23.007 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:23.008 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:23.008 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:23.942 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:24.071 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:24.073 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:24.073 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:25.234 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:25.581 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:25.583 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:25.583 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:27.245 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:27.246 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:27.434 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:28.118 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:28.172 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:28.500 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:28.678 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:29.033 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:29.716 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:29.777 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:30.331 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:30.746 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:31.090 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:31.571 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:31.573 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:31.573 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:32.539 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:32.580 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:32.975 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:33.014 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:33.214 No runtime found, using MemoryCacheStorageManager
+2026-10-15 20:58:33.218 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:33.979 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:34.053 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:34.323 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:34.696 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:35.530 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:36.309 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:36.367 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:37.374 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:37.438 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:37.742 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:37.977 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:38.501 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:40.113 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:40.176 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:41.013 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:41.015 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:41.016 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:42.384 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:43.107 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:43.158 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:44.923 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:45.010 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:45.699 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:45.929 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:46.769 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:46.853 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:47.316 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:48.966 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:49.007 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:50.470 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:51.199 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:51.260 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:51.885 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:51.885 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:52.430 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:52.431 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:52.972 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:53.829 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:53.898 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:54.485 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:54.485 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:55.648 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:56.226 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:56.287 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:56.835 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:56.835 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:57.993 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:58.280 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:58.316 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:58.487 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:58.786 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:59.057 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:59.082 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 20:58:59.251 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:59.251 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:58:59.738 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:04.302 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:04.303 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:05.083 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:05.084 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:05.894 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:05.894 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:06.703 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:06.704 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:07.422 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:07.422 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:08.147 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:08.147 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:08.807 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:10.079 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:11.138 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:12.818 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:13.848 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:14.903 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:16.145 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:17.806 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:19.367 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:21.819 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:23.055 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:24.302 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:28.754 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:30.302 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:30.304 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:30.304 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:31.372 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:31.585 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:31.760 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:32.260 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:32.304 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:32.417 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:32.420 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:32.420 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:33.284 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:34.005 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:34.007 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:34.007 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:35.565 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:35.567 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:35.568 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:37.403 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:37.691 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:37.693 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:37.693 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:38.461 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:38.948 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:39.591 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:40.013 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:40.015 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:40.017 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:40.944 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:41.373 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:41.375 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:41.375 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:42.248 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:42.621 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Enterprise submission failed: type=RuntimeError
+Enterprise submission failed: type=ValueError
+Enterprise persistence configuration is missing
+2026-10-15 20:59:43.126 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:43.127 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:43.130 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:44.114 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:44.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:44.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:44.281 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Enterprise persistence configuration is missing
+2026-10-15 20:59:45.339 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:46.080 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Enterprise submission failed: type=RuntimeError
+2026-10-15 20:59:46.094 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:47.847 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:50.392 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:54.565 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 20:59:55.722 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_guidance.py:85: SingularMatrixWarning: The design matrix is rank-deficient. The model parameters are not uniquely determined.
+  singular = ols('Y ~ C(A)*C(B)',df).fit()
+2026-10-15 21:00:00.532 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:10.994 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:10.994 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:10.994 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:11.289 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:11.408 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:11.652 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:12.892 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:13.770 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:25.033 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:28.440 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:31.026 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:32.484 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:33.653 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:33.855 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:35.135 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:35.775 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:35.838 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 21:00:36.156 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:36.157 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:36.503 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:36.533 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:36.603 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 21:00:36.947 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:36.948 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:37.363 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:37.363 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:38.054 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:40.156 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:42.627 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:45.075 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:45.544 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:46.024 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:46.428 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:54.664 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:00:55.993 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:03.716 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:04.577 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:05.329 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:06.154 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:06.851 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:06.887 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:06.887 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:06.887 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:07.556 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:08.566 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:12.056 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:12.745 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:12.800 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-10-15 21:01:14.601 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:14.601 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:14.935 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:15.379 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:16.165 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:17.174 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:18.216 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:20.255 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:21.668 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:21.668 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:22.519 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:22.519 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:23.298 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:23.298 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:24.110 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:24.111 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:24.111 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:47: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+  red_blue.set_bad(gray_rgb.tolist(), 1.0)
+C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:48: PendingDeprecationWarning: The set_over function will be deprecated in a future version. Use cmap.with_extremes(over=...) or Colormap(over=...) instead.
+  red_blue.set_over(gray_rgb.tolist(), 1.0)
+C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\shap\plots\colors\_colors.py:49: PendingDeprecationWarning: The set_under function will be deprecated in a future version. Use cmap.with_extremes(under=...) or Colormap(under=...) instead.
+  red_blue.set_under(gray_rgb.tolist(), 1.0)  # "under" is incorrectly used instead of "bad" in the scatter plot
+2026-10-15 21:01:34.593 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:34.595 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:34.595 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:36.768 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:37.370 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:37.370 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:38.247 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:38.981 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:40.132 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '5.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:40.703 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:41.717 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '5.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:42.006 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '3.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:42.297 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '3.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:42.734 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:43.014 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:43.337 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:43.662 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:43.992 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:44.289 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '5.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:44.310 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:45.351 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '5.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:45.848 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowTypeError: ("Expected bytes, got a 'float' object", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:46.129 Serialization of dataframe to Arrow table was unsuccessful. Applying automatic fixes for column types to make the dataframe Arrow-compatible.
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\dataframe_util.py", line 959, in convert_pandas_df_to_arrow_table
+    return pa.Table.from_pandas(df, preserve_index=preserve_index)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/table.pxi", line 4769, in pyarrow.lib.Table.from_pandas
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 656, in dataframe_to_arrays
+    arrays = [convert_column(c, f)
+              ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 644, in convert_column
+    raise e
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\pyarrow\pandas_compat.py", line 638, in convert_column
+    result = pa.array(col, type=type_, from_pandas=True, safe=safe)
+  File "pyarrow/array.pxi", line 408, in pyarrow.lib.array
+  File "pyarrow/array.pxi", line 91, in pyarrow.lib._ndarray_to_array
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+pyarrow.lib.ArrowInvalid: ("Could not convert '5.25' with type str: tried to convert to double", 'Conversion failed for column Value with type object')
+2026-10-15 21:01:46.704 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:47.931 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:47.932 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:01:47.932 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+======================================================================
+ERROR: test_workspace_preserves_controls_without_persisting_action (test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_temporal_target_guidance.py", line 106, in test_workspace_preserves_controls_without_persisting_action
+    app.checkbox(key=target_key('Delivery Date')).check().run(timeout=60)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\testing\v1\element_tree.py", line 339, in __call__
+    raise KeyError(key)
+KeyError: 'pa_target_check_cc31fa8947a4a713'
+
+======================================================================
+FAIL: test_group_navigation_preview_apply_and_create (test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_fill_missing.py", line 62, in test_group_navigation_preview_apply_and_create
+    self.assertEqual(app.selectbox(key='tf_menu_restructure_data').options,
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot'])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['Aggregate', 'Pivot', 'Unpivot'] != ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot']
+
+First differing element 0:
+'Aggregate'
+'Choose operation�'
+
+Second list contains 1 additional elements.
+First extra element 3:
+'Unpivot'
+
+- ['Aggregate', 'Pivot', 'Unpivot']
++ ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot']
+?  +++++++++++++++++++++
+
+
+----------------------------------------------------------------------
+Ran 380 tests in 315.887s
+
+FAILED (failures=1, errors=1)

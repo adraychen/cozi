@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_p_value
 from utils import presentation
 from utils.report_capture import reportable, offer_result
 """Cross-tabulation and chi-square interface for Relationship."""
@@ -48,7 +49,7 @@ def render_contingency(df, dimensions, key_prefix="rel_ct"):
     a, b, c = st.columns(3)
     presentation.metric(a, "Chi-square", f"{result['chi2']:.4f}")
     presentation.metric(b, "Degrees of freedom", result["dof"])
-    presentation.metric(c, "p-value", f"{result['p']:.4g}")
+    presentation.metric(c, "p-value", format_p_value(result['p']))
     if result["low_expected"]:
         presentation.warning(f"{result['low_expected']} of {table.size} cells have expected counts below 5. The asymptotic p-value may be unreliable; interpret cautiously.")
     if result["p"] < alpha:

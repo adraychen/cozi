@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt
 """Lightweight predictive controls; no sklearn or SHAP imports."""
 import re
 import numpy as np
@@ -60,7 +61,7 @@ def detect_id_columns(df: pd.DataFrame, columns: list) -> list:
             if n_unique == n_rows:
                 reasons.append("every value is unique")
             elif n_rows > 10 and n_unique / n_rows > 0.95:
-                reasons.append(f"{n_unique / n_rows * 100:.0f}% of values are unique")
+                reasons.append(f"{fmt(n_unique / n_rows * 100, 'percentage')} of values are unique")
 
         if reasons:
             suspects.append((col, " and ".join(reasons)))
@@ -153,11 +154,11 @@ def interpret_learning_curve(train_scores: np.ndarray, val_scores: np.ndarray) -
 
 def interpret_r2(r2: float) -> str:
     if r2 >= 0.85:
-        return f"✅ **Strong fit** (R² = {r2:.2f}) — the model explains {r2*100:.0f}% of the variation in the target column."
+        return f"✅ **Strong fit** (R² = {fmt(r2, 'r2')}) — the model explains {fmt(r2*100, 'percentage')} of the variation in the target column."
     elif r2 >= 0.65:
-        return f"ℹ️ **Moderate fit** (R² = {r2:.2f}) — the model captures most patterns but leaves room for improvement."
+        return f"ℹ️ **Moderate fit** (R² = {fmt(r2, 'r2')}) — the model captures most patterns but leaves room for improvement."
     else:
-        return f"⚠️ **Weak fit** (R² = {r2:.2f}) — consider reviewing your predictor selection or data quality."
+        return f"⚠️ **Weak fit** (R² = {fmt(r2, 'r2')}) — consider reviewing your predictor selection or data quality."
 
 PARAM_GRID_CLASSIFIER = {
     "model__n_estimators":     [300],

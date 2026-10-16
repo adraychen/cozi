@@ -64,6 +64,13 @@ if enterprise_requested():
     render_enterprise_page()
     st.stop()
 
+from utils.numerical_formatting import current_settings
+try:
+    current_settings()
+except (ValueError, OSError) as exc:
+    st.error('Check NUMERICAL_PRECISION.toml: ' + str(exc))
+    st.stop()
+
 render_brand()
 st.caption(
     "Upload or input your data and analyze it through guided analytical workflows designed to make data analysis more accessible, efficient, and insightful."

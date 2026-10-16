@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_plot_hover
 from utils.report_capture import reportable, offer_result
 """Streamlit controls and results for grouped exploratory analysis."""
 import pandas as pd
@@ -120,15 +121,25 @@ def render_group_statistics(df, col_types, analysis=None, key_prefix="gs", show_
         labels = result["Segment"].unique().tolist()
         chosen = st.multiselect("Segments to chart", labels, default=labels[:10], key=key_prefix + "_chart_" + analysis)
         chart = result[result["Segment"].isin(chosen)]
+        chart_kind = {'Mean': 'mean', 'Median': 'median', 'Minimum': 'minimum', 'Maximum': 'maximum', 'Standard deviation': 'sd', 'Row count': 'count', 'Non-missing count': 'count'}.get(statistic)
+        if analysis == ANALYSES[5]:
+            chart_kind = 'percentage'
         if not chart.empty:
             if time_based:
                 long = chart.melt(id_vars=["Period", "Segment"], value_vars=plotted, var_name="Statistic", value_name="Result")
                 fig = px.line(long, x="Period", y="Result", color="Segment", line_dash="Statistic")
             else:
                 fig = px.bar(chart, x="Segment", y=plotted[0], color="Segment")
+            if chart_kind:
+                format_plot_hover(fig, {'y': chart_kind})
             presentation.plotly_chart(fig, use_container_width=True, key=key_prefix + "_chart")
         display = result.drop(columns=keys)
-        presentation.dataframe(display.style.format(precision=2, na_rep="N/A"), use_container_width=True)
+        schema = {'Contribution %': 'percentage', 'Difference %': 'percentage', 'Change %': 'percentage', 'Observed periods': 'count'}
+        value_type = {'Mean': 'mean', 'Median': 'median', 'Minimum': 'minimum', 'Maximum': 'maximum', 'Standard deviation': 'sd', 'Variance': 'variance', 'Row count': 'count', 'Non-missing count': 'count'}.get(statistic)
+        if value_type:
+            schema.update({'Value': value_type, 'Previous': value_type, 'Reference': value_type})
+        schema.update({'Expanding mean': 'mean', 'Rolling average': 'mean'})
+        presentation.dataframe(display.style.format(precision=2, na_rep="N/A"), result_types=schema, use_container_width=True)
         st.download_button("Download statistics (CSV)", display.to_csv(index=False).encode("utf-8-sig"),
                            file_name="comparison.csv" if key_prefix != "gs" else "group_statistics.csv", mime="text/csv", key=key_prefix + "_download")
         offer_result(analysis, analysis, {'measure': measure, 'dimensions': dimensions},

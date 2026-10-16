@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt
 """Validated period comparisons; calendar components never acquire invented years."""
 from dataclasses import dataclass
 import calendar
@@ -211,7 +212,7 @@ def interpret_result(result, frequency, max_segments=20):
             continue
         first, last = valid.iloc[0], valid.iloc[-1]
         change = last['Value'] - first['Value']
-        percent = f'{change / abs(first["Value"]) * 100:+.2f}%' if first['Value'] != 0 else 'percentage change N/A because the starting value is zero'
+        percent = fmt(change / abs(first['Value']) * 100, 'percentage') if first['Value'] != 0 else 'percentage change N/A because the starting value is zero'
         direction = 'increased' if change > 0 else 'decreased' if change < 0 else 'was unchanged'
         text = f'{segment}: the value {direction} from {first["Period"]} to {last["Period"]} (absolute change {change:+.2f}; {percent}). This describes the overall endpoint movement, not a fitted trend.'
         if rows['Missing period'].any() or rows['Missing value'].any():
@@ -221,7 +222,7 @@ def interpret_result(result, frequency, max_segments=20):
         for label, subset, position in [('increase', positives, 'idxmax'), ('decrease', negatives, 'idxmin')]:
             if len(subset):
                 row = subset.loc[getattr(subset['Change %'], position)()]
-                text += f' Largest comparable percentage {label}: {row["Change %"]:+.2f}% from {row["Previous period"]} to {row["Period"]}.'
+                text += f' Largest comparable percentage {label}: {fmt(row['Change %'], 'percentage')} from {row["Previous period"]} to {row["Period"]}.'
         if comparisons.empty:
             text += ' No defined period percentage comparisons are available.'
         narratives.append(text)

@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt, format_p_value, DESCRIPTIVE, INFERENCE, current_settings
 """Guided Welch One-way ANOVA, diagnostics and Games–Howell reporting."""
 import hashlib
 import json
@@ -140,7 +141,7 @@ def render_anova(df, category, outcome):
             }).style.format({
                 'F': '{:.6g}', 'p-value': lambda p: 'p < 0.001' if p < .001 else f'{p:.4g}', 'df numerator': '{:.6g}',
                 'df denominator': '{:.6g}', "Effect Size (Cohen's f²)": '{:.6g}', 'α': '{:.3g}',
-            }), hide_index=True)
+            }), result_types=INFERENCE, alpha=alpha, hide_index=True)
             presentation.write('Statistically significant at the selected α.' if result['p-value'] < alpha else 'Not statistically significant at the selected α; this does not establish equal population means.')
             presentation.caption(f"Exact p-value: {result['p-value']:.17g}. Statistical significance does not establish practical importance.")
         else:
@@ -151,7 +152,7 @@ def render_anova(df, category, outcome):
             display['Source'] = display['Source'].replace({'Within Groups (Residual)': 'Within Groups'})
             total_ss = display.loc[display['Source'] == 'Total', 'Sum of Squares (SS)'].iloc[0]
             display['Variation (%)'] = display['Sum of Squares (SS)'] / total_ss * 100 if total_ss > 0 else float('nan')
-            presentation.dataframe(display.style.format({'Variation (%)': '{:.2f}%'}, na_rep='—'), hide_index=True)
+            presentation.dataframe(display, result_types=INFERENCE, alpha=alpha, hide_index=True)
             if total_ss == 0:
                 presentation.caption('Percentages are unavailable because total observed variation is zero.')
             presentation.caption(VARIATION_NOTE)
@@ -160,7 +161,7 @@ def render_anova(df, category, outcome):
             presentation.info('No numerically valid variation decomposition is available.')
     with tabs[1]:
         presentation.markdown('**Group Statistics**')
-        presentation.dataframe(prepared['summary'], hide_index=True)
+        presentation.dataframe(prepared['summary'], result_types=DESCRIPTIVE, hide_index=True)
         presentation.markdown('**Group Boxplot**')
         if not prepared['summary'].empty:
             plot = prepared['clean'].copy()
@@ -183,7 +184,7 @@ def render_anova(df, category, outcome):
             presentation.dataframe(table[columns].style.format({
                 'Mean Difference': '{:.6g}', 'Adjusted p-value': '{:.4g}',
                 pairwise['lower']: '{:.6g}', pairwise['upper']: '{:.6g}',
-            }), hide_index=True, height=420)
+            }), result_types={**INFERENCE, pairwise['lower']: 'ci', pairwise['upper']: 'ci'}, alpha=alpha, hide_index=True, height=420)
         else:
             presentation.info(pairwise['reason'] if pairwise else 'Games–Howell is unavailable while validated Welch inference is withheld.')
         _show_pair_plot(pairwise)
@@ -200,7 +201,7 @@ def render_anova(df, category, outcome):
         for note in prepared['warnings']:
             presentation.warning(note)
         if np.isfinite(prepared['levene_p']):
-            presentation.write(f"Median-centered Levene (Brown–Forsythe variance screen): statistic = {prepared['levene_stat']:.4g}; p = {prepared['levene_p']:.4g}.")
+            presentation.write(f"Median-centered Levene (Brown–Forsythe variance screen): statistic = {prepared['levene_stat']:.4g}; {format_p_value(prepared['levene_p'], alpha, context='narrative')}.")
         else:
             presentation.info('Variance screening is unavailable.')
         presentation.caption('Levene describes variance differences; its p-value never switches the method. A nonsignificant result does not establish equality.')
@@ -253,9 +254,9 @@ def render_anova(df, category, outcome):
                 findings = [{'Comparison': row['Comparison'],
                              'Finding': f"{row['Group A']} has a {'higher' if row['Mean Difference'] > 0 else 'lower'} mean than {row['Group B']} by {abs(row['Mean Difference']):.4g} response units.",
                              'Adjusted p-value': row['Adjusted p-value']} for _, row in significant.iterrows()]
-                presentation.dataframe(pd.DataFrame(findings), hide_index=True, height=420)
+                presentation.dataframe(pd.DataFrame(findings), result_types={'Adjusted p-value': 'p'}, alpha=alpha, hide_index=True, height=420)
         if result:
-            presentation.write(f'Variance-weighted effect size f² = {result[EFFECT_SIZE]:.4g}. Statistical significance does not establish practical importance.')
+            presentation.write(f'Variance-weighted effect size f² = {fmt(result[EFFECT_SIZE], 'cohens_f2')}. Statistical significance does not establish practical importance.')
         presentation.markdown('**Important limitations**')
         presentation.write(independence['state'] + '. ' + independence['qualification'])
         if design == 'independent':
@@ -264,7 +265,7 @@ def render_anova(df, category, outcome):
             presentation.warning(note)
         presentation.caption('Welch and Games–Howell allow unequal variances; they do not repair dependence, severe skew or outliers in small samples. Association is not causation. Adjustment covers this pairwise family, not later exploration of other outcomes or factors.')
         ai_context = guidance_context(prepared, independence, result, pairwise, metadata)
-        digest = hashlib.sha256(json.dumps(ai_context, sort_keys=True, default=str).encode()).hexdigest()
+        digest = hashlib.sha256((json.dumps(ai_context, sort_keys=True, default=str) + repr(current_settings())).encode()).hexdigest()
         with st.expander('🤖 AI Interpretation'):
             saved = st.session_state.get('rel_anova_ai', {})
             if st.button('Refresh interpretation' if saved.get('context') == digest else 'Generate interpretation',

@@ -39,7 +39,7 @@ class TTestUITests(unittest.TestCase):
         app.number_input(key='gs_tt_null').set_value(2.).run(timeout=45)
         app.selectbox(key='gs_tt_alternative').select('Difference > 0 (greater)').run(timeout=45)
         self.assertTrue(any('hypothesized mean (2)' in m.value for m in app.markdown))
-        self.assertTrue(any('+infinity' in str(t.value) for t in app.dataframe))
+        self.assertTrue(any('inf' in str(t.value) for t in app.dataframe))
         self.assertEqual(app.selectbox(key='gs_tt_mode').options, ['One-Sample t-Test'])
         app.checkbox(key='gs_cmp_variable_b').check().run(timeout=45)
         app.selectbox(key='gs_tt_mode').select('Paired Samples t-Test').run(timeout=45)

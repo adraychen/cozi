@@ -1,3 +1,5 @@
+from utils.numerical_formatting import format_statistic as fmt, format_p_value
+from utils.numerical_formatting import plot_number_format
 """Correlation analysis, separate from regression."""
 import numpy as np
 import pandas as pd
@@ -34,18 +36,18 @@ def render_correlation(df, numerical):
             return
         coefficient, p = (stats.pearsonr if method == 'Pearson' else stats.spearmanr)(pairs[a], pairs[b])
         left, right = st.columns(2)
-        left.metric(f'{method} correlation', f'{coefficient:.4f}')
-        right.metric('p-value (two-sided)', f'{p:.4g}')
+        left.metric(f'{method} correlation', fmt(coefficient, 'correlation'))
+        right.metric('p-value (two-sided)', format_p_value(p))
         presentation.plotly_chart(px.scatter(pairs, x=a, y=b), use_container_width=True)
         st.caption('The p-value assumes independent observations. Pearson inference assumes an appropriate bivariate-normal model; Spearman uses an asymptotic approximation that can be unreliable in small samples. Inspect the scatter plot for outliers and nonlinear patterns.')
     else:
         fig = px.imshow(matrix, zmin=-1, zmax=1, color_continuous_scale='RdBu_r',
-                        text_auto='.2f', title=f'{method} correlation matrix', aspect='auto')
-        fig.update_traces(customdata=counts.to_numpy(), hovertemplate='%{y} / %{x}<br>Correlation: %{z:.3f}<br>Usable pairs: %{customdata}<extra></extra>')
+                        text_auto=plot_number_format('correlation'), title=f'{method} correlation matrix', aspect='auto')
+        fig.update_traces(customdata=counts.to_numpy(), text=[[fmt(v, 'correlation') for v in row] for row in matrix.to_numpy()], texttemplate='%{text}', hovertemplate='%{y} / %{x}<br>Correlation: %{text}<br>Usable pairs: %{customdata}<extra></extra>')
         presentation.plotly_chart(fig, use_container_width=True)
-        presentation.dataframe(matrix, use_container_width=True)
+        presentation.dataframe(matrix, result_types={column: 'correlation' for column in matrix.columns}, use_container_width=True)
         if matrix.isna().any().any():
             st.warning('Some correlations are undefined because of insufficient pairs or constant values.')
         st.caption('Each matrix cell uses its own complete pairs, so sample sizes may differ. The matrix shows coefficients, not significance tests.')
         with st.expander('Usable observations per pair'):
-            presentation.dataframe(counts, use_container_width=True)
+            presentation.dataframe(counts, result_types={column: 'count' for column in counts.columns}, use_container_width=True)

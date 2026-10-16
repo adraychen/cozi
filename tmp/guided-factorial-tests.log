@@ -1,0 +1,12 @@
+2026-10-15 21:30:23.167 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:30:24.577 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:30:26.128 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:30:26.521 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_guidance.py:85: SingularMatrixWarning: The design matrix is rank-deficient. The model parameters are not uniquely determined.
+  singular = ols('Y ~ C(A)*C(B)',df).fit()
+2026-10-15 21:30:28.592 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 21:30:31.927 No runtime found, using MemoryCacheStorageManager
+----------------------------------------------------------------------
+Ran 23 tests in 10.002s
+
+OK

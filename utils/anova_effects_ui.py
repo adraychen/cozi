@@ -1,3 +1,4 @@
+from utils.numerical_formatting import DESCRIPTIVE, REGRESSION
 """Effect controls and guided Gaussian variance-component results."""
 import hashlib
 import pandas as pd
@@ -117,7 +118,7 @@ def render_random(df, outcome, effects, interactions, alpha, prefix):
     presentation.caption('Variance-component confidence intervals and significance tests are not supplied. Zero is a boundary; an ordinary chi-square likelihood-ratio test is not valid here.')
     if 'Fixed' in effects.values():
         presentation.subheader('Fixed effects')
-        presentation.dataframe(result['fixed'], hide_index=True, column_config={'p-value (asymptotic)': st.column_config.NumberColumn(format='%.4g')})
+        presentation.dataframe(result['fixed'], result_types=REGRESSION, alpha=alpha, hide_index=True, column_config={'p-value (asymptotic)': st.column_config.NumberColumn(format='%.4g')})
         presentation.caption(f'{1-alpha:.1%} asymptotic normal Wald intervals and two-sided z tests, when available; these are large-sample coefficient tests, not Type II F tests or small-sample corrected inference. Reference levels use first observed order. Estimates compare the selected fixed groups conditional on random variation. Small group counts can make inference unreliable even above the five-group suppression threshold.')
         reference = pd.DataFrame([{'Factor': str(f), 'Reference group': str(prepared['raw'][f].iloc[0])} for f in factors if effects[f] == 'Fixed'])
         presentation.dataframe(reference, hide_index=True)
@@ -168,7 +169,7 @@ def _render_oneway_random(prepared, result, outcome, effects, interactions, pare
         presentation.plotly_chart(px.bar(result['variance'].assign(Component=lambda frame: frame.Component.replace({'Residual (within groups)': 'Residual'})), x='Component', y='Variance', title='Estimated variance components'))
     with tabs[1]:
         presentation.markdown('**Group Statistics**')
-        presentation.dataframe(descriptive['summary'], hide_index=True)
+        presentation.dataframe(descriptive['summary'], result_types=DESCRIPTIVE, hide_index=True)
         presentation.markdown('**Group Boxplot**')
         presentation.plotly_chart(px.box(prepared['raw'], x=factor, y=outcome, points='outliers', title='Response distributions'))
         presentation.markdown('**Group Means with 95% Confidence Intervals**')

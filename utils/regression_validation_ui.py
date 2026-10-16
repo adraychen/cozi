@@ -31,7 +31,7 @@ def render_validation(result):
         fig.add_hline(y=0, line_dash='dash')
         presentation.plotly_chart(fig, use_container_width=True)
         st.write('Curvature suggests a missing nonlinear relationship. A funnel shape suggests changing error variance. In multiple regression, also consider relationships with individual predictors.')
-        presentation.dataframe(format_table(diagnostic), hide_index=True, use_container_width=True)
+        presentation.dataframe(format_table(diagnostic, {'p-value':'p'}), hide_index=True, use_container_width=True)
         st.caption('Breusch–Pagan uses the Koenker LM variant. Unequal variance can invalidate conventional standard errors: consider robust standard errors or a revised model before relying on the reported intervals and p-values. This test can be unreliable in small samples.')
         st.markdown('**Normality of residuals**')
         a, b = st.columns(2)

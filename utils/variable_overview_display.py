@@ -106,7 +106,7 @@ def render_overview(raw, metadata):
         return ('background-color: #f8d7da; color: #842029' if value >= 20 else
                 'background-color: #fff3cd; color: #664d03' if value >= 5 else '')
     styled = overview.style.format({'Missing %': '{:.2f}'}).map(missing_color, subset=['Missing %'])
-    presentation.dataframe(styled, hide_index=True, column_config={
+    presentation.dataframe(styled, result_types={'Missing %': 'percentage', 'Unique Values': 'count', 'Total Values': 'count', 'Missing Values': 'count'}, hide_index=True, column_config={
         'Variable Type': st.column_config.TextColumn(help='A = Automatic classification; M = Manual Override.'),
         'Variable Subtype': st.column_config.TextColumn(help='A = Automatic classification; M = Manual Override.'),
         'Unique Values': st.column_config.NumberColumn(help='Open Unique value details below for values or ranges.'),

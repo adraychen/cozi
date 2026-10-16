@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt, format_plot_hover
 """Adjusted interaction and polynomial displays from the retained OLS model."""
 import numpy as np
 import pandas as pd
@@ -36,7 +37,7 @@ def adjusted_curves(result, xvar, moderator=None, selected_levels=None, predicti
             raise ValueError('Select at least one known moderator category.')
         slices = [(f'{moderator} = {value!r}', value) for value in levels]
     else:
-        slices = [(f'{moderator}: P{q} = {value:.4g}', float(value))
+        slices = [(f'{moderator}: P{q} = {fmt(value, 'quantile')}', float(value))
                   for q,value in zip((25,50,75), np.percentile(clean[moderator], [25,50,75]))]
     curves = []
     for name, value in slices:
@@ -85,7 +86,7 @@ def effect_figure(result, xvar, curves, title, confidence=.95):
                       legend_title_text='Model prediction at',legend=dict(groupclick='togglegroup'))
     if categorical_x:
         fig.update_xaxes(type='category',categoryorder='array',categoryarray=[repr(v) for v in result['spec']['levels'][xvar]])
-    return fig
+    return format_plot_hover(fig, {'y':'mean', 'customdata[0]':'ci', 'customdata[1]':'ci'})
 
 
 def show_effect(result, xvar, moderator, title, widget_key):
@@ -139,7 +140,7 @@ def render_effect_plots(result, key):
         if len(result['spec']['predictors']) == 1:
             fig = fitted_curve(result)
             fig.update_layout(title=f'Polynomial relationship: {xvar}')
-            presentation.plotly_chart(fig,use_container_width=True,key='reg_poly_single_'+key[:12])
+            presentation.plotly_chart(format_plot_hover(fig, {'y': 'mean', 'customdata[0]': 'ci', 'customdata[1]': 'ci'}),use_container_width=True,key='reg_poly_single_'+key[:12])
             st.caption('Observed points and fitted polynomial in original units. Blue shading shows the 95% mean-response confidence interval; orange shading shows the 95% prediction interval. No other predictors are held fixed.')
             if result['perfect_fit']:
                 st.info('Intervals are unavailable for a perfect or near-perfect fit.')

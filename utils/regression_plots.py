@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_plot_hover
 """Plots based on the same fitted model and transformation pipeline."""
 import numpy as np
 import pandas as pd
@@ -32,7 +33,7 @@ def coefficient_plot(result):
     table['lower error'] = table['Coefficient']-table['95% lower']
     fig = px.scatter(table,x='Coefficient',y='Term',error_x='upper error',error_x_minus='lower error')
     fig.add_vline(x=0,line_dash='dash')
-    return fig
+    return format_plot_hover(fig, {'x': 'coefficient'})
 
 
 def partial_plot(result, c):

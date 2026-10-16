@@ -1,0 +1,53 @@
+# Cozy numerical display controls — edit this document, then rerun the app.
+# These settings affect statistical DISPLAY ONLY. They never round datasets,
+# calculations, CSV/Excel exports, or previously saved report snapshots.
+# Invalid settings produce an error; they are never silently ignored.
+
+[display]
+# "Standard" uses the result-specific rules below. Or use 2, 3, 4, or 5
+# (without quotes) to override suitable decimal-place result displays.
+# Counts stay integers. DF stays integer when integral, otherwise the df setting below.
+# Percentages use 1 decimal by default. Small nonzero values use scientific
+# notation instead of misleading zeros. Coefficients/ratios use significant digits.
+precision = "Standard"
+# "Standard": 3 decimals, <0.001 for small p-values.
+# "Detailed": 5 decimals, 3 significant digits in scientific notation below .001.
+# Near alpha, extra precision is automatic so the displayed decision is consistent.
+# Numeric underflow to zero is shown as a bound; never an invented exact value.
+p_value_mode = "Standard"
+# Detailed p-value precision (3–10); near-alpha precision can expand automatically.
+p_value_detailed_decimals = 5
+p_value_scientific_digits = 3
+
+[decimal_places]
+mean = 2
+median = 2
+minimum = 2
+maximum = 2
+quantile = 2
+sd = 3
+se = 3
+ci = 2
+f = 3
+t = 3
+z = 3
+cohens_d = 3
+cohens_f2 = 3
+eta_squared = 3
+correlation = 3
+r2 = 3
+adjusted_r2 = 3
+ss = 3
+ms = 3
+variance = 3
+df = 2
+percentage = 1
+
+[significant_digits]
+coefficient = 4
+odds_ratio = 3
+hazard_ratio = 3
+
+# Do not add unlisted result types here: see NUMERICAL_FORMATTING_AUDIT.md.
+# Examples requiring review include ICC, model variance components, likelihoods,
+# error/classification metrics, prediction values and coefficient/OR intervals.

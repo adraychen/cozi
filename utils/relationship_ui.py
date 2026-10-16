@@ -1,3 +1,4 @@
+from utils.numerical_formatting import format_statistic as fmt
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -58,7 +59,7 @@ def render_relationship_analysis(df, numerical, categorical, dates):
             presentation.plotly_chart(px.line(chart,x=axis,y=['Observed','Linear trend']),use_container_width=True)
             slope = trend['coefficients'].iloc[1]['Coefficient']
             unit = 'year' if annual else 'day'
-            st.write(f'Linear trend: {slope:.4g} units per elapsed {unit}; R² = {trend["r2"]:.3f}.')
+            st.write(f'Linear trend: {slope:.4g} units per elapsed {unit}; R² = {fmt(trend['r2'], 'r2')}.')
             presentation.dataframe(chart,hide_index=True,use_container_width=True)
             st.caption(f'Excluded {len(df)-len(clean):,} invalid/missing pairs. Missing periods are omitted, not filled with zero; elapsed calendar time is used. Trend is descriptive, not a forecast or significance test: seasonality and autocorrelation are not modelled. Boundary periods may be incomplete.')
         else:

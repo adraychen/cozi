@@ -43,7 +43,7 @@ class WhitespaceInspectionTests(unittest.TestCase):
                   if list(element.value.columns) == ['Statistic', 'Value']
                   and 'Leading/Trailing Whitespace' in element.value['Statistic'].tolist()]
         self.assertEqual(len(tables), 2)
-        for table, expected in zip(tables, ['75.00%', '0.00%']):
+        for table, expected in zip(tables, ['75.0%', '0.0%']):
             labels = table['Statistic'].tolist()
             self.assertEqual(labels[labels.index('Special Characters') + 1], 'Leading/Trailing Whitespace')
             values = table.set_index('Statistic')['Value']
