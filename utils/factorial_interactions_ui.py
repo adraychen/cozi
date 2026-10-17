@@ -48,7 +48,6 @@ def interaction_controls(factors, effects):
                                             else manual or [NO_INTERACTION])
     choices = state['fac_interaction_choices']
     selected = candidates if ALL_INTERACTIONS in choices else [p for p in candidates if p in choices]
-    st.markdown('**Interaction effects (optional)**')
     left, right = st.columns(2)
     left.button('Select all', key='fac_action_interactions_all', on_click=_set_interactions, args=([ALL_INTERACTIONS],))
     right.button('Clear all', key='fac_action_interactions_clear', on_click=_set_interactions, args=([],))

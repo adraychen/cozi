@@ -19,7 +19,8 @@ def render_factorial_random(df, outcome, effects, interactions, alpha, mode, con
     from utils.anova_effects_ui import _fit
     factors = list(effects)
     panel_status = st.session_state.get('fac_design_panel_status', 'review')
-    with st.expander({'review': 'Review advised', 'confirmed': 'Study Design', 'issue': 'Model issue'}[panel_status]):
+    with st.expander({'review': 'Review advised', 'confirmed': 'Study Design', 'issue': 'Model issue'}[panel_status],
+                     expanded=st.session_state.get('fac_design_collection') is not None):
         study = render_study_design(df, outcome, effects, interactions)
     ready = study['decision']['fit'] and study['decision']['inference']
     next_status = 'confirmed' if ready else 'issue' if study['decision']['severity'] == 'blocking' else 'review'

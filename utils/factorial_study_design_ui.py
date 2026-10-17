@@ -3,7 +3,7 @@ import numpy as np
 import streamlit as st
 from utils import presentation
 from utils.anova_effects import prepare_random
-from utils.factorial_study_design import (SAME, UNSURE, SEPARATE, SEQUENCE, SHARED,
+from utils.factorial_study_design import (UNSURE, SEPARATE, SEQUENCE, SHARED,
     study_context, factor_key, detect_relationships, assignment_parent, assignment_language,
     collection_language, time_evidence, check_time_column, collection_requirement,
     clean_design, design_diagnostic, sync_study_state)
@@ -67,10 +67,7 @@ def render_study_design(df, outcome, effects, interactions):
         presentation.markdown('**' + str(factor) + ' assignment**')
         _explain(item)
         suggestion = relation['suggestion']
-        if suggestion:
-            st.caption('Suggested from data: ' + labels[suggestion] +
-                       ' Review the selected option using your knowledge of the study.')
-        else:
+        if not suggestion:
             st.caption('The observed combinations do not support a single clear suggestion. Missing combinations do not tell Cozy whether the same people or units work across groups or belong to separate groups.')
         st.markdown('**' + question + '**')
         for option in options:
@@ -79,12 +76,6 @@ def render_study_design(df, outcome, effects, interactions):
             st.checkbox(labels[option], key=checkbox_key, on_change=_select_assignment,
                         args=(key, option, checkbox_key))
         choice = state[key]
-        sample = df[factor].dropna().iloc[0] if df[factor].notna().any() else 'a label'
-        if choice == SAME:
-            st.caption(f'Choose this if {factor} {sample} refers to the same person or unit wherever it appears.')
-        elif choice != UNSURE:
-            parent = assignment_parent(choice, factor, effects)
-            st.caption(f'Choose this if each {parent} has its own {factor} people or units; identical labels in different {parent} groups may refer to different people or units.')
         confirmed = choice != UNSURE
         if confirmed:
             parent = assignment_parent(choice, factor, effects)
