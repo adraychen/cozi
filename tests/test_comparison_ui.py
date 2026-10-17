@@ -78,7 +78,7 @@ render_comparison(df, {'numerical':['Y','Z','W'], 'categorical':['A','B','D'], '
         self.assertEqual(app.selectbox(key='gs_cmp_analysis').options, ['Factorial ANOVA','Segment Comparison'])
         self.assertIsNone(app.selectbox(key='gs_cmp_analysis').value)
         app.selectbox(key='gs_cmp_analysis').select('Factorial ANOVA').run(timeout=40)
-        self.assertEqual(app.multiselect(key='fac_x').value, ['A','B','D'])
+        self.assertTrue(any(m.value == '**Factors (X):** A, B, D' for m in app.markdown))
         self.assertFalse(app.exception)
 
     def test_three_analyses_and_independent_controls(self):

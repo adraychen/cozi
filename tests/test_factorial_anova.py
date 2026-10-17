@@ -178,6 +178,7 @@ render_factorial_anova(df, ['Y','B'], ['A','B','D'])
 import streamlit as st
 from tests.test_factorial_anova import fixture
 from utils.comparison_ui import render_comparison
+st.session_state.setdefault('fac_interaction_mode', 'Select interactions manually')
 df = fixture()
 render_comparison(df, {'numerical':['Y'], 'categorical':['A','B','D'], 'datetime':[]})
 ''').run(timeout=30)

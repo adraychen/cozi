@@ -84,6 +84,12 @@ def prepare_random(df, outcome, effects, interactions=(), parents=None):
             components[' × '.join(map(str, pair))] = list(dict.fromkeys(sum((ancestry(f) for f in pair), [])))
     if len(components) > 12:
         raise ValueError('At most 12 random components are supported in one model; reduce the requested structure only when justified by the design.')
+    fixed_levels = {f: raw[f].nunique() for f in factors if effects[f] == 'Fixed'}
+    parameters = 1 + sum(v - 1 for v in fixed_levels.values())
+    parameters += sum((fixed_levels[a]-1)*(fixed_levels[b]-1) for a, b in interactions
+                      if a in fixed_levels and b in fixed_levels)
+    if parameters > 1000 or n * parameters > 1_000_000:
+        raise ValueError('The fixed part of this random/mixed model exceeds interactive design-matrix limits. Review factors, levels and interactions before fitting.')
     X = dmatrix(' + '.join(fixed) or '1', data, return_type='dataframe')
     if np.linalg.matrix_rank(X) != X.shape[1] or n <= X.shape[1] + len(components):
         raise ValueError('Fixed effects are confounded or leave too little residual information. Remove redundant terms or collect more observations.')
@@ -119,7 +125,13 @@ def prepare_random(df, outcome, effects, interactions=(), parents=None):
             'groups': pd.DataFrame(groups), 'names': names, 'components': list(components),
             'effects': dict(effects), 'parents': dict(parents), 'n': n, 'excluded': len(df)-n,
             'empty_cells': possible-len(cells), 'balanced': cells.nunique() == 1 and len(cells) == possible,
-            'relationships': pd.DataFrame(relationships), 'outcome': outcome}
+            'relationships': pd.DataFrame(relationships), 'outcome': outcome,
+            'fixed_rank': X.shape[1], 'residual_df': n-X.shape[1],
+            'fixed_term_slices': {term: (span.start, span.stop) for term, span in X.design_info.term_name_slices.items()},
+            'fixed_columns': list(X.columns),
+            'covariance_rank': len(kernels), 'possible_cells': possible,
+            'observed_cells': len(cells), 'singleton_cells': int(cells.eq(1).sum()),
+            'interactions': list(interactions)}
 
 
 def fit_random(prepared, alpha=.05):
@@ -185,7 +197,9 @@ def fit_random(prepared, alpha=.05):
         raise ValueError('The singular random-effect covariance prevents reliable fitted values; results are withheld.') from exc
     if not np.isfinite(fitted).all() or not np.isfinite(residuals).all():
         raise ValueError('Nonfinite fitted values or residuals; results are withheld.')
+    from utils.factorial_interactions import joint_fixed_interactions
+    interaction_tests = joint_fixed_interactions(model, fit, prepared, inference)
     return {'converged': True, 'information_positive_definite': bool(healthy), 'near_boundary': near_zero, 'variance': variance, 'fixed': fixed, 'total_variance': float(values.sum()),
             'icc': float(values[0]/values.sum()) if len(values) == 2 else None,
             'inference': inference, 'warnings': notes, 'method': 'REML', 'n': prepared['n'],
-            'fitted': fitted, 'residuals': residuals}
+            'fitted': fitted, 'residuals': residuals, 'fixed_interactions': interaction_tests}

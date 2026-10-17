@@ -213,8 +213,10 @@ class GuidedUITests(unittest.TestCase):
     def test_complete_guided_workflow_hc3_simple_effects_swaps_and_alpha(self):
         from streamlit.testing.v1 import AppTest
         app=AppTest.from_string('''
+import streamlit as st
 from tests.test_factorial_anova import fixture
 from utils.factorial_anova_ui import render_factorial_anova
+st.session_state.setdefault('fac_interaction_mode', 'Select interactions manually')
 render_factorial_anova(fixture(True), ['Y'], ['A','B','D'])
 ''').run(timeout=40)
         self.assertFalse(app.exception)

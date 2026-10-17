@@ -6,7 +6,7 @@ from utils.dataset_workspace import dataset_state_key, add_dataset, activate, sa
 
 
 ACTIONS = ('fac_open_diagnostics', 'fac_apply_model', 'fac_action_cell_coverage',
-           'fac_action_estimability', 'fac_action_hc3')
+           'fac_action_estimability', 'fac_action_hc3', 'fac_action_refine_confirm', 'fac_action_ai_generate', 'fac_action_random_apply')
 
 SCRIPT = '''
 import streamlit as st
@@ -22,6 +22,7 @@ if 'ws_datasets' not in st.session_state:
     st.session_state['ws_workflow'] = 'Analyze'
     st.session_state['ws_datasets'][second]['workflow'] = 'Analyze'
 def analyze(frame, feedback):
+    st.session_state.setdefault('fac_interaction_mode', 'Select interactions manually')
     render_factorial_anova(frame, ['Y'], ['A','B'])
 with patch('utils.dataset_views.render_analyze', side_effect=analyze):
     render_workspace([], lambda: None)
@@ -37,7 +38,8 @@ class FactorialWorkspaceActionsTests(unittest.TestCase):
             self.assertFalse(dataset_state_key(key), key)
             state[key] = False
         state.update(fac_study_answer="I'm not sure.", fac_results_tab='Diagnostics',
-                     fac_diagnostic_focus='coverage', fac_interactions=[('A', 'B')])
+                     fac_diagnostic_focus='coverage', fac_interactions=[('A', 'B')],
+                     fac_interaction_mode='Select interactions manually')
         save_active(state)
         saved = state['ws_datasets'][first]['state']
         self.assertTrue(all(key not in saved for key in ACTIONS))
@@ -49,6 +51,7 @@ class FactorialWorkspaceActionsTests(unittest.TestCase):
         activate(state, first)
         self.assertTrue(all(key not in state for key in ACTIONS))
         self.assertEqual(state['fac_study_answer'], "I'm not sure.")
+        self.assertEqual(state['fac_interaction_mode'], 'Select interactions manually')
 
     def test_workspace_reruns_navigation_model_apply_and_dataset_roundtrip(self):
         app = AppTest.from_string(SCRIPT).run(timeout=60)

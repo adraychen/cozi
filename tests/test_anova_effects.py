@@ -167,8 +167,8 @@ render_factorial_anova(df,['Y'],['A','B'])
 """
         app=AppTest.from_string(script).run(timeout=45)
         self.assertFalse(app.exception)
-        self.assertEqual([w.value for w in app.radio],['Fixed','Fixed'])
-        self.assertTrue(any('Factor effect type' in m.value for m in app.markdown))
+        self.assertEqual([w.value for w in app.radio if w.key != 'fac_interaction_mode'],['Fixed','Fixed'])
+        self.assertTrue(any(m.value == '**Factor Effect Type**' for m in app.markdown))
         summary = next(t.value for t in app.dataframe if 'Model detail' in t.value.columns
                        and 'Analysis method' in t.value['Model detail'].tolist())
         self.assertEqual(summary.loc[summary['Model detail'] == 'Analysis method', 'Value'].iloc[0],

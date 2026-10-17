@@ -10,26 +10,60 @@ from utils.table_transforms import validate_table
 ADD_TAB = '＋ Add datasets'
 
 
-def _scroll_to_opened_dataset():
-    """Reset navigation once after an import, after the new view reaches the DOM."""
+def _scroll_to_opened_dataset(dataset_id):
+    """Mount after the dataset output and correct late layout/anchor changes."""
     import streamlit.components.v2 as components
 
     scroll = components.component('cozy_dataset_open_scroll', html='<span></span>', isolate_styles=False, js='''
 export default function({parentElement}) {
-    const heading = parentElement.closest('.st-key-ws_dataset_heading');
-    let secondFrame;
-    const firstFrame = requestAnimationFrame(() => {
-        secondFrame = requestAnimationFrame(() => {
-            heading?.scrollIntoView({block: 'start', behavior: 'instant'});
-        });
-    });
-    return () => {
-        cancelAnimationFrame(firstFrame);
-        if (secondFrame) cancelAnimationFrame(secondFrame);
+    const view = parentElement.closest('.st-key-ws_dataset_view');
+    const heading = view?.querySelector('.st-key-ws_dataset_heading');
+    if (!heading) return;
+    const content = view.closest('[data-testid="stMainBlockContainer"]') || view;
+    let scroller = heading.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) {
+        scroller = scroller.parentElement;
+    }
+    scroller ||= document.scrollingElement;
+    const oldAnchor = scroller.style.overflowAnchor;
+    const oldMargin = heading.style.scrollMarginTop;
+    scroller.style.overflowAnchor = 'none';
+    heading.style.scrollMarginTop = '5rem';
+    let timer, deadline, stopped = false;
+    const align = () => {
+        if (!stopped && heading.isConnected) {
+            heading.scrollIntoView({block: 'start', behavior: 'instant'});
+        }
     };
+    const schedule = () => {
+        clearTimeout(timer);
+        timer = setTimeout(align, 150);
+    };
+    // Streamlit can replace stale elements and resize tables after this mounts.
+    // Re-align after each layout settles, for a bounded navigation window.
+    const resize = new ResizeObserver(schedule);
+    const mutations = new MutationObserver(schedule);
+    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+    const stop = () => {
+        if (stopped) return;
+        stopped = true;
+        clearTimeout(timer);
+        clearTimeout(deadline);
+        resize.disconnect();
+        mutations.disconnect();
+        events.forEach(event => document.removeEventListener(event, stop, true));
+        scroller.style.overflowAnchor = oldAnchor;
+        heading.style.scrollMarginTop = oldMargin;
+    };
+    resize.observe(content);
+    mutations.observe(content, {childList: true, subtree: true});
+    events.forEach(event => document.addEventListener(event, stop, {capture: true, passive: true}));
+    schedule();
+    deadline = setTimeout(() => { align(); stop(); }, 2500);
+    return stop;
 }
 ''')
-    scroll(key='ws_dataset_open_scroll')
+    scroll(key='ws_dataset_open_scroll_' + dataset_id)
 
 
 _DATA_KEYS = {'variable_metadata', 'variable_dataset_id', 'col_types', 'ai_summary',
@@ -319,11 +353,9 @@ def render_workspace(samples, show_feedback):
             continue
         activate(st.session_state, dataset_id)
         try:
-            with st.container():
+            with st.container(key='ws_dataset_view'):
                 with st.container(key='ws_dataset_heading'):
                     st.subheader(entry['name'])
-                    if pending == dataset_id:
-                        _scroll_to_opened_dataset()
                 st.caption(f"{len(entry['frame']):,} rows · {len(entry['frame'].columns):,} columns · {entry['source']}")
                 context = st.session_state.get('temporal_return_context', {})
                 if context.get('target_id') == dataset_id:
@@ -364,6 +396,8 @@ def render_workspace(samples, show_feedback):
                     from utils.help_ui import render_help
                     with help_tab:
                         render_help()
+                if pending == dataset_id:
+                    _scroll_to_opened_dataset(dataset_id)
         finally:
             save_active(st.session_state)
         break

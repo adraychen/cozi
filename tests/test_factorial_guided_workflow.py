@@ -91,6 +91,7 @@ SCRIPT = '''
 import streamlit as st
 from tests.test_factorial_guided_workflow import design
 from utils.factorial_anova_ui import render_factorial_anova
+st.session_state.setdefault('fac_interaction_mode', 'Select interactions manually')
 df = design()
 if st.session_state.get('break_design'):
     df = df.loc[~((df.A == 2) & (df.B == 1))]

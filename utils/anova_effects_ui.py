@@ -22,9 +22,10 @@ def effect_controls(factors, outcome, prefix):
         st.session_state.pop(base + '_' + hashlib.sha256(str(factor).encode()).hexdigest()[:16], None)
     effects = sync_effects(previous, factors)
     if prefix == 'fac':
-        presentation.markdown('##### Factor effect type')
-        presentation.write('Fixed Effect: The groups being studied are the specific groups you want to draw conclusions about.')
-        presentation.write('Random Effect: The groups being studied are treated as a sample from a broader population of groups.')
+        presentation.write('**Factor Effect Type**')
+        with st.expander('Which factor effect type should I select?'):
+            presentation.write('**Fixed Effect:** The groups being studied are the specific groups you want to draw conclusions about.')
+            presentation.write('**Random Effect:** The groups being studied are treated as a sample from a broader population of groups.')
     else:
         presentation.caption('Are you comparing these specific groups, or understanding variation across a broader population of groups? Fixed compares selected groups (for example, Machines A, B and C). Random estimates population variability (for example, machine-to-machine variation among sampled machines). Neither the number of groups nor an identifier name determines the choice.')
     for factor in factors:

@@ -2,7 +2,6 @@ from utils.numerical_formatting import format_plot_hover
 from utils.numerical_formatting import format_statistic as fmt, format_p_value, DESCRIPTIVE, INFERENCE
 from utils.report_capture import reportable, offer_result
 """Factorial ANOVA configuration and readable model reporting."""
-from itertools import combinations
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -32,7 +31,7 @@ def display_name(value):
 
 def render_effect_plots(prepared, result):
     include_all = st.checkbox('Include non-significant selected terms', key='fac_plot_all')
-    presentation.caption(f"Showing {'all selected terms' if include_all else 'all significant terms'} using Type II ANOVA at α = {result['alpha']:.3g}. Each main effect and interaction has its own plot.")
+    presentation.caption(f"Showing {'all selected terms' if include_all else 'all significant terms'} at α = {result['alpha']:.3g}. Main effects use Type II p-values; interaction decisions use Holm-adjusted Type II p-values across the fitted interaction family. Each term has its own plot.")
     presentation.caption(EMM_NOTE)
     shown = 0
     # Interactions precede marginal main effects in the guided review.
@@ -220,47 +219,49 @@ def render_factorial_anova(df, numerical, categorical):
     outcome, factors = numerical[0], list(categorical)
     presentation.write('**Response (Y):** ' + str(outcome))
     presentation.write('**Factors (X):** ' + ', '.join(map(str, factors)))
-    from utils.anova_effects_ui import effect_controls, render_random
+    from utils.anova_effects_ui import effect_controls
     effects = effect_controls(factors, outcome, 'fac')
     if len(factors) < 2:
         presentation.info('Choose at least two categorical factors.')
         return
     alpha = st.number_input('Significance level (α)', min_value=.001, max_value=.20,
                             value=.05, step=.01, format='%.3f', key='fac_alpha')
-    presentation.caption('Select an interaction when the effect of one factor may depend on the level of another factor. Choose interactions using business/domain knowledge, not every possible pair.')
-    presentation.caption('For example, Segment × Discount Band asks: Does the relationship between Discount Band and the response differ across Segments?')
-    options = list(combinations(factors, 2))
-    _prune('fac_interactions', options, True)
-    interactions = st.multiselect('Interaction effects (optional)', options,
-                                 format_func=lambda pair: ' × '.join(map(str, pair)), key='fac_interactions')
+    from utils.factorial_interactions_ui import interaction_controls, insights, refinement, INTERACTION_TYPES
+    from utils.factorial_interactions import fixed_assessment, qualified_fixed_result, support_table
+    interactions, mode = interaction_controls(factors, effects)
     from utils.factorial_guidance import analysis_context, dependence_indicators, guided_items
     from utils.guided_diagnostics import diagnostic_status
     from utils.factorial_guidance_ui import navigate, render_items
-    configuration = (outcome, tuple(factors), tuple(interactions), tuple(effects.items()), alpha)
+    configuration = (outcome, tuple(factors), tuple(interactions), tuple(effects.items()), alpha, mode)
     previous = st.session_state.get('fac_applied_configuration')
     if previous is not None and previous != configuration:
-        if st.session_state.get('report_latest', {}).get('analysis_type') == 'Factorial ANOVA':
+        if 'ANOVA' in st.session_state.get('report_latest', {}).get('analysis_type', ''):
             st.session_state.pop('report_latest', None)
         st.info('Model changes are pending. Apply them to run a new analysis; results for the previous configuration are withheld here.')
         if not st.button('Apply changes and rerun', key='fac_apply_model'):
             return
     st.session_state['fac_applied_configuration'] = configuration
-    context = analysis_context(df, outcome, factors, interactions, effects, alpha, metadata)
+    context = analysis_context(df, outcome, factors, interactions, effects, alpha, {**metadata, '_interaction_mode': mode})
     if st.session_state.get('fac_guidance_context') != context:
         st.session_state['fac_guidance_context'] = context
         st.session_state.pop('fac_study_answer', None)
         st.session_state.pop('fac_diagnostic_focus', None)
+        st.session_state.pop('fac_interaction_ai', None)
         for key in list(st.session_state):
             if key.startswith('fac_random_'):
                 del st.session_state[key]
     if 'Random' in effects.values():
-        return render_random(df, outcome, effects, interactions, alpha, 'fac')
+        from utils.factorial_random_ui import render_factorial_random
+        return render_factorial_random(df, outcome, effects, interactions, alpha, mode, context)
     prepared, result, failure = None, None, None
     try:
         prepared = prepare_factorial(df, outcome, factors, interactions)
         result = run_factorial(prepared, alpha)
     except (ValueError, TypeError, np.linalg.LinAlgError) as exc:
         failure = str(exc)
+    assessment = fixed_assessment(prepared, result, mode) if result is not None else pd.DataFrame()
+    if result is not None:
+        result = qualified_fixed_result(prepared, result, assessment)
     from utils.report_capture import begin_result
     begin_result()
     diagnostics = diagnostic_summary(prepared, result) if result is not None else None
@@ -278,7 +279,7 @@ def render_factorial_anova(df, numerical, categorical):
             ('Response / Dependent Variable', str(outcome)),
             ('Factors / Independent Variables', ', '.join(map(str, factors))),
             ('Effect type', 'Fixed'), ('Analysis method', model_family(effects)),
-            ('Significance level', str(alpha)),
+            ('Significance level', str(alpha)), ('Interaction selection', mode),
         ], columns=['Model detail', 'Value']))
         if failure:
             st.error('Model issue — requested Factorial ANOVA inference is unavailable. Review Diagnostics.')
@@ -306,6 +307,12 @@ def render_factorial_anova(df, numerical, categorical):
             if st.session_state.get('report_latest', {}).get('analysis_type') == 'Factorial ANOVA':
                 st.session_state.pop('report_latest', None)
             with tabs[1]:
+                presentation.write('Affected requested interactions: ' + (', '.join(' × '.join(map(str, p)) for p in interactions) or 'None'))
+                if interactions:
+                    unsupported = support_table(df, outcome, effects, interactions)
+                    unsupported['Assessment'] = 'Not estimable in requested model'
+                    unsupported['Reason'] = failure
+                    presentation.dataframe(unsupported, hide_index=True)
                 if items:
                     render_items(items, prepared, evidence)
                 else:
@@ -315,8 +322,11 @@ def render_factorial_anova(df, numerical, categorical):
             return
         presentation.caption('Checks are screening results, not proof of all assumptions. Independence is a study-design assumption; review its recorded status in Diagnostics.')
         table = result['table']
-        presentation.dataframe(table, result_types=INFERENCE, alpha=alpha, hide_index=True, width='stretch')
+        presentation.dataframe(table, result_types=INTERACTION_TYPES, alpha=alpha, hide_index=True, width='stretch')
         presentation.caption('Partial η² = effect SS / (effect SS + residual SS). Effect sizes are conditional on this model and do not sum to 1. Statistical significance does not establish practical importance or causation.')
+        presentation.caption('Interaction significance uses Holm adjustment across all selected interactions. Raw Type II p-values remain visible; main-effect tests are unchanged. Adjustments do not cover subsequent exploration.')
+        insights(prepared, result, assessment, mode)
+        refinement(prepared, result, context=context)
         if st.checkbox('Show HC3 robust inference for comparison', key='fac_hc3'):
             presentation.write('HC3 heteroskedasticity-robust inference — equivalent OLS model, Type II hypotheses')
             try:
@@ -327,6 +337,9 @@ def render_factorial_anova(df, numerical, categorical):
     with tabs[1]:
         presentation.subheader('Model validity')
         render_items(items, prepared, evidence)
+        if interactions:
+            presentation.dataframe(support_table(df, outcome, effects, interactions), hide_index=True)
+            presentation.caption('Pair counts pool over other factors. Full-model rank, replication and degrees of freedom determine estimability; pair coverage alone is insufficient.')
         st.markdown('[Review model configuration and interactions](#fac-model-configuration)')
         presentation.caption('Automated pattern flags are exploratory, not definitive hypothesis tests. Study-design answers remain user-provided assumptions.')
         presentation.subheader('Residual plots and variance details')
@@ -366,7 +379,10 @@ def render_factorial_anova(df, numerical, categorical):
     with tabs[4]:
         presentation.write(next(item.observed_result for item in items if item.diagnostic_id == 'independence'))
         render_findings(prepared, result, diagnostics, comparisons)
+        interpretation = insights(prepared, result, assessment, mode,
+                                  diagnostics=[i.__dict__ for i in items], ai=True)
     offer_result('Factorial ANOVA', str(outcome)+' by '+', '.join(map(str, factors)),
-                 {'response': outcome, 'factors': factors}, {'interactions': interactions, 'alpha': alpha, 'study_design': answer},
-                 result, {**diagnostics, 'guided_items': [item.__dict__ for item in items]},
-                 [item.observed_result for item in items if item.severity != 'ok'], key='factorial', run_id=context)
+                 {'response': outcome, 'factors': factors}, {'interactions': interactions, 'effects': effects,
+                 'interaction_selection': mode, 'alpha': alpha, 'study_design': answer},
+                 {**result, 'interaction_assessment': assessment}, {**diagnostics, 'guided_items': [item.__dict__ for item in items]},
+                 [item.observed_result for item in items if item.severity != 'ok'], interpretation=interpretation, key='factorial', run_id=context)
