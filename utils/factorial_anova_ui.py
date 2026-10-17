@@ -211,6 +211,8 @@ def render_factorial_anova(df, numerical, categorical):
     categorical = [c for c in categorical if metadata.get(c, {}).get('variable_type', 'Categorical') == 'Categorical'
                    and metadata.get(c, {}).get('variable_subtype', 'Nominal') in ('Binary', 'Nominal', 'Ordinal')]
     if len(numerical) != 1 or len(categorical) < 2:
+        from utils.factorial_study_design import sync_study_state
+        sync_study_state(st.session_state, None)
         presentation.info('Select one Numerical response and at least two Categorical variables in Comparison. Review Variable Type / Subtype in Column Overview; numerical codes must be explicitly classified as categorical to be factors.')
         return
     st.markdown('<a id="fac-model-configuration"></a>', unsafe_allow_html=True)
@@ -229,6 +231,8 @@ def render_factorial_anova(df, numerical, categorical):
     from utils.factorial_interactions_ui import interaction_controls, insights, refinement, INTERACTION_TYPES
     from utils.factorial_interactions import fixed_assessment, qualified_fixed_result, support_table
     interactions, mode = interaction_controls(factors, effects)
+    from utils.factorial_study_design import sync_study_state, study_context
+    sync_study_state(st.session_state, study_context(df, outcome, effects, interactions, metadata, st.session_state.get('file_id')))
     from utils.factorial_guidance import analysis_context, dependence_indicators, guided_items
     from utils.guided_diagnostics import diagnostic_status
     from utils.factorial_guidance_ui import navigate, render_items

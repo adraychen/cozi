@@ -6,7 +6,8 @@ from utils.dataset_workspace import dataset_state_key, add_dataset, activate, sa
 
 
 ACTIONS = ('fac_open_diagnostics', 'fac_apply_model', 'fac_action_cell_coverage',
-           'fac_action_estimability', 'fac_action_hc3', 'fac_action_refine_confirm', 'fac_action_ai_generate', 'fac_action_random_apply')
+           'fac_action_estimability', 'fac_action_hc3', 'fac_action_refine_confirm', 'fac_action_ai_generate',
+           'fac_action_random_apply', 'fac_action_design_add_group', 'fac_action_design_confirm_example')
 
 SCRIPT = '''
 import streamlit as st

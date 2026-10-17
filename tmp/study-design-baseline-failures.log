@@ -1,0 +1,50 @@
+test_group_navigation_preview_apply_and_create (tests.test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create) ... 2026-10-16 21:41:53.142 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-10-16 21:41:53.148 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 21:41:53.150 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 21:41:53.150 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 21:41:54.915 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+FAIL
+test_workspace_preserves_controls_without_persisting_action (tests.test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action) ... 2026-10-16 21:41:54.956 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 21:41:54.957 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 21:41:54.957 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ERROR
+
+======================================================================
+ERROR: test_workspace_preserves_controls_without_persisting_action (tests.test_temporal_target_guidance.GuidanceUITests.test_workspace_preserves_controls_without_persisting_action)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_temporal_target_guidance.py", line 106, in test_workspace_preserves_controls_without_persisting_action
+    app.checkbox(key=target_key('Delivery Date')).check().run(timeout=60)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\.venv\Lib\site-packages\streamlit\testing\v1\element_tree.py", line 339, in __call__
+    raise KeyError(key)
+KeyError: 'pa_target_check_cc31fa8947a4a713'
+
+======================================================================
+FAIL: test_group_navigation_preview_apply_and_create (tests.test_fill_missing.FillMissingUITests.test_group_navigation_preview_apply_and_create)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_fill_missing.py", line 62, in test_group_navigation_preview_apply_and_create
+    self.assertEqual(app.selectbox(key='tf_menu_restructure_data').options,
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot'])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['Aggregate', 'Pivot', 'Unpivot'] != ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot']
+
+First differing element 0:
+'Aggregate'
+'Choose operation�'
+
+Second list contains 1 additional elements.
+First extra element 3:
+'Unpivot'
+
+- ['Aggregate', 'Pivot', 'Unpivot']
++ ['Choose operation�', 'Aggregate', 'Pivot', 'Unpivot']
+?  +++++++++++++++++++++
+
+
+----------------------------------------------------------------------
+Ran 2 tests in 2.149s
+
+FAILED (failures=1, errors=1)
