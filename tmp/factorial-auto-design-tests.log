@@ -1,0 +1,50 @@
+.........2026-10-16 23:48:15.975 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:19.307 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:48:21.372 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:48:22.213 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:23.445 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:48:24.746 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+F2026-10-16 23:48:27.272 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:28.695 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:30.759 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:31.569 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:48:31.569 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:32.472 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:33.145 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:48:33.146 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:35.032 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:38.252 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:40.448 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:46.282 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:48:56.822 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+F.........2026-10-16 23:48:58.080 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:49:01.153 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-16 23:49:10.922 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:49:12.286 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.2026-10-16 23:49:17.404 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+.
+======================================================================
+FAIL: test_factor_change_invalidates_identity_before_model_apply (tests.test_factorial_study_design.StudyDesignUITests.test_factor_change_invalidates_identity_before_model_apply)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_study_design.py", line 320, in test_factor_change_invalidates_identity_before_model_apply
+    self.assertFalse(any(r.key == 'fac_design_collection' for r in app.radio))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_study_design_is_above_tabs_and_confirmation_generates_results (tests.test_factorial_layout.FactorialLayoutTests.test_study_design_is_above_tabs_and_confirmation_generates_results)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\chung\GitHub Repositories\DataAnalytics\tests\test_factorial_layout.py", line 59, in test_study_design_is_above_tabs_and_confirmation_generates_results
+    self.assertEqual(app.expander[-1].label, 'Review advised')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'Advanced model details' != 'Review advised'
+- Advanced model details
++ Review advised
+
+
+----------------------------------------------------------------------
+Ran 36 tests in 64.734s
+
+FAILED (failures=2)

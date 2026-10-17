@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import select_assignment
 """Study-design facts, user confirmations and model eligibility are distinct."""
 from tests.factorial_selection_helper import interaction_selection
 
@@ -158,7 +159,7 @@ class StudyDesignUITests(unittest.TestCase):
         return app
 
     def confirm(self, app):
-        app.button(key='fac_action_design_confirm_' + factor_key('Operator')).click().run(timeout=60)
+        self.assertFalse(any(b.label.startswith('Confirm Operator') for b in app.button))
         self.assertFalse(app.exception)
 
     def collect(self, app, value):
@@ -169,14 +170,18 @@ class StudyDesignUITests(unittest.TestCase):
         with patch('utils.anova_effects_ui._fit') as fit:
             app = self.app()
             fit.assert_not_called()
-            assignment = app.selectbox(key='fac_design_assignment_' + factor_key('Operator'))
-            self.assertEqual(assignment.value, SAME)
-            self.assertFalse(any(r.key == 'fac_design_collection' for r in app.radio))
+            from utils.factorial_study_design import factor_key
+            assignment = app.checkbox(key='fac_design_assignment_' + factor_key('Operator') + '_option_' + factor_key(SAME))
+            self.assertTrue(assignment.value)
+            self.assertIsNone(app.radio(key='fac_design_collection').value)
+            self.assertTrue(any('Study design status: **Pending check**' in m.value for m in app.markdown))
+            self.assertFalse(any(m.value == 'Study Design' for m in app.subheader))
             self.assertNotIn('report_latest', app.session_state)
         self.confirm(app)
         self.assertIsNone(app.radio(key='fac_design_collection').value)
         self.collect(app, SEPARATE)
         settings = app.session_state['report_latest']['settings']
+        self.assertTrue(any('Study design status: **Checks passed**' in m.value for m in app.markdown))
         self.assertEqual(settings['effects'], EFFECTS)
         self.assertEqual(settings['parents'], {})
         self.assertEqual(settings['interactions'], [['Machine','Operator']])
@@ -185,6 +190,22 @@ class StudyDesignUITests(unittest.TestCase):
         self.assertTrue(any('54 usable observations' in m.value for m in app.markdown))
         app.run(timeout=60)
         self.assertEqual(app.radio(key='fac_design_collection').value, SEPARATE)
+
+    def test_assignment_checkboxes_are_exclusive_and_update_next_step(self):
+        app = self.app()
+        prefix = 'fac_design_assignment_' + factor_key('Operator') + '_option_'
+        select_assignment(app, 'Operator', UNSURE).run(timeout=60)
+        choices = [c for c in app.checkbox if c.key.startswith(prefix)]
+        self.assertEqual(sum(c.value for c in choices), 1)
+        self.assertTrue(app.checkbox(key=prefix + factor_key(UNSURE)).value)
+        self.assertFalse(any(r.key == 'fac_design_collection' for r in app.radio))
+        self.assertTrue(any('Pending check' in m.value for m in app.markdown))
+        select_assignment(app, 'Operator', SAME).run(timeout=60)
+        self.assertIsNone(app.radio(key='fac_design_collection').value)
+        self.assertEqual(sum(c.value for c in app.checkbox if c.key.startswith(prefix)), 1)
+        app.checkbox(key=prefix + factor_key(SAME)).uncheck().run(timeout=60)
+        self.assertTrue(app.checkbox(key=prefix + factor_key(UNSURE)).value)
+        self.assertFalse(app.tabs)
 
     def test_unknown_collection_exploration_and_cached_assumption_change(self):
         from utils.anova_effects_ui import _fit
@@ -211,16 +232,16 @@ class StudyDesignUITests(unittest.TestCase):
         app = self.app()
         key = 'fac_design_assignment_' + factor_key('Operator')
         with patch('utils.anova_effects_ui._fit') as fit:
-            app.selectbox(key=key).select(UNSURE).run(timeout=60)
+            select_assignment(app, 'Operator', UNSURE).run(timeout=60)
             fit.assert_not_called()
             self.assertNotIn('report_latest', app.session_state)
             self.assertFalse(app.tabs)
-        app.selectbox(key=key).select(SAME).run(timeout=60)
+        select_assignment(app, 'Operator', SAME).run(timeout=60)
         self.confirm(app)
         self.collect(app, SEPARATE)
         app.button(key='report_add_fac_random').click().run(timeout=60)
         snapshot = deepcopy(app.session_state['cozy_report']['blocks'])
-        app.selectbox(key=key).select('within:0').run(timeout=60)
+        select_assignment(app, 'Operator', 'within:0').run(timeout=60)
         self.assertNotIn('report_latest', app.session_state)
         self.confirm(app)
         self.assertFalse(app.exception)
@@ -287,7 +308,7 @@ class StudyDesignUITests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertNotEqual(before, app.session_state['fac_design_context'])
         self.assertNotIn('report_latest', app.session_state)
-        self.assertFalse(any(r.key == 'fac_design_collection' for r in app.radio))
+        self.assertIsNone(app.radio(key='fac_design_collection').value)
         self.confirm(app)
         self.collect(app, SEPARATE)
         app.session_state['file_id'] = 'unrelated'
@@ -312,14 +333,14 @@ class StudyDesignUITests(unittest.TestCase):
         self.assertNotIn('report_latest', app.session_state)
         self.assertNotIn('fac_design_confirmed_' + factor_key('Operator'), app.session_state)
         self.assertFalse(app.exception)
-        self.assertFalse(any(r.key == 'fac_design_collection' for r in app.radio))
+        self.assertIsNone(app.radio(key='fac_design_collection').value)
 
     def test_confirmed_nested_group_conflicts_with_global_shared_identity(self):
         app = self.app()
         from utils.factorial_interactions_ui import NO_INTERACTION
         interaction_selection(app).set_value([NO_INTERACTION]).run(timeout=60)
         key = 'fac_design_assignment_' + factor_key('Operator')
-        app.selectbox(key=key).select('within:0').run(timeout=60)
+        select_assignment(app, 'Operator', 'within:0').run(timeout=60)
         self.confirm(app)
         self.collect(app, SHARED)
         app.selectbox(key='fac_design_shared_column').select('Operator').run(timeout=60)

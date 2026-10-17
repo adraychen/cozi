@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import select_assignment
 """Automatic factorial results and clarification above the results navigation."""
 from tests.factorial_selection_helper import interaction_selection
 
@@ -55,8 +56,8 @@ class FactorialLayoutTests(unittest.TestCase):
             fitting.assert_not_called()
         self.assertFalse(app.exception)
         self.assertFalse(app.tabs)
-        self.assertEqual(app.expander[-1].label, 'Review advised')
-        app.button(key='fac_action_design_confirm_' + factor_key('Operator')).click().run(timeout=60)
+        self.assertTrue(any(e.label == 'Review advised' for e in app.expander))
+        self.assertFalse(any(b.label.startswith('Confirm Operator') for b in app.button))
         app.radio(key='fac_design_collection').set_value(SEPARATE).run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.tabs[0].label, 'Model Overview')

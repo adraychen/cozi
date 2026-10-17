@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import select_assignment
 from tests.factorial_selection_helper import interaction_selection
 import unittest
 from copy import deepcopy
@@ -230,8 +231,6 @@ render_factorial_anova(df, ['Y'], ['A','B'])
         self.assertNotIn('report_latest', app.session_state)
         self.assertFalse(app.tabs)
         from utils.factorial_study_design import factor_key, SEPARATE
-        for factor in ('A', 'B'):
-            app.button(key='fac_action_design_confirm_' + factor_key(factor)).click().run(timeout=60)
         app.radio(key='fac_design_collection').set_value(SEPARATE).run(timeout=60)
         self.assertFalse(app.exception)
         variance = next(t.value for t in app.dataframe if 'Percentage of modeled variance' in t.value and 'Component' in t.value)
@@ -242,9 +241,8 @@ render_factorial_anova(df, ['Y'], ['A','B'])
         app.button(key='report_add_fac_random').click().run(timeout=60)
         snapshot = deepcopy(app.session_state['cozy_report']['blocks'])
         self.assertIn('Random-effects', str(snapshot))
-        app.selectbox(key='fac_design_assignment_' + factor_key('A')).select('within:1').run(timeout=60)
+        select_assignment(app, 'A', 'within:1').run(timeout=60)
         self.assertNotIn('report_latest', app.session_state)
-        app.button(key='fac_action_design_confirm_' + factor_key('A')).click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertNotIn('report_latest', app.session_state)
         self.assertTrue(any('confounded' in m.value for m in app.tabs[1].markdown))

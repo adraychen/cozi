@@ -1,9 +1,8 @@
-"""Plain-language design confirmations; suggestions never configure a model."""
+"""Plain-language study choices and automatic design checks."""
 import numpy as np
 import streamlit as st
 from utils import presentation
 from utils.anova_effects import prepare_random
-from utils.guided_diagnostics import diagnostic_status
 from utils.factorial_study_design import (SAME, UNSURE, SEPARATE, SEQUENCE, SHARED,
     study_context, factor_key, detect_relationships, assignment_parent, assignment_language,
     collection_language, time_evidence, check_time_column, collection_requirement,
@@ -16,8 +15,10 @@ def _reset_confirmation(key):
     st.session_state.pop('fac_interaction_ai', None)
 
 
-def _confirm_assignment(key, choice):
-    st.session_state[key] = choice
+def _select_assignment(key, choice, checkbox_key):
+    st.session_state[key] = choice if st.session_state[checkbox_key] else UNSURE
+    st.session_state.pop('report_latest', None)
+    st.session_state.pop('fac_interaction_ai', None)
 
 
 def _explain(item):
@@ -38,16 +39,14 @@ def render_study_design(df, outcome, effects, interactions):
     evidence = detect_relationships(df, outcome, effects)
     items, assignments, parents = [], [], {}
     confirmed_all = True
-    presentation.subheader('Study Design')
     for relation in evidence['relationships']:
         factor = relation['factor']
         suffix = factor_key(factor)
         key = 'fac_design_assignment_' + suffix
-        confirmed_key = 'fac_design_confirmed_' + suffix
         question, options, labels = assignment_language(factor, effects)
         if key not in state:
             state[key] = relation['suggestion'] or UNSURE
-        confirmed = state.get(confirmed_key) == state[key] and state[key] != UNSURE
+        confirmed = state[key] != UNSURE
         details = []
         for comparison in relation['comparisons']:
             other = comparison['other']
@@ -64,35 +63,36 @@ def render_study_design(df, outcome, effects, interactions):
         item = design_diagnostic('assignment_' + suffix, 'ok' if confirmed else 'unresolved', f'{factor} Assignment',
             ' '.join(details),
             f'The model needs to know whether identical {factor} labels identify the same people or units. Reused labels may identify different people in different groups; missing combinations alone do not establish ownership.',
-            'Confirm the assignment using your knowledge of the study. If unsure, ask the person who collected the measurements; the model structure remains unresolved.')
+            'Select the assignment using your knowledge of the study. If unsure, ask the person who collected the measurements; the model structure remains unresolved.')
         presentation.markdown('**' + str(factor) + ' assignment**')
         _explain(item)
         suggestion = relation['suggestion']
         if suggestion:
             st.caption('Suggested from data: ' + labels[suggestion] +
-                       (' Your assignment is confirmed below.' if confirmed else ' This suggestion is not confirmed. Please confirm what identical labels mean.'))
+                       ' Review the selected option using your knowledge of the study.')
         else:
             st.caption('The observed combinations do not support a single clear suggestion. Missing combinations do not tell Cozy whether the same people or units work across groups or belong to separate groups.')
-        choice = st.selectbox(question, options, key=key, format_func=labels.get,
-                              on_change=_reset_confirmation, args=(confirmed_key,))
+        st.markdown('**' + question + '**')
+        for option in options:
+            checkbox_key = key + '_option_' + factor_key(option)
+            state[checkbox_key] = state[key] == option
+            st.checkbox(labels[option], key=checkbox_key, on_change=_select_assignment,
+                        args=(key, option, checkbox_key))
+        choice = state[key]
         sample = df[factor].dropna().iloc[0] if df[factor].notna().any() else 'a label'
         if choice == SAME:
             st.caption(f'Choose this if {factor} {sample} refers to the same person or unit wherever it appears.')
         elif choice != UNSURE:
             parent = assignment_parent(choice, factor, effects)
             st.caption(f'Choose this if each {parent} has its own {factor} people or units; identical labels in different {parent} groups may refer to different people or units.')
-        st.button(f'Confirm {factor} assignment', key='fac_action_design_confirm_' + suffix,
-                  disabled=choice == UNSURE or state.get(confirmed_key) == choice,
-                  on_click=_confirm_assignment, args=(confirmed_key, choice))
-        confirmed = choice != UNSURE and state.get(confirmed_key) == choice
+        confirmed = choice != UNSURE
         if confirmed:
-            st.caption('Assignment confirmed from your knowledge of the study.')
             parent = assignment_parent(choice, factor, effects)
             if parent is not None:
                 parents[factor] = parent
         else:
             confirmed_all = False
-        # The confirmation button can update the status within this same run.
+        # The selected assignment configures the next step immediately.
         from dataclasses import replace
         items.append(replace(item, severity='ok' if confirmed else 'unresolved'))
         assignments.append({'factor': factor, 'answer': choice, 'label': labels[choice],
@@ -103,8 +103,8 @@ def render_study_design(df, outcome, effects, interactions):
     effective = dict(effects)
     explicitly_applied = False
     if not confirmed_all:
-        st.info('Confirm the assignments above to continue to measurement collection. Unconfirmed identity is a review concern; no random-factor structure is assumed.')
-        presentation.write('Study-design status: **' + diagnostic_status(items) + '**')
+        st.info('Select a known assignment above to continue to measurement collection. If unsure, clarify what the labels identify with the study owner.')
+        presentation.write('Study design status: **Pending check**')
         return {'parents': parents, 'effects': effective, 'decision': decision, 'items': items,
                 'answers': response, 'explicitly_applied': explicitly_applied}
 
@@ -223,7 +223,8 @@ def render_study_design(df, outcome, effects, interactions):
             'The model summary and diagnostics wait for this clarification so they do not present unsupported model conclusions.',
             'Ask the study owner about measurement order and shared sources, then update your answer. The dataset is not declared invalid.')
     items.append(item)
-    presentation.write('Study-design status: **' + diagnostic_status(items) + '**')
+    status = 'Checks passed' if decision['fit'] and decision['inference'] else ('Model issue' if decision['severity'] == 'blocking' else 'Pending check')
+    presentation.write('Study design status: **' + status + '**')
     if choice:
         presentation.write('**What your answer means:** ' + item.observed_result + ' ' + item.explanation)
         presentation.write('**Recommended action:** ' + item.recommended_action)

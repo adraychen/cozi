@@ -24,3 +24,9 @@ class InteractionSelection:
 
 def interaction_selection(app):
     return InteractionSelection(app)
+
+
+def select_assignment(app, factor, choice):
+    from utils.factorial_study_design import factor_key
+    key = 'fac_design_assignment_' + factor_key(factor) + '_option_' + factor_key(choice)
+    return app.checkbox(key=key).check()
