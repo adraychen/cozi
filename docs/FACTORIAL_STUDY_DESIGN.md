@@ -1,5 +1,11 @@
 # Guided study-design diagnostics for Factorial ANOVA
 
+## Current presentation and automatic updates
+
+Study-design questions now appear in **Review advised** above the result tabs. Expanding it shows **Study Design**. Model results remain withheld until identity and measurement-collection clarification permits fitting and inference. Confirmation automatically generates Model Overview, Diagnostics and the other result tabs; no Apply/refit button is required. The panel then remains available as **Study Design** above the tabs. Diagnostics contains the standard model checks, support and residual diagnostics without assignment controls.
+
+Changing interactions or the significance level retains study-design answers. Changing the data, selected factors or effect types invalidates them. This workflow supersedes the earlier conditional-exploration and manual-apply descriptions below; statistical methods and limitations remain unchanged.
+
 ## Scope and files
 
 Random/mixed Diagnostics now asks how people or units were assigned and how measurements were collected. Observed data informs suggestions; explicit user confirmations configure the model. Fixed-effects methods, interaction selection/results, the REML engine and the Report editor are retained.

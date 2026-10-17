@@ -12,29 +12,33 @@ from utils.factorial_guidance_ui import render_items, navigate
 from utils.guided_diagnostics import Diagnostic, diagnostic_status
 from utils.numerical_formatting import REGRESSION, format_plot_hover
 from utils.report_capture import begin_result, offer_result
-from utils.factorial_study_design import exploratory_result
 from utils.factorial_study_design_ui import render_study_design
 
 
 def render_factorial_random(df, outcome, effects, interactions, alpha, mode, context):
     from utils.anova_effects_ui import _fit
     factors = list(effects)
+    panel_status = st.session_state.get('fac_design_panel_status', 'review')
+    with st.expander({'review': 'Review advised', 'confirmed': 'Study Design', 'issue': 'Model issue'}[panel_status]):
+        study = render_study_design(df, outcome, effects, interactions)
+    ready = study['decision']['fit'] and study['decision']['inference']
+    next_status = 'confirmed' if ready else 'issue' if study['decision']['severity'] == 'blocking' else 'review'
+    if next_status != panel_status:
+        st.session_state['fac_design_panel_status'] = next_status
+        st.rerun()
+    if not ready:
+        st.session_state.pop('report_latest', None)
+        return
     tabs = st.tabs(['Model Overview', 'Diagnostics', 'Effect plots', 'Post-hoc comparisons', 'ANOVA Findings'],
                    key='fac_results_tab', on_change='rerun')
     begin_result()
-    with tabs[1]:
-        study = render_study_design(df, outcome, effects, interactions)
+    from utils.report_capture import record_text
+    for item in study['items']:
+        record_text(item.observed_result + ' ' + item.explanation)
     parents, effective = study['parents'], study['effects']
     answer = study['answers']['collection']
     prepared, result, failure = None, None, None
-    ready = study['decision']['fit']
     structure = (study['answers']['context'], tuple(effective.items()), tuple(parents.items()))
-    previous_structure = st.session_state.get('fac_design_applied_structure')
-    pending_structure = ready and previous_structure is not None and previous_structure != structure and not study['explicitly_applied']
-    if pending_structure:
-        with tabs[1]:
-            st.info('Group structure changes are pending. Previous results are withheld until you confirm the revised model.')
-            ready = st.button('Apply group structure and refit', key='fac_action_random_apply')
     if ready:
         st.session_state['fac_design_applied_structure'] = structure
         try:
@@ -42,8 +46,6 @@ def render_factorial_random(df, outcome, effects, interactions, alpha, mode, con
             # kernels; child × parent duplication is blocked, never crossed silently.
             with st.spinner('Checking interaction identifiability and fitting the REML model…'):
                 prepared, result = _fit(df, outcome, effective, tuple(interactions), parents, alpha)
-            if not study['decision']['inference']:
-                result = exploratory_result(result)
         except (ValueError, TypeError, np.linalg.LinAlgError) as exc:
             failure = str(exc)
     items = list(study['items'])
@@ -56,10 +58,6 @@ def render_factorial_random(df, outcome, effects, interactions, alpha, mode, con
         diagnostic('random_estimability', 'blocking', 'Model Estimability', failure,
                    'The requested joint model is unavailable; no partial full-model results or interaction p-values are presented.',
                    'Review the listed interactions, nested ownership and replication. Collect missing information or confirm a scientifically justified revision.')
-    elif result is None:
-        if pending_structure:
-            diagnostic('random_design_pending', 'unresolved', 'Model Update', 'The changed group structure awaits refitting.',
-                       'Old results cannot represent the revised assignments.', 'Apply the group structure above before interpreting results.', None)
     else:
         diagnostic('random_estimability', 'ok', 'Model Estimability',
                    f"{prepared['n']} usable observations; fixed design rank {prepared['fixed_rank']}; residual-subspace dimension {prepared['residual_df']}; "

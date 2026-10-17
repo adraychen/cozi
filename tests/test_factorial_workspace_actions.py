@@ -68,15 +68,14 @@ class FactorialWorkspaceActionsTests(unittest.TestCase):
         self.assertEqual(app.session_state['fac_diagnostic_focus'], 'coverage')
         app.button(key='fac_action_hc3').click().run(timeout=60)
         self.assertEqual(app.session_state['fac_results_tab'], 'Model Overview')
-        app.multiselect(key='fac_interactions').set_value([('A', 'B')]).run(timeout=60)
-        app.button(key='fac_apply_model').click().run(timeout=60)
+        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=60)
         app.run(timeout=60)
         self.assertFalse(app.exception)
         for name in ('Second', 'First'):
             app.session_state['ws_dataset_tabs'] = name
             app.run(timeout=60)
             self.assertFalse(app.exception)
-        self.assertEqual(app.multiselect(key='fac_interactions').value, [('A', 'B')])
+        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A', 'B')])
         active = app.session_state['ws_active']
         saved = app.session_state['ws_datasets'][active]['state']
         self.assertTrue(all(key not in saved for key in ACTIONS))

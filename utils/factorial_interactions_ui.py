@@ -16,32 +16,48 @@ INTERACTION_TYPES = {**INFERENCE, 'Wald χ²': 'f', 'Variance': 'variance',
                      '95% simultaneous CI lower': 'ci', '95% simultaneous CI upper': 'ci'}
 
 
+ALL_INTERACTIONS = 'All interactions'
+NO_INTERACTION = 'No interaction'
+
+
+def _interaction_choices_changed():
+    state = st.session_state
+    values = state['fac_interaction_choices']
+    previous = state.get('fac_interaction_previous', [])
+    added = [v for v in values if v not in previous]
+    if added and added[-1] in (ALL_INTERACTIONS, NO_INTERACTION):
+        values = [added[-1]]
+    elif added:
+        values = [v for v in values if isinstance(v, tuple)]
+    if not values:
+        values = [NO_INTERACTION]
+    state['fac_interaction_choices'] = values
+    state['fac_interaction_previous'] = values
+
+
 def interaction_controls(factors, effects):
     presentation.write('**Interaction Effects**')
     presentation.caption('Interactions help identify whether the effect of one factor depends on another factor.')
-    # Detach manual choices from widget cleanup while exploration hides the widget.
-    existing = 'fac_interactions' in st.session_state
-    manual = selected_pairs(factors, MANUAL, st.session_state.get('fac_interactions', []))
-    st.session_state['fac_interactions'] = manual
-    if 'fac_interaction_mode' not in st.session_state:
-        st.session_state['fac_interaction_mode'] = MANUAL if existing else EXPLORE
-    mode = st.radio('Interaction selection', [EXPLORE, MANUAL], key='fac_interaction_mode',
-                    help='Explore all interactions is recommended for exploratory analysis.')
-    if mode == EXPLORE:
-        presentation.caption('Evaluate all possible two-way interactions to discover relationships you may not already know about.')
-        pairs = selected_pairs(factors, mode)
-    else:
-        presentation.caption('Investigate specific interactions based on your study objectives or domain knowledge.')
-        pairs = st.multiselect('Interaction effects (optional)', selected_pairs(factors, EXPLORE),
-                               format_func=lambda pair: ' × '.join(map(str, pair)), key='fac_interactions')
-    if pairs:
-        presentation.dataframe(pd.DataFrame([{'Interaction': ' × '.join(map(str, p)),
-                                               'Structure': interaction_structure(p, effects)} for p in pairs]),
-                               hide_index=True)
-        presentation.caption('Interaction types describe crossed factors. Random/mixed models require group-identity confirmation in Diagnostics; nested groupings are not assumed to be crossed.')
-    else:
-        presentation.caption('No interactions selected. All selected main effects remain in the model.')
-    presentation.caption('Cozy will evaluate the selected interactions and help you understand their importance. If the model is too complex or the data cannot support certain interactions, Cozy will explain the limitations in Diagnostics.')
+    with st.expander('Which interaction effects should I select?'):
+        st.write('Explore all interactions is recommended for exploratory analysis. Select specific interactions based on your study objectives or domain knowledge.')
+        st.write('Choose No interaction for a model containing only the selected main effects.')
+    state = st.session_state
+    candidates = selected_pairs(factors, EXPLORE)
+    options = [ALL_INTERACTIONS, NO_INTERACTION, *candidates]
+    if 'fac_interaction_choices' not in state:
+        manual = selected_pairs(factors, MANUAL, state.get('fac_interactions', []))
+        state['fac_interaction_choices'] = ([ALL_INTERACTIONS] if state.get('fac_interaction_mode', EXPLORE) == EXPLORE
+                                            else manual or [NO_INTERACTION])
+    valid = [v for v in state['fac_interaction_choices'] if v in options]
+    state['fac_interaction_choices'] = valid or [NO_INTERACTION]
+    state['fac_interaction_previous'] = state['fac_interaction_choices']
+    choices = st.multiselect('Interaction effects (optional)', options, key='fac_interaction_choices',
+        format_func=lambda v: v if isinstance(v, str) else ' × '.join(map(str, v)),
+        on_change=_interaction_choices_changed)
+    mode = EXPLORE if ALL_INTERACTIONS in choices else MANUAL
+    pairs = candidates if mode == EXPLORE else [v for v in choices if isinstance(v, tuple)]
+    state['fac_interaction_mode'] = mode
+    state['fac_interactions'] = pairs if mode == MANUAL else state.get('fac_interactions', [])
     return pairs, mode
 
 
@@ -130,6 +146,7 @@ def insights(prepared, result, table, mode, *, random=False, diagnostics=None, a
 def _confirm_reduction(remaining):
     st.session_state['fac_interaction_mode'] = MANUAL
     st.session_state['fac_interactions'] = remaining
+    st.session_state['fac_interaction_choices'] = remaining or [NO_INTERACTION]
     st.session_state.pop('fac_applied_configuration', None)
     st.session_state.pop('fac_interaction_ai', None)
     st.session_state.pop('report_latest', None)

@@ -220,7 +220,7 @@ def render_study_design(df, outcome, effects, interactions):
     elif decision['fit'] and not decision['inference']:
         item = design_diagnostic('measurement_collection', 'unresolved', 'Measurement Collection',
             'The measurement collection process or additional relationship is unconfirmed.',
-            'Estimates may be explored conditionally, but fixed-effect p-values, confidence intervals and inferential interaction conclusions are withheld.',
+            'The model summary and diagnostics wait for this clarification so they do not present unsupported model conclusions.',
             'Ask the study owner about measurement order and shared sources, then update your answer. The dataset is not declared invalid.')
     items.append(item)
     presentation.write('Study-design status: **' + diagnostic_status(items) + '**')

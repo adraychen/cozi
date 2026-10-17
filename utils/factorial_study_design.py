@@ -16,7 +16,9 @@ SHARED = 'shared'
 
 def study_context(df, outcome, effects, interactions, metadata, dataset_id):
     # Alpha/formatting/selection mode do not change who or what was measured.
-    return analysis_context(df, outcome, list(effects), interactions, effects, None,
+    # Identity and collection facts survive interaction/alpha changes. The
+    # statistical engine still validates and refits each new term structure.
+    return analysis_context(df, outcome, list(effects), (), effects, None,
                             {'metadata': metadata, 'dataset_id': dataset_id})
 
 
@@ -147,7 +149,7 @@ def collection_language(factors):
     descriptions = {SEPARATE: f'Each measurement comes from a separate {unit}. No additional relationship is expected beyond the selected factors.',
                     SEQUENCE: f'Measurements taken one after another may be affected by {examples}.',
                     SHARED: f'For example, several measurements come from the same {shared}.',
-                    UNSURE: 'Cozy cannot determine how the measurements were collected from the dataset alone. The analysis can be explored, but conclusions depend on whether the model adequately accounts for relationships between observations.'}
+                    UNSURE: 'Cozy cannot determine how the measurements were collected from the dataset alone. Clarify the collection process to generate the model summary and diagnostics.'}
     return labels, descriptions
 
 

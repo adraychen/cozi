@@ -241,9 +241,6 @@ def render_factorial_anova(df, numerical, categorical):
     if previous is not None and previous != configuration:
         if 'ANOVA' in st.session_state.get('report_latest', {}).get('analysis_type', ''):
             st.session_state.pop('report_latest', None)
-        st.info('Model changes are pending. Apply them to run a new analysis; results for the previous configuration are withheld here.')
-        if not st.button('Apply changes and rerun', key='fac_apply_model'):
-            return
     st.session_state['fac_applied_configuration'] = configuration
     context = analysis_context(df, outcome, factors, interactions, effects, alpha, {**metadata, '_interaction_mode': mode})
     if st.session_state.get('fac_guidance_context') != context:

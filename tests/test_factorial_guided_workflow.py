@@ -130,19 +130,17 @@ class GuidedWorkflowUITests(unittest.TestCase):
         app.selectbox(key='fac_study_answer').set_value(INDEPENDENT).run(timeout=40)
         app.checkbox(key='fac_plot_all').check().run(timeout=40)
         self.assertEqual(app.selectbox(key='fac_study_answer').value, INDEPENDENT)
-        app.multiselect(key='fac_interactions').set_value([('A', 'B')]).run(timeout=40)
-        self.assertEqual(len(app.get('plotly_chart')), 0)
-        self.assertTrue(any('pending' in m.value for m in app.info))
-        app.button(key='fac_apply_model').click().run(timeout=40)
+        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
+        self.assertFalse(any('pending' in m.value for m in app.info))
+        self.assertFalse(any(b.key == 'fac_apply_model' for b in app.button))
         self.assertFalse(app.exception)
         self.assertIsNone(app.selectbox(key='fac_study_answer').value)
         self.assertTrue(any('Partial η²' in t.value.columns for t in app.dataframe))
-        self.assertEqual(app.multiselect(key='fac_interactions').value, [('A', 'B')])
+        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A', 'B')])
 
     def test_critical_model_status_withholds_tables_and_followups(self):
         app = self.app()
-        app.multiselect(key='fac_interactions').set_value([('A', 'B')]).run(timeout=40)
-        app.button(key='fac_apply_model').click().run(timeout=40)
+        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
         app.session_state['break_design'] = True
         app.run(timeout=40)
         self.assertFalse(app.exception)
@@ -173,9 +171,8 @@ class GuidedWorkflowUITests(unittest.TestCase):
         self.assertNotIn('Review Interactions / Model Terms', content)
         app.selectbox(key='fac_study_answer').set_value(INDEPENDENT).run(timeout=40)
         self.assertFalse(app.button(key='report_add_factorial').disabled)
-        app.multiselect(key='fac_interactions').set_value([('A', 'B')]).run(timeout=40)
-        self.assertNotIn('report_latest', app.session_state)
-        app.button(key='fac_apply_model').click().run(timeout=40)
+        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
+        self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A', 'B']])
         self.assertEqual(app.session_state['cozy_report']['blocks'][0], before)
 
 
