@@ -1,4 +1,6 @@
 """Study-design facts, user confirmations and model eligibility are distinct."""
+from tests.factorial_selection_helper import interaction_selection
+
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -315,7 +317,7 @@ class StudyDesignUITests(unittest.TestCase):
     def test_confirmed_nested_group_conflicts_with_global_shared_identity(self):
         app = self.app()
         from utils.factorial_interactions_ui import NO_INTERACTION
-        app.multiselect(key='fac_interaction_choices').set_value([NO_INTERACTION]).run(timeout=60)
+        interaction_selection(app).set_value([NO_INTERACTION]).run(timeout=60)
         key = 'fac_design_assignment_' + factor_key('Operator')
         app.selectbox(key=key).select('within:0').run(timeout=60)
         self.confirm(app)

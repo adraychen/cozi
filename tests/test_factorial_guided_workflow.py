@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import interaction_selection
 import unittest
 from dataclasses import replace
 import numpy as np
@@ -113,10 +114,9 @@ class GuidedWorkflowUITests(unittest.TestCase):
         self.assertTrue(any('Original observations: 120' in m.value for m in overview.markdown))
         self.assertTrue(any('Type II Sum' in m.value for m in overview.caption))
         self.assertFalse(overview.warning)
-        self.assertTrue(any('Review advised' in m.value for m in overview.markdown))
+        self.assertTrue(any(e.label == 'Review advised' for e in app.expander))
         self.assertTrue(any('Cell Coverage' in m.label for m in app.tabs[1].expander))
-        app.button(key='fac_open_diagnostics').click().run(timeout=40)
-        self.assertEqual(app.session_state['fac_results_tab'], 'Diagnostics')
+        self.assertFalse(any(b.label == 'Open Diagnostics' for b in app.button))
         app.button(key='fac_action_cell_coverage').click().run(timeout=40)
         self.assertEqual(app.session_state['fac_diagnostic_focus'], 'coverage')
         self.assertTrue(any(e.label == 'Cell-count details' and e.proto.expanded for e in app.expander))
@@ -130,17 +130,17 @@ class GuidedWorkflowUITests(unittest.TestCase):
         app.selectbox(key='fac_study_answer').set_value(INDEPENDENT).run(timeout=40)
         app.checkbox(key='fac_plot_all').check().run(timeout=40)
         self.assertEqual(app.selectbox(key='fac_study_answer').value, INDEPENDENT)
-        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
+        interaction_selection(app).set_value([('A', 'B')]).run(timeout=40)
         self.assertFalse(any('pending' in m.value for m in app.info))
         self.assertFalse(any(b.key == 'fac_apply_model' for b in app.button))
         self.assertFalse(app.exception)
         self.assertIsNone(app.selectbox(key='fac_study_answer').value)
         self.assertTrue(any('Partial η²' in t.value.columns for t in app.dataframe))
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A', 'B')])
+        self.assertEqual(interaction_selection(app).value, [('A', 'B')])
 
     def test_critical_model_status_withholds_tables_and_followups(self):
         app = self.app()
-        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
+        interaction_selection(app).set_value([('A', 'B')]).run(timeout=40)
         app.session_state['break_design'] = True
         app.run(timeout=40)
         self.assertFalse(app.exception)
@@ -171,7 +171,7 @@ class GuidedWorkflowUITests(unittest.TestCase):
         self.assertNotIn('Review Interactions / Model Terms', content)
         app.selectbox(key='fac_study_answer').set_value(INDEPENDENT).run(timeout=40)
         self.assertFalse(app.button(key='report_add_factorial').disabled)
-        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=40)
+        interaction_selection(app).set_value([('A', 'B')]).run(timeout=40)
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A', 'B']])
         self.assertEqual(app.session_state['cozy_report']['blocks'][0], before)
 

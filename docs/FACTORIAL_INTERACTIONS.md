@@ -2,7 +2,7 @@
 
 ## Workflow and implementation
 
-New analyses default to **All interactions**, jointly fitting every two-way combination of the selected factors. The single **Interaction effects (optional)** dropdown also offers **No interaction** and individual pairs. No higher-order terms are generated. Expand **Which interaction effects should I select?** for selection guidance. Settings update results automatically; no Apply button is required.
+New analyses default to **All interactions**, jointly fitting every two-way combination of the selected factors. The **Interaction effects (optional)** checkbox grid starts with all pairs selected and provides **Select all** and **Clear all** buttons. Clearing every pair fits only the main effects. No higher-order terms are generated. Expand **Which interaction effects should I select?** for selection guidance. Settings update results automatically; no Apply button is required.
 
 The same selector works for fixed, random and mixed models. Fixed × Fixed is a fixed interaction; any pair containing a random factor is a random interaction in the intended crossed-factor variance-components formulation. Random/mixed fitting requires study-design clarification in the **Review advised** expander above the result tabs. Once confirmed, results appear automatically and the expander is labeled **Study Design**. Diagnostics contains model checks rather than assignment controls. Interaction and significance-level changes retain study-design answers; changes to data, factors or effect types invalidate them. Nested ownership expands grouping identities through the existing engine; it is not silently interpreted as crossing. Redundant child × parent components, cyclic ownership and confounded structures are blocked.
 

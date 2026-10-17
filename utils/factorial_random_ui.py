@@ -88,9 +88,6 @@ def render_factorial_random(df, outcome, effects, interactions, alpha, mode, con
         ], columns=['Model detail', 'Value']))
         if status == 'Model issue':
             st.error('Model issue — the requested model is unavailable. Review Diagnostics.')
-        else:
-            presentation.write('Diagnostic status: **' + status + '**')
-        st.button('Open Diagnostics', key='fac_open_diagnostics', on_click=navigate, args=('overview',))
     with tabs[1]:
         render_items([i for i in items if i.category != 'study_design'])
         if interactions:

@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import interaction_selection
 import unittest
 from copy import deepcopy
 from itertools import combinations, product
@@ -173,16 +174,16 @@ class InteractionUITests(unittest.TestCase):
     def test_default_explore_manual_roundtrip_factor_change_and_no_stale_output(self):
         app = self.app()
         from utils.factorial_interactions_ui import ALL_INTERACTIONS, NO_INTERACTION
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [ALL_INTERACTIONS])
+        self.assertEqual(interaction_selection(app).value, [ALL_INTERACTIONS])
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A','B'], ['A','C'], ['B','C']])
-        app.multiselect(key='fac_interaction_choices').set_value([NO_INTERACTION]).run(timeout=60)
+        interaction_selection(app).set_value([NO_INTERACTION]).run(timeout=60)
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [])
-        app.multiselect(key='fac_interaction_choices').set_value([('A','B'), ('A','C')]).run(timeout=60)
+        interaction_selection(app).set_value([('A','B'), ('A','C')]).run(timeout=60)
         app.run(timeout=60)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A','B'), ('A','C')])
+        self.assertEqual(interaction_selection(app).value, [('A','B'), ('A','C')])
         app.session_state['remove_c'] = True
         app.run(timeout=60)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A','B')])
+        self.assertEqual(interaction_selection(app).value, [('A','B')])
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A','B']])
 
     def test_explicit_reduction_and_snapshot_preservation(self):
@@ -195,7 +196,7 @@ class InteractionUITests(unittest.TestCase):
         app.button(key='fac_action_refine_confirm').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['fac_interaction_mode'], MANUAL)
-        self.assertNotIn(('A','B'), app.multiselect(key='fac_interaction_choices').value)
+        self.assertNotIn(('A','B'), interaction_selection(app).value)
         self.assertEqual(app.session_state['cozy_report']['blocks'], snapshot)
         content = str(snapshot)
         self.assertIn('Interaction Insights', content)

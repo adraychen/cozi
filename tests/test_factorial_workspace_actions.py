@@ -1,11 +1,13 @@
 """Regression coverage for ephemeral factorial actions in the real workspace."""
+from tests.factorial_selection_helper import interaction_selection
+
 import unittest
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 from utils.dataset_workspace import dataset_state_key, add_dataset, activate, save_active
 
 
-ACTIONS = ('fac_open_diagnostics', 'fac_apply_model', 'fac_action_cell_coverage',
+ACTIONS = ('fac_action_interactions_all', 'fac_action_interactions_clear', 'fac_open_diagnostics', 'fac_apply_model', 'fac_action_cell_coverage',
            'fac_action_estimability', 'fac_action_hc3', 'fac_action_refine_confirm', 'fac_action_ai_generate',
            'fac_action_random_apply', 'fac_action_design_add_group', 'fac_action_design_confirm_example')
 
@@ -60,22 +62,20 @@ class FactorialWorkspaceActionsTests(unittest.TestCase):
         # The original failure occurs on the next workspace rerun, even without a click.
         app.run(timeout=60)
         self.assertFalse(app.exception)
-        app.button(key='fac_open_diagnostics').click().run(timeout=60)
-        self.assertFalse(app.exception)
-        self.assertEqual(app.session_state['fac_results_tab'], 'Diagnostics')
+        self.assertFalse(any(b.label == 'Open Diagnostics' for b in app.button))
         app.button(key='fac_action_cell_coverage').click().run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['fac_diagnostic_focus'], 'coverage')
         app.button(key='fac_action_hc3').click().run(timeout=60)
         self.assertEqual(app.session_state['fac_results_tab'], 'Model Overview')
-        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run(timeout=60)
+        interaction_selection(app).set_value([('A', 'B')]).run(timeout=60)
         app.run(timeout=60)
         self.assertFalse(app.exception)
         for name in ('Second', 'First'):
             app.session_state['ws_dataset_tabs'] = name
             app.run(timeout=60)
             self.assertFalse(app.exception)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A', 'B')])
+        self.assertEqual(interaction_selection(app).value, [('A', 'B')])
         active = app.session_state['ws_active']
         saved = app.session_state['ws_datasets'][active]['state']
         self.assertTrue(all(key not in saved for key in ACTIONS))

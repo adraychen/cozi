@@ -270,6 +270,10 @@ def render_factorial_anova(df, numerical, categorical):
     answer = st.session_state.get('fac_study_answer')
     items = guided_items(prepared, result, diagnostics, answer, evidence, failure) if prepared is not None else []
     status = diagnostic_status(items) if items else 'Model issue'
+    study_items = [item for item in items if item.diagnostic_id == 'independence']
+    with st.expander(status if status != 'Checks passed' else 'Study Design'):
+        presentation.subheader('Study Design')
+        render_items(study_items, prepared, evidence)
     tabs = st.tabs(['Model Overview', 'Diagnostics', 'Effect plots', 'Post-hoc comparisons', 'ANOVA Findings'],
                    key='fac_results_tab', on_change='rerun')
     with tabs[0]:
@@ -284,9 +288,6 @@ def render_factorial_anova(df, numerical, categorical):
         ], columns=['Model detail', 'Value']))
         if failure:
             st.error('Model issue — requested Factorial ANOVA inference is unavailable. Review Diagnostics.')
-        else:
-            presentation.write('Diagnostic status: **' + status + '**')
-        st.button('Open Diagnostics', key='fac_open_diagnostics', on_click=navigate, args=('overview',))
         if st.session_state.get('fac_review_terms'):
             st.markdown('[Review response, factors and interaction controls](#fac-model-configuration)')
         presentation.write('Main effects: ' + ', '.join(map(str, factors)))
@@ -315,7 +316,7 @@ def render_factorial_anova(df, numerical, categorical):
                     unsupported['Reason'] = failure
                     presentation.dataframe(unsupported, hide_index=True)
                 if items:
-                    render_items(items, prepared, evidence)
+                    render_items([item for item in items if item.diagnostic_id != 'independence'], prepared, evidence)
                 else:
                     presentation.write('What was found: ' + failure)
                     presentation.write('Review the response type and distinct factor levels, then confirm changes and rerun.')
@@ -337,7 +338,7 @@ def render_factorial_anova(df, numerical, categorical):
             presentation.caption('The classical ANOVA and partial η² above remain unchanged. HC3 changes covariance-based inference, not the fitted response or selected terms. It does not resolve dependence, missing cells, or an incorrect mean model. Robust F tests are an approximate sensitivity analysis, especially with small samples or high leverage.')
     with tabs[1]:
         presentation.subheader('Model validity')
-        render_items(items, prepared, evidence)
+        render_items([item for item in items if item.diagnostic_id != 'independence'], prepared, evidence)
         if interactions:
             presentation.dataframe(support_table(df, outcome, effects, interactions), hide_index=True)
             presentation.caption('Pair counts pool over other factors. Full-model rank, replication and degrees of freedom determine estimability; pair coverage alone is insufficient.')

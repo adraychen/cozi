@@ -1,4 +1,6 @@
 """Automatic factorial results and clarification above the results navigation."""
+from tests.factorial_selection_helper import interaction_selection
+
 import unittest
 from copy import deepcopy
 from unittest.mock import patch
@@ -10,30 +12,42 @@ from tests.test_factorial_interactions import SCRIPT as FIXED_SCRIPT
 
 
 class FactorialLayoutTests(unittest.TestCase):
-    def test_one_dropdown_defaults_all_and_updates_without_apply(self):
+    def test_defaults_all_and_updates_without_apply(self):
         app = AppTest.from_string(FIXED_SCRIPT).run(timeout=60)
         self.assertFalse(app.exception)
         self.assertFalse(any(r.key == 'fac_interaction_mode' for r in app.radio))
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [ALL_INTERACTIONS])
+        self.assertEqual(interaction_selection(app).value, [ALL_INTERACTIONS])
         self.assertTrue(any(e.label == 'Which interaction effects should I select?' for e in app.expander))
         app.button(key='report_add_factorial').click().run(timeout=60)
         saved = deepcopy(app.session_state['cozy_report']['blocks'])
-        app.multiselect(key='fac_interaction_choices').set_value([NO_INTERACTION]).run(timeout=60)
+        interaction_selection(app).set_value([NO_INTERACTION]).run(timeout=60)
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [])
         self.assertFalse(any(b.key == 'fac_apply_model' for b in app.button))
-        app.multiselect(key='fac_interaction_choices').set_value([('A','B'),('B','C')]).run(timeout=60)
+        interaction_selection(app).set_value([('A','B'),('B','C')]).run(timeout=60)
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A','B'],['B','C']])
         self.assertEqual(app.session_state['cozy_report']['blocks'], saved)
 
-    def test_all_and_none_are_exclusive_with_specific_pairs(self):
+    def test_checkbox_grid_select_all_clear_all_and_guidance(self):
         app = AppTest.from_string(FIXED_SCRIPT).run(timeout=60)
-        app.multiselect(key='fac_interaction_choices').set_value([ALL_INTERACTIONS, ('A','B')]).run(timeout=60)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [('A','B')])
-        app.multiselect(key='fac_interaction_choices').set_value([('A','B'), NO_INTERACTION]).run(timeout=60)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [NO_INTERACTION])
-        app.multiselect(key='fac_interaction_choices').set_value([NO_INTERACTION, ALL_INTERACTIONS]).run(timeout=60)
-        self.assertEqual(app.multiselect(key='fac_interaction_choices').value, [ALL_INTERACTIONS])
+        pairs = [c for c in app.checkbox if c.key.startswith('fac_interaction_pair_')]
+        self.assertEqual(len(pairs), 3)
+        self.assertTrue(all(c.value for c in pairs))
+        self.assertFalse(any(m.key == 'fac_interaction_choices' for m in app.multiselect))
+        help_box = next(e for e in app.expander if e.label == 'Which interaction effects should I select?')
+        self.assertEqual(len(help_box.markdown), 3)
+        app.button(key='fac_action_interactions_clear').click().run(timeout=60)
+        self.assertFalse(any(c.value for c in app.checkbox if c.key.startswith('fac_interaction_pair_')))
+        next(c for c in app.checkbox if c.label == 'A × B').check().run(timeout=60)
+        self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [['A','B']])
+        app.button(key='fac_action_interactions_all').click().run(timeout=60)
+        self.assertTrue(all(c.value for c in app.checkbox if c.key.startswith('fac_interaction_pair_')))
+        self.assertFalse(any(b.label == 'Open Diagnostics' for b in app.button))
+        elements = list(app)
+        panel = next(i for i,e in enumerate(elements) if e.type == 'expander' and e.label == 'Review advised')
+        tab = next(i for i,e in enumerate(elements) if e.type == 'tab')
+        self.assertLess(panel, tab)
+        self.assertFalse(any('Diagnostic status:' in m.value for m in app.tabs[0].markdown))
 
     def test_study_design_is_above_tabs_and_confirmation_generates_results(self):
         with patch('utils.anova_effects_ui._fit') as fitting:
@@ -55,7 +69,7 @@ class FactorialLayoutTests(unittest.TestCase):
         panel = next(i for i, e in enumerate(elements) if e.type == 'expander' and e.label == 'Study Design')
         tab = next(i for i, e in enumerate(elements) if e.type == 'tab' and e.label == 'Model Overview')
         self.assertLess(panel, tab)
-        app.multiselect(key='fac_interaction_choices').set_value([NO_INTERACTION]).run(timeout=60)
+        interaction_selection(app).set_value([NO_INTERACTION]).run(timeout=60)
         self.assertFalse(app.exception)
         self.assertTrue(app.tabs)
         self.assertEqual(app.session_state['report_latest']['settings']['interactions'], [])

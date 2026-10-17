@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import interaction_selection
 import unittest
 import json
 from itertools import product
@@ -227,7 +228,7 @@ render_factorial_anova(fixture(True), ['Y'], ['A','B','D'])
         self.assertTrue(adjusted_charts)
         self.assertTrue(all(chart['layout']['xaxis']['type'] == 'category' for chart in adjusted_charts))
         self.assertTrue(all(trace.get('error_y') for chart in adjusted_charts for trace in chart['data']))
-        app.multiselect(key='fac_interaction_choices').set_value([('A','B')]).run(timeout=40)
+        interaction_selection(app).set_value([('A','B')]).run(timeout=40)
         app.checkbox(key='fac_hc3').check().run(timeout=40)
         app.checkbox(key='fac_simple_show').check().run(timeout=40)
         self.assertFalse(app.exception)
@@ -238,7 +239,7 @@ render_factorial_anova(fixture(True), ['Y'], ['A','B','D'])
         app.checkbox(key='fac_swap_3').check().run(timeout=40)
         app.number_input(key='fac_alpha').set_value(.01).run(timeout=40)
         self.assertFalse(app.exception)
-        app.multiselect(key='fac_interaction_choices').set_value([]).run(timeout=40)
+        interaction_selection(app).set_value([]).run(timeout=40)
         self.assertTrue(any('A' in s.options for s in app.selectbox if s.key=='fac_posthoc'))
         self.assertFalse(any(s.key=='fac_simple_factor' for s in app.selectbox))
 

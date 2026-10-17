@@ -1,3 +1,4 @@
+from tests.factorial_selection_helper import interaction_selection
 import unittest
 from itertools import product
 import numpy as np
@@ -186,11 +187,11 @@ render_comparison(df, {'numerical':['Y'], 'categorical':['A','B','D'], 'datetime
         app.button(key='gs_cmp_all_categorical').click().run()
         app.selectbox(key='gs_cmp_analysis').select('Factorial ANOVA').run()
         self.assertFalse(app.exception)
-        app.multiselect(key='fac_interaction_choices').set_value([('A', 'B')]).run()
+        interaction_selection(app).set_value([('A', 'B')]).run()
         self.assertFalse(app.exception)
         self.assertTrue(any('depends on' in w.value for w in app.info))
         self.assertTrue(any('Partial η²' in t.value for t in app.dataframe))
-        app.multiselect(key='fac_interaction_choices').set_value([]).run()
+        interaction_selection(app).set_value([]).run()
         app.checkbox(key='fac_posthoc_show').check().run()
         self.assertTrue(any('Holm-adjusted p-value' in t.value for t in app.dataframe))
         app.checkbox(key='gs_cmp_variable_D').uncheck().run()

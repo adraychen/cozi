@@ -20,45 +20,50 @@ ALL_INTERACTIONS = 'All interactions'
 NO_INTERACTION = 'No interaction'
 
 
-def _interaction_choices_changed():
-    state = st.session_state
-    values = state['fac_interaction_choices']
-    previous = state.get('fac_interaction_previous', [])
-    added = [v for v in values if v not in previous]
-    if added and added[-1] in (ALL_INTERACTIONS, NO_INTERACTION):
-        values = [added[-1]]
-    elif added:
-        values = [v for v in values if isinstance(v, tuple)]
-    if not values:
-        values = [NO_INTERACTION]
-    state['fac_interaction_choices'] = values
-    state['fac_interaction_previous'] = values
+def _set_interactions(pairs):
+    st.session_state['fac_interaction_choices'] = list(pairs) or [NO_INTERACTION]
+
+
+def _toggle_interaction(pair, key, candidates):
+    choices = st.session_state['fac_interaction_choices']
+    selected = list(candidates) if ALL_INTERACTIONS in choices else [p for p in choices if isinstance(p, tuple)]
+    selected = [p for p in selected if p != pair]
+    if st.session_state[key]:
+        selected.append(pair)
+    _set_interactions([p for p in candidates if p in selected])
 
 
 def interaction_controls(factors, effects):
     presentation.write('**Interaction Effects**')
     presentation.caption('Interactions help identify whether the effect of one factor depends on another factor.')
     with st.expander('Which interaction effects should I select?'):
-        st.write('Explore all interactions is recommended for exploratory analysis. Select specific interactions based on your study objectives or domain knowledge.')
-        st.write('Choose No interaction for a model containing only the selected main effects.')
+        st.write('Explore all interactions is recommended for exploratory analysis.')
+        st.write('Select specific interactions based on your study objectives or domain knowledge.')
+        st.write('Clear all interactions for a model containing only the selected main effects.')
     state = st.session_state
     candidates = selected_pairs(factors, EXPLORE)
-    options = [ALL_INTERACTIONS, NO_INTERACTION, *candidates]
     if 'fac_interaction_choices' not in state:
         manual = selected_pairs(factors, MANUAL, state.get('fac_interactions', []))
         state['fac_interaction_choices'] = ([ALL_INTERACTIONS] if state.get('fac_interaction_mode', EXPLORE) == EXPLORE
                                             else manual or [NO_INTERACTION])
-    valid = [v for v in state['fac_interaction_choices'] if v in options]
-    state['fac_interaction_choices'] = valid or [NO_INTERACTION]
-    state['fac_interaction_previous'] = state['fac_interaction_choices']
-    choices = st.multiselect('Interaction effects (optional)', options, key='fac_interaction_choices',
-        format_func=lambda v: v if isinstance(v, str) else ' × '.join(map(str, v)),
-        on_change=_interaction_choices_changed)
+    choices = state['fac_interaction_choices']
+    selected = candidates if ALL_INTERACTIONS in choices else [p for p in candidates if p in choices]
+    st.markdown('**Interaction effects (optional)**')
+    left, right = st.columns(2)
+    left.button('Select all', key='fac_action_interactions_all', on_click=_set_interactions, args=([ALL_INTERACTIONS],))
+    right.button('Clear all', key='fac_action_interactions_clear', on_click=_set_interactions, args=([],))
+    for start in range(0, len(candidates), 4):
+        cells = st.columns(4)
+        for cell, pair in zip(cells, candidates[start:start + 4]):
+            key = 'fac_interaction_pair_' + hashlib.sha256(repr(pair).encode()).hexdigest()[:16]
+            state[key] = pair in selected
+            cell.checkbox(' × '.join(map(str, pair)), key=key,
+                          on_change=_toggle_interaction, args=(pair, key, candidates))
     mode = EXPLORE if ALL_INTERACTIONS in choices else MANUAL
-    pairs = candidates if mode == EXPLORE else [v for v in choices if isinstance(v, tuple)]
     state['fac_interaction_mode'] = mode
-    state['fac_interactions'] = pairs if mode == MANUAL else state.get('fac_interactions', [])
-    return pairs, mode
+    state['fac_interactions'] = selected
+    state['fac_interaction_choices'] = [ALL_INTERACTIONS] if mode == EXPLORE else selected or [NO_INTERACTION]
+    return selected, mode
 
 
 def insights(prepared, result, table, mode, *, random=False, diagnostics=None, ai=False):
